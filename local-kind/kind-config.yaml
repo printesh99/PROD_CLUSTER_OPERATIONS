@@ -1,0 +1,9 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: patroni-prod-local
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30432
+        hostPort: 5555
+        protocol: TCP

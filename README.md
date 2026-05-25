@@ -16,6 +16,7 @@ No Kubernetes Secret values, passwords, private keys, or S3 access keys are deco
 | `04-config-inventory-and-change-control.md` | ConfigMaps, Secret names, exported config references, safe patch method |
 | `05-terminal-troubleshooting-runbook.md` | Copy/paste terminal checks for health, replication, pgBackRest, jobs, services, logs, DR |
 | `manifests/README.md` | Cluster manifest export/rebuild bundle instructions |
+| `local-kind/README.md` | Minimal macOS kind lab for PostgreSQL 18, Patroni, PGO, and PgBouncer |
 | `scripts/export-prod-cluster-manifests.sh` | Read-only exporter for PROD namespace manifests and rebuild evidence |
 | `configs/prod-pgbackrest-config.md` | Captured PROD pgBackRest ConfigMap and instance config |
 | `configs/prod-pgbouncer.ini` | Captured PROD PgBouncer operator config |
