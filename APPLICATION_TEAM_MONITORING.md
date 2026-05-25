@@ -660,6 +660,169 @@ Minimum labels to standardize in exporters and app metrics:
 - `endpoint`
 - `severity`
 
+## Banking Core Monitoring Perspective
+
+Because this database estate supports core banking workflows, monitoring must go beyond server health and query speed. Dashboards must prove transaction integrity, customer-impact visibility, auditability, operational control, and regulatory readiness.
+
+### Core Banking Risk Areas
+
+| Risk area | What to monitor |
+|---|---|
+| Transaction integrity | posted vs unposted transactions, duplicate references, failed posting, ledger sequence gaps, rollback spikes |
+| Financial reconciliation | TPS vs warehouse counts, failed records, end-of-day load freshness, balance table freshness |
+| Customer access | login success/failure, account lockouts, abnormal failed login spikes, session growth |
+| Maker-checker/control | reference/config changes, approval workflow failures, changes during freeze windows |
+| Audit and evidence | audit table growth, audit write failures, missing audit entries, retention pressure |
+| Regulatory continuity | backup freshness, restore validation, DR replication health, RPO/RTO indicators |
+| Fraud/security signals | abnormal failed logins, unusual transaction failure patterns, suspicious access bursts |
+| Operational resilience | lock waits, idle transactions, replication lag, WAL retention, disk/PVC capacity runway |
+| Data quality | failed ETL records, stale reporting data, invalid status transitions, orphan records |
+| Change risk | deployment/change window correlation with DB errors, latency, locks, and failed business events |
+
+### Banking Executive KPIs
+
+Management dashboards should translate technical symptoms into banking risk:
+
+- Customer login availability and latency.
+- Transaction posting availability and latency.
+- Unposted transaction backlog and oldest unposted transaction age.
+- Failed transaction rate by region.
+- TPS ledger growth and abnormal spike detection.
+- Warehouse data freshness for business reporting.
+- Backup success and last restore test age.
+- Replication RPO status by critical data flow.
+- Critical reference data changes in the selected window.
+- Open P1/P2 incidents by business service.
+- Capacity runway for transaction, audit, WAL, and warehouse growth.
+
+### Transaction Integrity Signals
+
+For TPS databases, the highest-value Grafana panels should answer:
+
+- Are transactions being received, posted, and audited at normal rates?
+- Is `tps.unposted_transaction` growing?
+- What is the oldest unposted transaction age?
+- Are there repeated failures for the same account, branch, channel, or transaction reference?
+- Are ledger/audit sequence tables growing normally?
+- Did transaction failures start after a deployment, configuration change, or replication issue?
+- Are TPS tables blocked by locks or waiting on I/O during posting peaks?
+
+Recommended panels:
+
+- Posted vs unposted transaction count.
+- Unposted backlog by age bucket.
+- Failed transaction rate by region and channel if available.
+- Ledger insert rate and audit insert rate.
+- TPS long queries and lock waits during posting windows.
+- Transaction table growth against expected daily baseline.
+
+### Reconciliation And Reporting Signals
+
+Warehouse dashboards should not only show table size. They should show whether business reports can be trusted.
+
+Monitor:
+
+- Last successful warehouse load time.
+- ETL freshness by region.
+- Failed record count and growth trend.
+- Difference between TPS source counts and warehouse loaded counts where a safe reconciliation query exists.
+- Reporting query latency and timeout count.
+- Stale analyze statistics after ETL loads.
+- Temp file growth during reporting queries.
+
+Escalate when:
+
+- Warehouse is stale beyond reporting SLA.
+- Failed records grow and do not drain.
+- TPS-to-warehouse reconciliation count differs beyond agreed tolerance.
+- Reporting is green technically but data freshness is red.
+
+### Audit, Compliance, And Evidence
+
+Core banking dashboards must retain evidence for incident review and audit.
+
+Monitor:
+
+- Audit table insert rate.
+- Audit table growth and retention runway.
+- Audit write errors from application logs.
+- Login audit success/failure trend.
+- Reference/config change history.
+- Administrative user activity if available from logs or audit tables.
+- Backup completion, WAL archive continuity, and restore validation.
+
+Evidence to preserve during incidents:
+
+- Exact time window with timezone.
+- Affected region, database, schema, application, and business workflow.
+- Grafana dashboard link with variables and time range.
+- Top wait events, locks, long queries, and app error rates.
+- Relevant config/reference changes.
+- Deployment/change records.
+- Replication and backup status.
+
+### Maker-Checker And Reference Data Control
+
+For `banking_admin`, `admin`, and common reference schemas, monitoring should detect risky changes.
+
+Panels:
+
+- Reference/config DML volume by table.
+- Recently changed reference tables.
+- Changes outside approved windows.
+- Region-to-region reference data drift where comparable.
+- Failed approval or workflow events if captured by application logs.
+- Long-running queries on reference lookup tables.
+
+Alerts:
+
+- Critical reference table updated during freeze window.
+- Unexpected delete/truncate-like volume on configuration tables.
+- Config drift detected between regions.
+- Reference data change followed by spike in TPS/service errors.
+
+### Security And Fraud-Oriented Signals
+
+This is not a replacement for SIEM/fraud tooling, but Grafana can expose database-backed early warning signals.
+
+Monitor:
+
+- Failed login spike by region.
+- Repeated failures for the same user, channel, client, branch, or IP where safe and compliant.
+- Sudden session count increase.
+- Administrative connection attempts.
+- Application users connecting from unexpected hosts.
+- High failed transaction rate for the same channel or branch.
+- Unusual after-hours access to critical schemas.
+
+Security notes:
+
+- Do not expose customer PII in Grafana panels.
+- Aggregate by region, service, status, channel, or anonymized identifier.
+- Limit raw audit drill-down to approved DBA/security roles.
+- Use Grafana folder permissions for management, app team, DBA, and security views.
+
+### Banking Alert Severity Guidance
+
+Use banking impact to set severity, not only technical thresholds.
+
+| Severity | Banking interpretation |
+|---|---|
+| `P1` | Login unavailable, transaction posting unavailable, data integrity risk, ledger/audit write failure, primary database unavailable |
+| `P2` | TPS backlog growing, replication RPO breach, warehouse reporting SLA missed, severe lock waits, reference data control breach |
+| `P3` | Dead tuples, stale stats, index risk, moderate latency, ETL delay within tolerance, growing but controlled capacity risk |
+| `P4` | Hygiene, dashboard improvement, low-risk tuning, documentation, non-urgent capacity review |
+
+### Banking Dashboard Design Rule
+
+Every core banking dashboard should separate three layers:
+
+1. Business state: customer login, transaction posting, reporting freshness, backlog, failed business events.
+2. Application state: errors, latency, job queues, API health, logs, traces.
+3. Database state: sessions, locks, waits, queries, vacuum, replication, WAL, capacity.
+
+This makes it possible to tell management whether the bank is impacted, tell application teams where their workflow is failing, and tell DBA/platform teams what technical condition needs action.
+
 ## Comprehensive Dashboard Set
 
 ### 1. Management Command Center
@@ -1188,3 +1351,7 @@ Create dashboards in folders by audience and app domain:
 9. Standardize `application_name`, correlation ID, service labels, and region labels across application teams.
 10. Build the Management Command Center after baseline thresholds are agreed with application owners.
 11. Prepare WB UI and database console deep links using Grafana dashboard variables.
+12. Add banking-core panels for posted vs unposted transactions, failed transaction rate, and oldest unposted transaction age.
+13. Add reconciliation panels for TPS-to-warehouse freshness and failed warehouse records.
+14. Add audit/control panels for login audit growth, reference data changes, backup freshness, and restore validation.
+15. Define P1/P2 banking-impact rules with application owners, DBA, security, and management.
