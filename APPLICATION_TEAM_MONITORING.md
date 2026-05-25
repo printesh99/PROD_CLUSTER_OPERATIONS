@@ -823,6 +823,862 @@ Every core banking dashboard should separate three layers:
 
 This makes it possible to tell management whether the bank is impacted, tell application teams where their workflow is failing, and tell DBA/platform teams what technical condition needs action.
 
+## Core Banking Grafana Dashboard SQL Pack
+
+Use this section as the base for one comprehensive Grafana dashboard named `Core Banking Regional Operations`.
+
+The SQL below is based on the imported table structure from the production report. It is intended for Grafana PostgreSQL data sources. Because PostgreSQL does not query across databases unless FDW/dblink is configured, create one data source per database or per region/domain and repeat the same panel by data source.
+
+Regional database naming convention:
+
+| Domain | Regional databases |
+|---|---|
+| API Gateway | `ae_api_gateway_uat`, `sa_api_gateway_uat`, `uk_api_gateway_uat`; API tables also exist in `*_service_uat` |
+| Common/reference | `ae_common_uat`, `ch_common_uat`, `sa_common_uat`, `uk_common_uat` |
+| Document | `ae_document_uat`, `sa_document_uat`, `uk_document_uat`; `ch_document_uat` has no base tables in this report |
+| Service/CRM | `ae_service_uat`, `ch_service_uat`, `sa_service_uat`, `uk_service_uat` |
+| TPS | `ae_tps_uat`, `ch_tps_uat`, `sa_tps_uat`, `uk_tps_uat` |
+| TPS Warehouse | `ae_tps_warehouse_uat`, `ch_tps_warehouse_uat`, `sa_tps_warehouse_uat`, `uk_tps_warehouse_uat` |
+
+Recommended dashboard variables:
+
+- `$region`: `ae`, `ch`, `sa`, `uk`
+- `$domain`: `api_gateway`, `common`, `document`, `service`, `tps`, `warehouse`
+- `$database`: Grafana data source or database variable mapped to the selected region/domain
+- `$branch_id`: optional branch filter where a table has `branch_id`
+- `$status`: optional status filter
+
+### Row 1: Executive Banking Health
+
+Panel: current database and object source confirmation.
+
+```sql
+select
+  current_database() as database_name,
+  current_user as grafana_user,
+  now() as collected_at;
+```
+
+Panel: largest user tables for selected database.
+
+```sql
+select
+  current_database() as database_name,
+  schemaname,
+  relname as table_name,
+  pg_total_relation_size(relid) as total_bytes,
+  pg_size_pretty(pg_total_relation_size(relid)) as total_size,
+  n_live_tup,
+  n_dead_tup,
+  last_autovacuum,
+  last_autoanalyze
+from pg_stat_user_tables
+order by pg_total_relation_size(relid) desc
+limit 25;
+```
+
+Panel: database object count by schema.
+
+```sql
+select
+  current_database() as database_name,
+  n.nspname as schema_name,
+  c.relkind,
+  count(*) as object_count
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace
+where n.nspname not in ('pg_catalog', 'information_schema')
+group by n.nspname, c.relkind
+order by n.nspname, c.relkind;
+```
+
+### Row 2: Customer Login And Access
+
+Run against `*_api_gateway_uat` or `*_service_uat`.
+
+Panel: access sessions by status.
+
+```sql
+select
+  date_trunc('hour', access_time) as time,
+  status,
+  count(*) as sessions
+from api_gateway.access_session
+where $__timeFilter(access_time)
+group by 1, status
+order by 1, status;
+```
+
+Panel: active login sessions.
+
+```sql
+select
+  count(*) as active_login_sessions
+from api_gateway.login_audit
+where logged_out_time is null;
+```
+
+Panel: login activity by device type.
+
+```sql
+select
+  date_trunc('hour', la.logged_in_time) as time,
+  coalesce(dt.name, la.device_type::text) as device_type,
+  count(*) as logins
+from api_gateway.login_audit la
+left join api_gateway.device_type dt on dt.id = la.device_type
+where $__timeFilter(la.logged_in_time)
+group by 1, coalesce(dt.name, la.device_type::text)
+order by 1, 2;
+```
+
+Panel: API route/menu access volume.
+
+```sql
+select
+  date_trunc('hour', access_time) as time,
+  service_id,
+  menu_id,
+  route_id,
+  count(*) as access_count
+from api_gateway.login_audit_log
+where $__timeFilter(access_time)
+group by 1, service_id, menu_id, route_id
+order by 1, access_count desc;
+```
+
+### Row 3: TPS Transaction Posting
+
+Run against `*_tps_uat`.
+
+Panel: transaction references by branch and date.
+
+```sql
+select
+  "date"::timestamp as time,
+  branch_id,
+  count(*) as transaction_count
+from tps.transaction_reference
+where "date" >= $__timeFrom()::date
+  and "date" < ($__timeTo()::date + interval '1 day')
+group by "date", branch_id
+order by "date", branch_id;
+```
+
+Panel: ledger postings by effective date.
+
+```sql
+select
+  effective_date::timestamp as time,
+  transaction_type,
+  transaction_sub_type,
+  count(*) as ledger_rows,
+  sum(fc_amount) as fc_amount,
+  sum(lc_amount) as lc_amount
+from tps.transaction_ledger
+where effective_date >= $__timeFrom()::date
+  and effective_date < ($__timeTo()::date + interval '1 day')
+group by effective_date, transaction_type, transaction_sub_type
+order by effective_date, transaction_type, transaction_sub_type;
+```
+
+Panel: unposted transaction backlog by effective date.
+
+```sql
+select
+  effective_date::timestamp as time,
+  transaction_type,
+  transaction_sub_type,
+  hold_flag,
+  count(*) as unposted_rows,
+  sum(fc_amount) as fc_amount,
+  sum(lc_amount) as lc_amount
+from tps.unposted_transaction
+where effective_date >= $__timeFrom()::date
+  and effective_date < ($__timeTo()::date + interval '1 day')
+group by effective_date, transaction_type, transaction_sub_type, hold_flag
+order by effective_date, transaction_type, transaction_sub_type, hold_flag;
+```
+
+Panel: current unposted transaction count and amount.
+
+```sql
+select
+  count(*) as unposted_rows,
+  count(distinct transaction_id) as unposted_transactions,
+  min(effective_date) as oldest_effective_date,
+  max(effective_date) as newest_effective_date,
+  sum(fc_amount) as fc_amount,
+  sum(lc_amount) as lc_amount
+from tps.unposted_transaction;
+```
+
+Panel: transaction audit status by action.
+
+```sql
+select
+  date_trunc('hour', action_time) as time,
+  action,
+  status,
+  count(*) as audit_events
+from tps.transaction_audit
+where $__timeFilter(action_time)
+group by 1, action, status
+order by 1, action, status;
+```
+
+Panel: service/path status from transaction audit sequence.
+
+```sql
+select
+  service_name,
+  path,
+  http_request_type,
+  financial,
+  status,
+  count(*) as events
+from tps.transaction_audit_sequence
+group by service_name, path, http_request_type, financial, status
+order by events desc
+limit 50;
+```
+
+Panel: transaction balance update status.
+
+```sql
+select
+  status,
+  count(*) as balance_update_rows
+from tps.transaction_balance_update
+group by status
+order by balance_update_rows desc;
+```
+
+Panel: transaction integrity check, references without ledger rows.
+
+```sql
+select
+  tr."date"::timestamp as time,
+  tr.branch_id,
+  count(*) as references_without_ledger
+from tps.transaction_reference tr
+left join tps.transaction_ledger tl on tl.transaction_id = tr.transaction_id
+where tl.transaction_id is null
+  and tr."date" >= $__timeFrom()::date
+  and tr."date" < ($__timeTo()::date + interval '1 day')
+group by tr."date", tr.branch_id
+order by tr."date", tr.branch_id;
+```
+
+Panel: transaction ledger rows without audit sequence.
+
+```sql
+select
+  count(*) as ledger_rows_without_audit_sequence
+from tps.transaction_ledger tl
+left join tps.transaction_audit_sequence tas
+  on tas.transaction_id = tl.transaction_id
+ and tas.sequence_number = tl.sequence_number
+where tas.transaction_id is null;
+```
+
+### Row 4: Account And Customer Risk
+
+Use `*_service_uat` for customer onboarding, account opening, and account control risk. Use `*_tps_uat` for replicated account balance exposure.
+
+Panel: customer status by branch and category.
+
+```sql
+select
+  branch_id,
+  category,
+  status,
+  count(*) as customers
+from crm.customer
+group by branch_id, category, status
+order by customers desc;
+```
+
+Panel: customer onboarding trend from relationship start date.
+
+```sql
+select
+  relationship_start_date::timestamp as time,
+  branch_id,
+  category,
+  count(*) as customers_started
+from crm.customer
+where relationship_start_date >= $__timeFrom()::date
+  and relationship_start_date < ($__timeTo()::date + interval '1 day')
+group by relationship_start_date, branch_id, category
+order by relationship_start_date, branch_id, category;
+```
+
+Panel: account opening trend.
+
+```sql
+select
+  opened_on::timestamp as time,
+  branch_unit_id,
+  product_id,
+  currency_id,
+  status,
+  count(*) as accounts_opened
+from crm.account
+where opened_on >= $__timeFrom()::date
+  and opened_on < ($__timeTo()::date + interval '1 day')
+group by opened_on, branch_unit_id, product_id, currency_id, status
+order by opened_on, branch_unit_id, product_id, currency_id, status;
+```
+
+Panel: account control risk flags. Run against `*_service_uat`.
+
+```sql
+select
+  status,
+  is_freeze_debit_transaction,
+  is_freeze_credit_transactions,
+  is_no_transactions,
+  is_deceased,
+  is_high_risk,
+  is_restrict_account_access,
+  count(*) as accounts
+from crm.account_control
+group by
+  status,
+  is_freeze_debit_transaction,
+  is_freeze_credit_transactions,
+  is_no_transactions,
+  is_deceased,
+  is_high_risk,
+  is_restrict_account_access
+order by accounts desc;
+```
+
+Panel: account balances by product/currency. Run against `*_tps_uat`.
+
+```sql
+select
+  product_id,
+  currency_id,
+  count(*) as accounts,
+  sum(fc_balance) as fc_balance,
+  sum(lc_balance) as lc_balance,
+  sum(blocked_amount) as blocked_amount,
+  sum(lien_amount) as lien_amount
+from crm.account
+group by product_id, currency_id
+order by abs(sum(lc_balance)) desc nulls last
+limit 50;
+```
+
+### Row 5: Warehouse And Reconciliation
+
+Run against `*_tps_warehouse_uat`.
+
+Panel: warehouse ledger processed status.
+
+```sql
+select
+  effective_date::timestamp as time,
+  is_processed,
+  count(*) as ledger_rows,
+  sum(fc_amount) as fc_amount,
+  sum(lc_amount) as lc_amount
+from tps_warehouse.transaction_ledger
+where effective_date >= $__timeFrom()::date
+  and effective_date < ($__timeTo()::date + interval '1 day')
+group by effective_date, is_processed
+order by effective_date, is_processed;
+```
+
+Panel: warehouse failed records.
+
+```sql
+select
+  date_trunc('hour', created_at) as time,
+  type,
+  count(*) as failed_records
+from tps_warehouse.failed_record
+where $__timeFilter(created_at)
+group by 1, type
+order by 1, type;
+```
+
+Panel: warehouse balance freshness.
+
+```sql
+select
+  'balance_during' as table_name,
+  max(updated_at) as last_updated_at,
+  count(*) as rows
+from tps_warehouse.balance_during
+union all
+select
+  'balance_during_value_date' as table_name,
+  max(updated_at) as last_updated_at,
+  count(*) as rows
+from tps_warehouse.balance_during_value_date
+union all
+select
+  'account_serial_balance_during' as table_name,
+  max(updated_at) as last_updated_at,
+  count(*) as rows
+from tps_warehouse.account_serial_balance_during
+union all
+select
+  'account_serial_balance_during_value_date' as table_name,
+  max(updated_at) as last_updated_at,
+  count(*) as rows
+from tps_warehouse.account_serial_balance_during_value_date;
+```
+
+Panel: warehouse transaction map by branch route.
+
+```sql
+select
+  "date"::timestamp as time,
+  r_country,
+  r_zone,
+  r_branch,
+  count(*) as mapped_transactions
+from tps_warehouse.hplus_transaction_map
+where "date" >= $__timeFrom()::date
+  and "date" < ($__timeTo()::date + interval '1 day')
+group by "date", r_country, r_zone, r_branch
+order by "date", r_country, r_zone, r_branch;
+```
+
+Panel: TPS-to-warehouse reconciliation, Grafana transformation method.
+
+Run this query on the TPS datasource:
+
+```sql
+select
+  "date"::timestamp as time,
+  count(*) as tps_transaction_references
+from tps.transaction_reference
+where "date" >= $__timeFrom()::date
+  and "date" < ($__timeTo()::date + interval '1 day')
+group by "date"
+order by "date";
+```
+
+Run this query on the warehouse datasource and join by `time` in Grafana transformations:
+
+```sql
+select
+  "date"::timestamp as time,
+  count(*) as warehouse_transaction_maps
+from tps_warehouse.hplus_transaction_map
+where "date" >= $__timeFrom()::date
+  and "date" < ($__timeTo()::date + interval '1 day')
+group by "date"
+order by "date";
+```
+
+### Row 6: Service Jobs And Integration Backlog
+
+Run against `*_service_uat`.
+
+Panel: JobRunr job state.
+
+```sql
+select
+  date_trunc('hour', createdat) as time,
+  state,
+  count(*) as jobs
+from jobrunr.jobrunr_jobs
+where $__timeFilter(createdat)
+group by 1, state
+order by 1, state;
+```
+
+Panel: old or stuck JobRunr jobs.
+
+```sql
+select
+  state,
+  count(*) as jobs,
+  min(createdat) as oldest_createdat,
+  max(updatedat) as newest_updatedat,
+  max(scheduledat) as newest_scheduledat
+from jobrunr.jobrunr_jobs
+group by state
+order by jobs desc;
+```
+
+Panel: Kafka recovery failures.
+
+```sql
+select
+  topic,
+  group_name,
+  status,
+  type,
+  count(*) as failed_records,
+  max(retry_count) as max_retry_count
+from kafka_recovery.kafka_fail_record
+group by topic, group_name, status, type
+order by failed_records desc
+limit 50;
+```
+
+Panel: outstanding Kafka recovery records.
+
+```sql
+select
+  k.topic,
+  k.group_name,
+  k.status,
+  k.type,
+  count(*) as outstanding_records,
+  max(k.retry_count) as max_retry_count
+from kafka_recovery.out_standing_record o
+join kafka_recovery.kafka_fail_record k on k.id = o.kafka_fail_record_id
+group by k.topic, k.group_name, k.status, k.type
+order by outstanding_records desc;
+```
+
+### Row 7: Maker-Checker, Audit, And Reference Controls
+
+Run against `*_service_uat` for operational maker-checker tables and `*_common_uat` for common reference tables.
+
+Panel: transaction log status by module.
+
+```sql
+select 'admin' as module, status, count(*) as transactions
+from admin.transaction_log
+group by status
+union all
+select 'crm' as module, status, count(*) as transactions
+from crm.transaction_log
+group by status
+union all
+select 'charge' as module, status, count(*) as transactions
+from charge.transaction_log
+group by status
+union all
+select 'locker' as module, status, count(*) as transactions
+from locker.transaction_log
+group by status
+order by module, status;
+```
+
+Panel: pending/proposed maintenance rows by schema.
+
+```sql
+select 'admin' as schema_name, count(*) as rows from admin.e_hplus_system_user
+union all
+select 'crm' as schema_name, count(*) as rows from crm.e_customer
+union all
+select 'crm' as schema_name, count(*) as rows from crm.e_account
+union all
+select 'banking_admin' as schema_name, count(*) as rows from banking_admin.e_product
+union all
+select 'banking_admin' as schema_name, count(*) as rows from banking_admin.e_currency
+union all
+select 'charge' as schema_name, count(*) as rows from charge.e_override_charge_account
+union all
+select 'locker' as schema_name, count(*) as rows from locker.e_locker_customer
+order by rows desc;
+```
+
+Panel: reference branch working date and status.
+
+```sql
+select
+  b.id as branch_id,
+  b.name as branch_name,
+  b.short_name,
+  b.status,
+  b.working_date,
+  b.time_zone,
+  o.name as organization_name
+from banking_admin.branch b
+join banking_admin.organization o on o.id = b.organization_id
+order by b.id;
+```
+
+Panel: product status and control flags.
+
+```sql
+select
+  id as product_id,
+  short_name,
+  status,
+  ledger_type,
+  balance_control,
+  debit_transaction_flag,
+  credit_transaction_flag,
+  limit_check_flag,
+  deep_freeze_flag,
+  allow_user_transaction_flag
+from banking_admin.product
+order by status, product_id;
+```
+
+Panel: currency master.
+
+```sql
+select
+  id as currency_id,
+  iso_code,
+  name,
+  "decimal",
+  decimal_name
+from banking_admin.currency
+order by id;
+```
+
+### Row 8: Document And Statement Access
+
+Run against `*_document_uat` where tables exist.
+
+Panel: document uploads by type and size.
+
+```sql
+select
+  date_trunc('hour', "date") as time,
+  documenttype,
+  contenttype,
+  count(*) as documents,
+  sum(size) as total_size_bytes
+from document.document
+where $__timeFilter("date")
+group by 1, documenttype, contenttype
+order by 1, documenttype, contenttype;
+```
+
+Panel: document access by user/source/access type.
+
+```sql
+select
+  date_trunc('hour', "date") as time,
+  source,
+  accesstype,
+  username,
+  count(*) as access_count
+from document.document_access_log
+where $__timeFilter("date")
+group by 1, source, accesstype, username
+order by 1, access_count desc;
+```
+
+Panel: document metadata status by route.
+
+```sql
+select
+  serviceid,
+  menuid,
+  routeid,
+  status,
+  count(*) as metadata_rows
+from document.document_metadata
+group by serviceid, menuid, routeid, status
+order by metadata_rows desc;
+```
+
+Run against `*_tps_warehouse_uat` for statement access:
+
+```sql
+select
+  date_trunc('hour', created_at) as time,
+  login_name,
+  count(*) as statement_access_count
+from tps_warehouse.statement_access_log
+where $__timeFilter(created_at)
+group by 1, login_name
+order by 1, statement_access_count desc;
+```
+
+### Row 9: OTP, Mobile, Locker, And Charge
+
+Run against `*_service_uat`.
+
+Panel: OTP status and failures.
+
+```sql
+select
+  date_trunc('hour', sent_at) as time,
+  otp_status,
+  failure_reason,
+  count(*) as otp_count,
+  sum(attempts) as attempts,
+  sum(resend_count) as resend_count
+from mobile.otp_transaction
+where $__timeFilter(sent_at)
+group by 1, otp_status, failure_reason
+order by 1, otp_status, failure_reason;
+```
+
+Panel: OTP audit log.
+
+```sql
+select
+  date_trunc('hour', log_date) as time,
+  otp_status,
+  failure_reason,
+  count(*) as otp_audit_events,
+  sum(attempts) as attempts,
+  sum(resend_count) as resend_count
+from mobile.otp_audit_log
+where $__timeFilter(log_date)
+group by 1, otp_status, failure_reason
+order by 1, otp_status, failure_reason;
+```
+
+Panel: locker pending/proposed operations.
+
+```sql
+select
+  http_request_type,
+  locker_status,
+  branch_id,
+  count(*) as locker_customer_rows
+from locker.e_locker_customer
+group by http_request_type, locker_status, branch_id
+order by locker_customer_rows desc;
+```
+
+Panel: charge overrides by type.
+
+```sql
+select
+  'override_charge_account' as source_table,
+  charge_type_id,
+  currency_id,
+  count(*) as rows,
+  sum(charge) as total_charge
+from charge.override_charge_account
+group by charge_type_id, currency_id
+union all
+select
+  'override_charge_customer' as source_table,
+  charge_type_id,
+  currency_id,
+  count(*) as rows,
+  sum(charge) as total_charge
+from charge.override_charge_customer
+group by charge_type_id, currency_id
+order by source_table, rows desc;
+```
+
+### Row 10: Database Reliability For Banking Incidents
+
+Run against every database data source.
+
+Panel: active sessions by application.
+
+```sql
+select
+  current_database() as database_name,
+  application_name,
+  usename,
+  state,
+  wait_event_type,
+  wait_event,
+  count(*) as sessions
+from pg_stat_activity
+where state <> 'idle'
+group by current_database(), application_name, usename, state, wait_event_type, wait_event
+order by sessions desc;
+```
+
+Panel: long-running active statements.
+
+```sql
+select
+  current_database() as database_name,
+  pid,
+  usename,
+  application_name,
+  client_addr,
+  state,
+  wait_event_type,
+  wait_event,
+  now() - query_start as query_age,
+  left(query, 500) as query_text
+from pg_stat_activity
+where state <> 'idle'
+  and query_start is not null
+order by query_age desc
+limit 50;
+```
+
+Panel: idle-in-transaction sessions.
+
+```sql
+select
+  current_database() as database_name,
+  pid,
+  usename,
+  application_name,
+  client_addr,
+  now() - xact_start as transaction_age,
+  now() - state_change as idle_age,
+  left(query, 500) as last_query
+from pg_stat_activity
+where state = 'idle in transaction'
+order by transaction_age desc
+limit 50;
+```
+
+Panel: table vacuum/analyze freshness.
+
+```sql
+select
+  current_database() as database_name,
+  schemaname,
+  relname as table_name,
+  n_live_tup,
+  n_dead_tup,
+  round(100.0 * n_dead_tup / nullif(n_live_tup + n_dead_tup, 0), 2) as dead_tuple_pct,
+  last_autovacuum,
+  last_autoanalyze,
+  n_mod_since_analyze
+from pg_stat_user_tables
+order by dead_tuple_pct desc nulls last, n_dead_tup desc
+limit 50;
+```
+
+Panel: unused or rarely used large indexes.
+
+```sql
+select
+  current_database() as database_name,
+  schemaname,
+  relname as table_name,
+  indexrelname as index_name,
+  idx_scan,
+  pg_size_pretty(pg_relation_size(indexrelid)) as index_size
+from pg_stat_user_indexes
+where idx_scan = 0
+order by pg_relation_size(indexrelid) desc
+limit 50;
+```
+
+### Dashboard Alert Candidates
+
+Use these alert candidates after baseline collection:
+
+| Panel | Alert condition |
+|---|---|
+| Active login sessions | abnormal spike compared with baseline |
+| Access sessions by status | failure/error status spike |
+| Unposted transaction backlog | count greater than agreed threshold or oldest effective date too old |
+| Transaction references without ledger | count greater than zero after posting window |
+| Ledger rows without audit sequence | count greater than zero |
+| Warehouse failed records | count increasing and not draining |
+| Warehouse balance freshness | `last_updated_at` older than SLA |
+| JobRunr state | failed jobs or stuck scheduled jobs increasing |
+| Kafka outstanding records | count greater than zero for sustained period |
+| Account control risk flags | high-risk/freeze/no-transaction changes spike |
+| Reference branch working date | stale or unexpected branch working date |
+| OTP failures | failure rate spike |
+| Idle-in-transaction sessions | age above agreed threshold |
+| Replication retained WAL | retained WAL above agreed threshold |
+
 ## Comprehensive Dashboard Set
 
 ### 1. Management Command Center
