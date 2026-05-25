@@ -20,6 +20,7 @@ No Kubernetes Secret values, passwords, private keys, or S3 access keys are deco
 | `LOCAL_METADATA_ENVIRONMENT.md` | Local metadata-only database environment and object inventory for troubleshooting |
 | `INDEX_RECOMMENDATIONS.md` | Metadata-driven missing foreign-key child index analysis and validation SQL |
 | `PERFORMANCE_TROUBLESHOOTING_RECOMMENDATIONS.md` | Consolidated performance troubleshooting recommendations and SQL checks |
+| `APPLICATION_TEAM_MONITORING.md` | Application-team monitoring guide mapped to database schemas/domains |
 | `scripts/export-prod-cluster-manifests.sh` | Read-only exporter for PROD namespace manifests and rebuild evidence |
 | `configs/prod-pgbackrest-config.md` | Captured PROD pgBackRest ConfigMap and instance config |
 | `configs/prod-pgbouncer.ini` | Captured PROD PgBouncer operator config |
