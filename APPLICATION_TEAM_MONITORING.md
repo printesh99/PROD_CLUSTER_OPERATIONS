@@ -605,24 +605,586 @@ where not granted
 order by pid;
 ```
 
+## Grafana Monitoring Roadmap
+
+The current production estate is already monitored through Zabbix. Grafana should not replace that immediately. Use Grafana as the single observability layer that combines Zabbix infrastructure signals, PostgreSQL database metrics, Kubernetes/Patroni status, application logs, traces, and business-domain KPIs.
+
+Target outcome:
+
+- Application teams see their own business workflow health without needing DBA access.
+- DBA team sees PostgreSQL, Patroni, replication, capacity, waits, locks, and query health.
+- Management sees service availability, risk, SLA/SLO health, major incidents, and capacity runway.
+- WB UI and the database console can later embed or deep-link to the exact Grafana panels for one database, app, region, or incident window.
+
+### Recommended Grafana Data Sources
+
+| Source | Purpose |
+|---|---|
+| Zabbix plugin | Reuse existing server, VM, network, disk, CPU, and legacy alert signals |
+| Prometheus | Primary metrics store for PostgreSQL exporters, Kubernetes, Patroni, PgBouncer, node, and app metrics |
+| PostgreSQL data source | Controlled SQL panels for metadata, object counts, table growth, slow sessions, locks, and DBA reports |
+| Loki | PostgreSQL, application, API gateway, Kubernetes, and ETL logs |
+| Tempo or Jaeger | Distributed traces from WB UI, API, service layer, and database calls |
+| Alertmanager | Alert routing, grouping, silencing, escalation, and on-call integration |
+| Object storage or backup exporter | Backup age, backup success, restore validation, WAL archive health |
+
+### Standard Dashboard Variables
+
+Every dashboard should use the same variables so it can be embedded later into the WB UI and database console.
+
+| Variable | Example values |
+|---|---|
+| `$environment` | `uat`, `prod`, `dr` |
+| `$region` | `ae`, `ch`, `sa`, `uk` |
+| `$database` | `ae_tps_uat`, `uk_service_uat` |
+| `$domain` | `api_gateway`, `common`, `document`, `service`, `tps`, `warehouse`, `replication` |
+| `$schema` | `tps`, `crm`, `tps_warehouse`, `api_gateway`, `document` |
+| `$table` | selected table from `pg_stat_user_tables` |
+| `$application` | application name from connection string or app metrics |
+| `$team` | owning application or DBA team |
+| `$pod` | Kubernetes pod name |
+| `$time_window` | incident or SLA window |
+
+Minimum labels to standardize in exporters and app metrics:
+
+- `environment`
+- `region`
+- `cluster`
+- `namespace`
+- `pod`
+- `database`
+- `schema`
+- `application`
+- `team`
+- `service`
+- `endpoint`
+- `severity`
+
+## Comprehensive Dashboard Set
+
+### 1. Management Command Center
+
+Audience: CIO, CTO, service owners, operations managers.
+
+Purpose: one page that answers whether the banking platform is healthy, what is at risk, and whether customers or internal users are affected.
+
+Panels:
+
+- Overall health score by region and domain.
+- Current active incidents by severity.
+- SLO burn rate for API, TPS, service, warehouse, and database platform.
+- Top 5 slow business services.
+- Top 5 databases by risk: disk, connections, long queries, replication lag, dead tuples.
+- Availability by region: AE, CH, SA, UK.
+- Backup status and last restore validation.
+- Replication health summary.
+- Capacity runway: database size, WAL growth, PVC/disk growth.
+- Change window overlay: deployments, schema changes, maintenance.
+- Business impact summary: failed logins, unposted transactions, failed warehouse records, notification backlog.
+
+Management thresholds should be business-facing:
+
+- Red when customer transaction posting, login, or critical service APIs are affected.
+- Amber when capacity, lag, or backlog is growing but service is still available.
+- Green only when service health, database health, replication, backup, and capacity are all inside thresholds.
+
+### 2. Application Team Overview
+
+Audience: all application teams.
+
+Purpose: one landing dashboard with links to each team's deep dashboard.
+
+Panels:
+
+- Service health by team.
+- Request rate, error rate, and latency by application.
+- Database connections by application.
+- Slow SQL count by application name.
+- Lock waits by application name.
+- Idle-in-transaction sessions by application name.
+- Dead tuple and table growth risk by owning schema.
+- Top incident-producing services over the selected window.
+
+Required application behavior:
+
+- Every service should set PostgreSQL `application_name`.
+- Every API request should carry a correlation ID.
+- Every log line should include `region`, `service`, `endpoint`, `correlation_id`, and `database` when available.
+- Every service should expose RED metrics: request rate, errors, duration.
+
+### 3. DBA / PostgreSQL Reliability
+
+Audience: DBA and platform team.
+
+Panels:
+
+- Connections by database, user, state, application, and client.
+- Connection saturation vs `max_connections`.
+- PgBouncer pool usage if PgBouncer is introduced.
+- Long-running queries.
+- Idle-in-transaction sessions.
+- Blocked sessions and blocking queries.
+- Wait events by type.
+- Top queries from `pg_stat_statements`: total time, mean time, P95/P99 if available, calls, rows, temp blocks.
+- Database size and growth.
+- Table and index growth.
+- Dead tuples and autovacuum freshness.
+- Tables needing analyze.
+- Cache hit ratio.
+- Temp file creation and temp bytes.
+- Checkpoint frequency and checkpoint write time.
+- WAL generation rate.
+- Replication slots and retained WAL.
+- Patroni leader, replica, failover, and timeline status.
+- Kubernetes pod restarts, CPU, memory, PVC, and readiness.
+
+DBA panels should link to:
+
+- `LOCAL_METADATA_ENVIRONMENT.md` for imported object counts.
+- `INDEX_RECOMMENDATIONS.md` for missing FK index candidates.
+- `PERFORMANCE_TROUBLESHOOTING_RECOMMENDATIONS.md` for runbooks and investigation SQL.
+
+### 4. API Gateway / Login Dashboard
+
+Relevant databases:
+
+- `ae_api_gateway_uat`
+- `ch_api_gateway_uat`
+- `sa_api_gateway_uat`
+- `uk_api_gateway_uat`
+
+Business panels:
+
+- Login attempts, success, failure, lockout, and timeout rate.
+- Login latency P50/P95/P99.
+- Authentication failure reason split.
+- Active session count.
+- Session creation/deletion rate.
+- Device/browser/client distribution if available in logs.
+- Spike in failed login attempts by region.
+
+Database panels:
+
+- Growth of `login_audit`, `session`, and auth-related tables.
+- Slow login queries.
+- Lock waits in API gateway database.
+- Connections from gateway services.
+- Dead tuple ratio for high-churn session/audit tables.
+
+Recommended alerts:
+
+- Failed login rate spike.
+- Login P95/P99 latency breach.
+- Session table growth abnormal.
+- Gateway database connection spike.
+- Gateway queries blocked longer than agreed threshold.
+
+### 5. Common / Reference Data Dashboard
+
+Relevant databases:
+
+- `ae_common_uat`
+- `ch_common_uat`
+- `sa_common_uat`
+- `uk_common_uat`
+
+Business panels:
+
+- Reference/config table changes by region.
+- Product, branch, currency, holiday, limit, or parameter changes during incident windows.
+- Config drift between regions.
+- Recently changed reference records.
+- Replication lag from service/common publishers where applicable.
+
+Database panels:
+
+- DML volume on reference schemas.
+- Tables with high update/delete activity.
+- Long queries on reference lookups.
+- Missing FK index candidates on reference tables.
+
+Recommended alerts:
+
+- Reference data changed during freeze window.
+- Region-to-region config mismatch.
+- Unexpected DML volume on mostly static reference tables.
+
+### 6. Document Management Dashboard
+
+Relevant databases:
+
+- `ae_document_uat`
+- `sa_document_uat`
+- `uk_document_uat`
+
+Business panels:
+
+- Document upload count and failure count.
+- Document search latency.
+- Document access/download rate.
+- Metadata/tag update volume.
+- Document-related audit volume.
+
+Database panels:
+
+- Growth of document metadata tables.
+- Dead tuples on metadata/audit tables.
+- Slow document search queries.
+- Index usage on document lookup columns.
+- Tables with sequential scans during document searches.
+
+Recommended alerts:
+
+- Upload failures above threshold.
+- Document search latency breach.
+- Metadata/audit table growth spike.
+- Sequential scan spike on large document tables.
+
+### 7. Service / CRM Dashboard
+
+Relevant databases:
+
+- `ae_service_uat`
+- `ch_service_uat`
+- `sa_service_uat`
+- `uk_service_uat`
+
+Business panels:
+
+- Customer onboarding volume and failures.
+- Account/customer profile update rate.
+- CRM request latency and errors.
+- Jobrunr queued, running, failed, and retried jobs.
+- Kafka recovery backlog.
+- Locker workflow success/failure.
+- Charge calculation/config lookup latency.
+- Mobile notification request backlog and failure rate.
+
+Database panels:
+
+- CRM table growth and dead tuples.
+- `jobrunr` table growth and old failed jobs.
+- `kafka_recovery` backlog tables.
+- Locks and long queries by service application.
+- Tables with high `n_mod_since_analyze`.
+- Large tables with missing FK indexes from `INDEX_RECOMMENDATIONS.md`.
+
+Recommended alerts:
+
+- Jobrunr failed jobs increasing.
+- Kafka recovery backlog not draining.
+- CRM table dead tuple ratio high.
+- Service database idle-in-transaction sessions.
+- Locker or charge tables blocked during business hours.
+
+### 8. TPS Transaction Dashboard
+
+Relevant databases:
+
+- `ae_tps_uat`
+- `ch_tps_uat`
+- `sa_tps_uat`
+- `uk_tps_uat`
+
+Business panels:
+
+- Transaction throughput by region.
+- Posted vs unposted transaction count.
+- Transaction failure rate.
+- Transaction audit sequence growth.
+- Ledger insert rate.
+- Transaction processing latency.
+- VAT-related transaction activity.
+- Branch/account-level hot spots if safe to aggregate.
+
+Database panels:
+
+- Size/growth for `tps.transaction_ledger`, `tps.unposted_transaction`, `tps.transaction_audit`, `tps.transaction_reference`.
+- Long-running TPS queries.
+- Lock waits on transaction tables.
+- Temp file usage during TPS queries.
+- Missing FK child indexes on large TPS tables.
+- Partitioning candidates by table size and time/range key.
+
+Recommended alerts:
+
+- `unposted_transaction` backlog grows for more than agreed duration.
+- TPS P95/P99 posting latency breach.
+- Transaction table lock wait above threshold.
+- WAL generation spike during TPS peak.
+- TPS table growth exceeds expected daily baseline.
+
+### 9. TPS Warehouse / Reporting Dashboard
+
+Relevant databases:
+
+- `ae_tps_warehouse_uat`
+- `ch_tps_warehouse_uat`
+- `sa_tps_warehouse_uat`
+- `uk_tps_warehouse_uat`
+
+Business panels:
+
+- ETL freshness by region.
+- Last successful load time.
+- Failed record count.
+- Reporting query latency.
+- Warehouse row growth by major fact table.
+- Data availability SLA for business reports.
+
+Database panels:
+
+- Growth for `tps_warehouse.transaction_ledger`, `balance_during`, `balance_during_value_date`, `account_serial_balance_during`, and `failed_record`.
+- Long reporting queries.
+- Temp bytes and temp files from reporting workloads.
+- Dead tuples after ETL loads.
+- Analyze freshness after load completion.
+
+Recommended alerts:
+
+- ETL freshness breach.
+- Failed records growing.
+- Reporting queries blocked.
+- Warehouse table analyze stale after load.
+- Temp file spike during report execution.
+
+### 10. Replication / Integration Dashboard
+
+Audience: DBA, integration, application owners.
+
+Panels:
+
+- Logical replication slot active/inactive.
+- Retained WAL by slot.
+- Subscription worker status.
+- Apply lag where available.
+- Publisher/subscriber connectivity.
+- WAL archive status.
+- Replication errors from logs.
+- Cross-database flow map: service to common, service to TPS, TPS to warehouse.
+
+Recommended alerts:
+
+- Expected logical slot inactive.
+- Retained WAL above threshold.
+- Subscription worker reconnect loop.
+- WAL disk/PVC pressure.
+- Apply lag breaches RPO.
+
+### 11. Kubernetes / Patroni Platform Dashboard
+
+Panels:
+
+- Patroni leader and replicas.
+- Failover count and timeline changes.
+- Pod restarts.
+- Pod CPU and memory.
+- PVC usage and growth.
+- Kubernetes events for PostgreSQL pods.
+- PGO operator reconciliation status if available.
+- Service endpoint readiness.
+- Backup/restore job status.
+
+Recommended alerts:
+
+- Patroni leader not healthy.
+- Replica not streaming.
+- Pod crash loop.
+- PVC usage above threshold.
+- Backup missing or failed.
+- Restore validation older than agreed threshold.
+
+## Alert Routing Model
+
+| Alert class | Primary owner | Secondary owner |
+|---|---|---|
+| Login/API latency or errors | API gateway team | DBA if DB wait/lock is present |
+| CRM/service failures | Service team | DBA/platform |
+| TPS backlog or transaction latency | TPS team | DBA |
+| Warehouse freshness/reporting latency | Warehouse team | DBA |
+| Replication lag/WAL retention | DBA | Integration team |
+| Kubernetes/Patroni/PVC | Platform/DBA | Infrastructure |
+| CPU/memory/network from existing monitoring | Infrastructure/Zabbix owner | DBA if DB impact exists |
+| Executive SLO breach | Service owner | DBA/app/platform based on root cause |
+
+Use severity consistently:
+
+- `P1`: customer-impacting outage, transaction posting failure, login unavailable, data loss risk, or database unavailable.
+- `P2`: major degradation, growing backlog, replication RPO breach, severe lock contention, or capacity risk.
+- `P3`: trend risk, stale statistics, dead tuples, index review, non-critical ETL delay.
+- `P4`: hygiene, documentation, dashboard gap, or non-urgent optimization.
+
+## WB UI And Database Console Integration
+
+The future WB UI and database console can use Grafana as the observability backend instead of rebuilding every chart manually.
+
+Integration phases:
+
+1. Deep links: add links from each WB UI database/application page to filtered Grafana dashboards using `var-database`, `var-region`, `var-domain`, and time range parameters.
+2. Embedded panels: embed selected Grafana panels in the database console for database health, active sessions, locks, table growth, and replication status.
+3. Health API: use Grafana or Prometheus APIs to show status cards in WB UI: green/amber/red, open alerts, SLO burn, and current incident count.
+4. Incident workspace: from a WB UI incident page, open the matching Grafana view, logs in Loki, traces in Tempo, and SQL evidence pack for the same time window.
+5. Role-based views: management sees business health, app teams see their domains, DBA sees all database panels.
+
+Required design rules for integration:
+
+- Never expose unrestricted ad hoc SQL to application teams.
+- Use read-only PostgreSQL users for Grafana SQL panels.
+- Keep sensitive customer data out of panel results.
+- Prefer counts, rates, percentiles, and anonymized identifiers.
+- Every embedded panel must have a clear owner and runbook link.
+
+## Initial SLO Candidates
+
+| Service area | SLO idea |
+|---|---|
+| API Gateway | Login API success rate and P95/P99 latency |
+| TPS | Transaction posting success rate, unposted backlog drain time, posting latency |
+| Service/CRM | Customer/account workflow success rate and API latency |
+| Document | Upload/search success rate and latency |
+| Warehouse | ETL freshness and report availability |
+| Replication | Apply lag or data freshness within agreed RPO |
+| Database platform | PostgreSQL availability, connection saturation, lock wait budget |
+| Backup/restore | Backup success and restore validation freshness |
+
+## Example Grafana SQL Panels
+
+Active non-idle sessions by application:
+
+```sql
+select
+  application_name,
+  datname,
+  state,
+  count(*) as sessions
+from pg_stat_activity
+where state <> 'idle'
+group by application_name, datname, state
+order by sessions desc;
+```
+
+Blocked sessions:
+
+```sql
+select
+  blocked.pid as blocked_pid,
+  blocked.application_name as blocked_app,
+  blocked.datname,
+  now() - blocked.query_start as blocked_age,
+  blocker.pid as blocker_pid,
+  blocker.application_name as blocker_app,
+  now() - blocker.query_start as blocker_age,
+  left(blocked.query, 200) as blocked_query,
+  left(blocker.query, 200) as blocker_query
+from pg_stat_activity blocked
+join pg_locks blocked_locks on blocked_locks.pid = blocked.pid
+join pg_locks blocker_locks
+  on blocker_locks.locktype = blocked_locks.locktype
+ and blocker_locks.database is not distinct from blocked_locks.database
+ and blocker_locks.relation is not distinct from blocked_locks.relation
+ and blocker_locks.page is not distinct from blocked_locks.page
+ and blocker_locks.tuple is not distinct from blocked_locks.tuple
+ and blocker_locks.virtualxid is not distinct from blocked_locks.virtualxid
+ and blocker_locks.transactionid is not distinct from blocked_locks.transactionid
+ and blocker_locks.classid is not distinct from blocked_locks.classid
+ and blocker_locks.objid is not distinct from blocked_locks.objid
+ and blocker_locks.objsubid is not distinct from blocked_locks.objsubid
+ and blocker_locks.pid <> blocked_locks.pid
+join pg_stat_activity blocker on blocker.pid = blocker_locks.pid
+where not blocked_locks.granted
+  and blocker_locks.granted
+order by blocked_age desc;
+```
+
+Top table growth and churn:
+
+```sql
+select
+  current_database() as database_name,
+  schemaname,
+  relname,
+  pg_size_pretty(pg_total_relation_size(relid)) as total_size,
+  n_live_tup,
+  n_dead_tup,
+  n_tup_ins,
+  n_tup_upd,
+  n_tup_del,
+  last_autovacuum,
+  last_autoanalyze
+from pg_stat_user_tables
+order by pg_total_relation_size(relid) desc
+limit 50;
+```
+
+Logical slot WAL retained:
+
+```sql
+select
+  slot_name,
+  database,
+  active,
+  pg_size_pretty(pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn)) as retained_wal,
+  restart_lsn,
+  confirmed_flush_lsn
+from pg_replication_slots
+order by pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn) desc;
+```
+
+## Example Prometheus / Grafana Panels
+
+Metric names depend on the selected exporters, but the dashboard intent should stay consistent.
+
+| Panel | Metric intent |
+|---|---|
+| PostgreSQL connections | active connections by database/user/application |
+| PostgreSQL database size | size bytes by database |
+| PostgreSQL cache hit ratio | block hits vs reads |
+| Replication slot retained WAL | retained WAL bytes by slot |
+| Long transactions | transaction age by database/application |
+| Kubernetes pod restarts | restart count by PostgreSQL pod |
+| PVC usage | used bytes and percent by volume |
+| Node CPU/memory | node saturation from existing Zabbix or Prometheus metrics |
+| App RED metrics | request rate, error rate, duration by service/endpoint |
+| Business backlog | unposted transactions, failed warehouse records, job queue backlog |
+
+## Governance And Dashboard Ownership
+
+- Each dashboard must have an owner: DBA, platform, API gateway, service, TPS, warehouse, or management.
+- Each alert must have an owner, severity, threshold, runbook, and escalation path.
+- Thresholds must be reviewed after collecting real baseline data.
+- Management dashboards should show business impact, not raw database internals.
+- DBA dashboards should keep raw internals and direct SQL investigation links.
+- Application dashboards should show the database symptoms that the team can act on.
+- Zabbix alerts should be mapped into Grafana folders so the same incident view shows infrastructure and database evidence together.
+- Any panel using SQL against production must be read-only, bounded, indexed, and reviewed before deployment.
+
 ## Recommended Dashboards
 
-Create dashboards by app domain:
+Create dashboards in folders by audience and app domain:
 
-| Dashboard | Panels |
-|---|---|
-| API Gateway | login audit growth, active sessions, slow login queries |
-| CRM / Service | dead tuples, top table growth, idle transactions, jobrunr/kafka tables |
-| TPS | top TPS table size, transaction backlog, missing-index candidates, long queries |
-| Warehouse | ETL table growth, failed records, long reporting queries |
-| Replication | slot active status, retained WAL, walsender sessions |
-| Pooling | sessions by app/client/user/state, idle in transaction, connection spikes |
+| Folder | Dashboard | Panels |
+|---|---|---|
+| Management | Command Center | SLO, incidents, capacity runway, backup, business impact |
+| Application Teams | API Gateway | login audit growth, active sessions, slow login queries, login SLA |
+| Application Teams | CRM / Service | dead tuples, top table growth, idle transactions, jobrunr/kafka tables |
+| Application Teams | TPS | top TPS table size, transaction backlog, missing-index candidates, long queries |
+| Application Teams | Warehouse | ETL freshness, failed records, long reporting queries, temp usage |
+| DBA | PostgreSQL Reliability | sessions, locks, waits, queries, autovacuum, WAL, checkpoints |
+| DBA | Replication | slot active status, retained WAL, walsender sessions, apply lag |
+| Platform | Kubernetes / Patroni | leader, replica, pod, PVC, backup, PGO status |
+| Integration | Cross-Service Flow | service to common, service to TPS, TPS to warehouse, lag/error view |
+| WB UI / Console | Embedded Health | selected DB/app panels prepared for iframe or API consumption |
 
 ## Priority Actions
 
-1. Build alert for `idle in transaction` over an agreed threshold.
-2. Build alert for logical slot retained WAL growth.
-3. Review top missing FK child indexes on large TPS tables.
-4. Review autovacuum behavior on CRM/service tables with high dead tuple percentages.
-5. Review huge zero-scan indexes over a full workload cycle.
-6. Plan partitioning review for very large TPS and warehouse tables.
+1. Build the DBA PostgreSQL Reliability dashboard first because it provides the foundation for every application incident.
+2. Connect existing Zabbix signals into Grafana so management sees infrastructure and database symptoms in one place.
+3. Build alert for `idle in transaction` over an agreed threshold.
+4. Build alert for logical slot retained WAL growth.
+5. Review top missing FK child indexes on large TPS tables.
+6. Review autovacuum behavior on CRM/service tables with high dead tuple percentages.
+7. Review huge zero-scan indexes over a full workload cycle.
+8. Plan partitioning review for very large TPS and warehouse tables.
+9. Standardize `application_name`, correlation ID, service labels, and region labels across application teams.
+10. Build the Management Command Center after baseline thresholds are agreed with application owners.
+11. Prepare WB UI and database console deep links using Grafana dashboard variables.
