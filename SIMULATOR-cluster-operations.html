@@ -1,0 +1,1523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habib Bank UAE | PostgreSQL Production Cluster | Operations Simulator</title>
+<style>
+:root {
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-card: #1c2128;
+  --bg-card-hover: #222830;
+  --border: #30363d;
+  --border-accent: #388bfd;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #6e7681;
+  --green: #3fb950;
+  --green-dim: #1a3a20;
+  --amber: #d29922;
+  --amber-dim: #3a2a00;
+  --red: #f85149;
+  --red-dim: #3a1010;
+  --blue: #388bfd;
+  --blue-dim: #0d2040;
+  --purple: #bc8cff;
+  --cyan: #39d0d8;
+  --font-mono: 'Courier New', Courier, monospace;
+  --radius: 6px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.5);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* HEADER */
+.site-header {
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d2040 100%);
+  border-bottom: 1px solid var(--border-accent);
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow);
+}
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.header-logo .logo-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 900; color: white;
+}
+.header-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.header-sub { font-size: 11px; color: var(--text-secondary); }
+.header-status-bar {
+  display: flex; gap: 16px; align-items: center;
+}
+.status-badge {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+  border: 1px solid;
+}
+.status-badge.healthy { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.status-badge.warning { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+.status-badge.critical { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+.dot { width: 7px; height: 7px; border-radius: 50%; }
+.dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse-green 2s infinite; }
+.dot.amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); animation: pulse-amber 2s infinite; }
+.dot.red { background: var(--red); box-shadow: 0 0 6px var(--red); animation: pulse-red 2s infinite; }
+
+@keyframes pulse-green { 0%,100%{opacity:1} 50%{opacity:0.5} }
+@keyframes pulse-amber { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes pulse-red { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* TABS */
+.tab-nav {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+}
+.tab-nav-inner {
+  display: flex; gap: 0;
+  max-width: 1600px; margin: 0 auto;
+}
+.tab-btn {
+  padding: 14px 24px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 13px; font-weight: 600;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.main-container { max-width: 1600px; margin: 0 auto; padding: 24px; }
+
+/* CARDS */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.card-title {
+  font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+/* CODE BLOCKS */
+.cmd-block {
+  background: #010409;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #c9d1d9;
+  position: relative;
+  margin: 8px 0;
+  overflow-x: auto;
+  white-space: pre;
+  line-height: 1.5;
+}
+.cmd-block .prompt { color: var(--green); }
+.copy-btn {
+  position: absolute; top: 8px; right: 8px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--text-secondary); padding: 3px 10px;
+  border-radius: 4px; cursor: pointer; font-size: 11px;
+  transition: all 0.2s;
+}
+.copy-btn:hover { background: var(--blue); color: white; border-color: var(--blue); }
+.copy-btn.copied { background: var(--green-dim); color: var(--green); border-color: var(--green); }
+
+/* TOPOLOGY TAB */
+.topology-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.topo-section-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text-muted); margin-bottom: 12px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--border);
+}
+.node-box {
+  border-radius: var(--radius);
+  padding: 16px;
+  border: 1px solid;
+  margin-bottom: 12px;
+  position: relative;
+  transition: box-shadow 0.2s;
+}
+.node-box:hover { box-shadow: 0 0 20px rgba(56,139,253,0.15); }
+.node-box.leader { border-color: var(--green); background: linear-gradient(135deg, var(--green-dim), var(--bg-card)); }
+.node-box.standby { border-color: var(--blue); background: linear-gradient(135deg, var(--blue-dim), var(--bg-card)); }
+.node-box.warning { border-color: var(--amber); background: linear-gradient(135deg, var(--amber-dim), var(--bg-card)); }
+.node-box.service { border-color: var(--purple); background: linear-gradient(135deg, #1a0a2e, var(--bg-card)); }
+.node-box.backup { border-color: var(--cyan); background: linear-gradient(135deg, #001a1f, var(--bg-card)); }
+
+.node-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.node-role { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+.node-role.leader { color: var(--green); }
+.node-role.standby { color: var(--blue); }
+.node-role.warning { color: var(--amber); }
+.node-role.service { color: var(--purple); }
+.node-role.cyan { color: var(--cyan); }
+.node-name { font-family: var(--font-mono); font-size: 12px; color: var(--text-primary); font-weight: 600; }
+.node-meta { font-size: 11px; color: var(--text-secondary); }
+.node-meta span { display: inline-block; margin-right: 12px; }
+.node-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 700;
+}
+.node-badge.green { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
+.node-badge.blue { background: var(--blue-dim); color: var(--blue); border: 1px solid var(--blue); }
+.node-badge.amber { background: var(--amber-dim); color: var(--amber); border: 1px solid var(--amber); }
+.node-badge.red { background: var(--red-dim); color: var(--red); border: 1px solid var(--red); }
+
+.wal-arrow {
+  text-align: center; padding: 8px 0; color: var(--green);
+  font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.wal-line {
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--green), transparent);
+  animation: wal-flow 2s infinite;
+}
+@keyframes wal-flow {
+  0% { opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { opacity: 0.3; }
+}
+.wal-label { font-size: 10px; font-weight: 700; color: var(--green); white-space: nowrap; }
+
+.pgb-pods { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.pgb-pod { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; font-family: var(--font-mono); font-size: 10px; color: var(--text-secondary); }
+
+/* SCENARIO TAB */
+.scenario-select {
+  background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--text-primary); padding: 10px 14px;
+  border-radius: var(--radius); font-size: 14px;
+  width: 100%; cursor: pointer; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b949e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center;
+}
+.scenario-header {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+}
+.scenario-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+.scenario-severity {
+  padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700;
+}
+.sev-high { background: var(--red-dim); color: var(--red); border: 1px solid var(--red); }
+.sev-medium { background: var(--amber-dim); color: var(--amber); border: 1px solid var(--amber); }
+.sev-low { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
+
+.step-list { list-style: none; }
+.step-item {
+  display: flex; gap: 16px; margin-bottom: 20px;
+  padding: 16px; background: var(--bg-secondary); border-radius: var(--radius);
+  border: 1px solid var(--border); position: relative;
+}
+.step-item.active-step { border-color: var(--blue); background: var(--blue-dim); }
+.step-item.done-step { opacity: 0.6; }
+.step-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--bg-card); border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: var(--text-secondary);
+  flex-shrink: 0; margin-top: 2px;
+}
+.step-item.active-step .step-num { border-color: var(--blue); color: var(--blue); background: var(--blue-dim); }
+.step-item.done-step .step-num { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+.step-body { flex: 1; }
+.step-desc { margin-bottom: 8px; color: var(--text-primary); }
+.step-btn { padding: 6px 14px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary); cursor: pointer; font-size: 12px; margin-top: 8px; transition: all 0.2s; }
+.step-btn:hover { border-color: var(--blue); color: var(--blue); }
+.step-btn.mark-done { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+
+.escalate-box {
+  background: var(--red-dim); border: 2px solid var(--red);
+  border-radius: var(--radius); padding: 16px; margin: 12px 0;
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.escalate-icon { font-size: 20px; flex-shrink: 0; }
+.escalate-title { font-weight: 700; color: var(--red); font-size: 13px; }
+.escalate-body { font-size: 12px; color: #f0a0a0; margin-top: 4px; }
+
+.progress-bar-wrap { margin-bottom: 20px; }
+.progress-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; display: flex; justify-content: space-between; }
+.progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--cyan)); border-radius: 2px; transition: width 0.4s; }
+
+/* COMMAND GENERATOR TAB */
+.form-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+.form-group label { display: block; font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+.form-group input, .form-group select {
+  width: 100%; background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--text-primary); padding: 8px 12px;
+  border-radius: var(--radius); font-size: 13px; font-family: var(--font-mono);
+  transition: border-color 0.2s;
+}
+.form-group input:focus, .form-group select:focus { outline: none; border-color: var(--blue); }
+
+.cmd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.cmd-category { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.cmd-category-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--blue); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.cmd-category-title .cat-icon { font-size: 14px; }
+.cmd-item { margin-bottom: 10px; }
+.cmd-item-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+.cmd-line-wrap { position: relative; }
+.cmd-line {
+  background: #010409; border: 1px solid var(--border); border-radius: 4px;
+  padding: 8px 40px 8px 12px; font-family: var(--font-mono); font-size: 11px;
+  color: #c9d1d9; overflow-x: auto; white-space: nowrap;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+.cmd-line-copy {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; color: var(--text-muted);
+  font-size: 13px; padding: 4px; border-radius: 3px; transition: all 0.2s;
+}
+.cmd-line-copy:hover { color: var(--blue); background: var(--blue-dim); }
+.cmd-line-copy.copied { color: var(--green); }
+
+/* DECISION TREE TAB */
+.dtree-container { position: relative; }
+.dtree-node {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 0;
+  transition: all 0.2s;
+}
+.dtree-node.question { border-color: var(--blue); }
+.dtree-node.terminal { border-color: var(--green); }
+.dtree-node.escalate { border-color: var(--red); }
+
+.dtree-choices { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.dtree-choice {
+  padding: 8px 16px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--bg-secondary);
+  color: var(--text-primary); cursor: pointer; font-size: 12px;
+  transition: all 0.2s; font-weight: 500;
+}
+.dtree-choice:hover { border-color: var(--blue); background: var(--blue-dim); color: var(--blue); }
+.dtree-choice.selected { border-color: var(--blue); background: var(--blue-dim); color: var(--blue); }
+
+.dtree-path {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 16px; padding: 10px 16px; background: var(--bg-secondary);
+  border: 1px solid var(--border); border-radius: var(--radius);
+}
+.dtree-crumb {
+  font-size: 11px; color: var(--text-secondary);
+}
+.dtree-crumb.active { color: var(--blue); font-weight: 600; }
+.dtree-sep { color: var(--text-muted); font-size: 11px; }
+.dtree-reset {
+  margin-left: auto; padding: 4px 12px; border-radius: 4px;
+  border: 1px solid var(--border); background: none;
+  color: var(--text-secondary); cursor: pointer; font-size: 11px;
+  transition: all 0.2s;
+}
+.dtree-reset:hover { border-color: var(--amber); color: var(--amber); }
+
+.dtree-step { margin-bottom: 24px; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.dtree-q { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+.dtree-hint { font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
+
+.terminal-box {
+  background: var(--green-dim); border: 1px solid var(--green);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 12px;
+}
+.terminal-box.esc { background: var(--red-dim); border-color: var(--red); }
+.terminal-title { font-weight: 700; font-size: 13px; color: var(--green); margin-bottom: 8px; }
+.terminal-title.esc { color: var(--red); }
+
+/* SITE FOOTER */
+.site-footer {
+  background: var(--bg-secondary); border-top: 1px solid var(--border);
+  padding: 12px 24px; text-align: center;
+  font-size: 11px; color: var(--text-muted); margin-top: 40px;
+}
+
+/* UTILITIES */
+.flex { display: flex; }
+.gap-8 { gap: 8px; }
+.gap-16 { gap: 16px; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.mb-12 { margin-bottom: 12px; }
+.mb-20 { margin-bottom: 20px; }
+.text-green { color: var(--green); }
+.text-amber { color: var(--amber); }
+.text-red { color: var(--red); }
+.text-blue { color: var(--blue); }
+.text-cyan { color: var(--cyan); }
+.text-muted { color: var(--text-muted); }
+.text-sm { font-size: 12px; }
+.font-mono { font-family: var(--font-mono); }
+.bold { font-weight: 700; }
+.info-row { display: flex; gap: 8px; font-size: 11px; color: var(--text-secondary); flex-wrap: wrap; margin-top: 6px; }
+.info-row .key { color: var(--text-muted); }
+.info-row .val { color: var(--text-primary); font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-logo">
+      <div class="logo-icon">PG</div>
+      <div>
+        <div class="header-title">Habib Bank UAE &nbsp;|&nbsp; PostgreSQL 18 Production Cluster &nbsp;|&nbsp; Operations Simulator</div>
+        <div class="header-sub">OCP Context: prod-pgcluster-uae/api-ocp-prod-habibbank-local:6443/mohsinali &nbsp;&bull;&nbsp; Namespace: prod-pgcluster-uae</div>
+      </div>
+    </div>
+    <div class="header-status-bar">
+      <div class="status-badge healthy"><span class="dot green"></span>PROD: HEALTHY</div>
+      <div class="status-badge warning"><span class="dot amber"></span>DR: WARNING</div>
+      <div class="status-badge warning"><span class="dot amber"></span>Backups: WARNING</div>
+    </div>
+  </div>
+</header>
+
+<nav class="tab-nav">
+  <div class="tab-nav-inner">
+    <button class="tab-btn active" onclick="switchTab('topology', this)">&#9685; Cluster Topology</button>
+    <button class="tab-btn" onclick="switchTab('scenarios', this)">&#9889; Scenario Drills</button>
+    <button class="tab-btn" onclick="switchTab('cmdgen', this)">&#9881; Command Generator</button>
+    <button class="tab-btn" onclick="switchTab('dtree', this)">&#10070; Decision Tree</button>
+  </div>
+</nav>
+
+<!-- ========== TAB 1: TOPOLOGY ========== -->
+<div id="tab-topology" class="tab-content active">
+<div class="main-container">
+
+  <div class="topology-grid">
+
+    <!-- PROD SIDE -->
+    <div>
+      <div class="topo-section-title">&#127959; PRODUCTION CLUSTER &mdash; DC1 (PRIMARY SITE)</div>
+
+      <!-- Leader -->
+      <div class="node-box leader">
+        <div class="node-header">
+          <div>
+            <div class="node-role leader">&#9733; LEADER &mdash; PRIMARY</div>
+            <div class="node-name">prod-pgcluster-uae-dc1-9c5j-0</div>
+          </div>
+          <span class="node-badge green">RUNNING</span>
+        </div>
+        <div class="info-row">
+          <span><span class="key">IP: </span><span class="val">10.175.12.60</span></span>
+          <span><span class="key">Node: </span><span class="val">lupr09c05ocpw4</span></span>
+          <span><span class="key">TL: </span><span class="val">8</span></span>
+          <span><span class="key">Port: </span><span class="val">5432</span></span>
+        </div>
+        <div class="info-row" style="margin-top:8px;">
+          <span><span class="key">Container: </span><span class="val">database, pgbackrest</span></span>
+          <span><span class="key">LB Endpoint: </span><span class="val">10.171.1.229:5555</span></span>
+        </div>
+        <div class="info-row" style="margin-top:6px;">
+          <span style="color:var(--green); font-size:11px;">&#10003; Accepting writes &nbsp; &#10003; WAL archiving active &nbsp; &#10003; Patroni healthy</span>
+        </div>
+      </div>
+
+      <!-- WAL Arrow -->
+      <div class="wal-arrow">
+        <div class="wal-line"></div>
+        <span class="wal-label">&#9660; WAL Streaming (sync) TL:8 / lag: 0</span>
+        <div class="wal-line"></div>
+      </div>
+
+      <!-- Sync Standby -->
+      <div class="node-box standby">
+        <div class="node-header">
+          <div>
+            <div class="node-role standby">&#8596; SYNC STANDBY</div>
+            <div class="node-name">prod-pgcluster-uae-dc1-5c2q-0</div>
+          </div>
+          <span class="node-badge blue">SYNC</span>
+        </div>
+        <div class="info-row">
+          <span><span class="key">IP: </span><span class="val">10.175.14.83</span></span>
+          <span><span class="key">Node: </span><span class="val">lupr09c05ocpw5</span></span>
+          <span><span class="key">TL: </span><span class="val">8</span></span>
+          <span><span class="key">Lag: </span><span class="val text-green">0 bytes</span></span>
+        </div>
+        <div class="info-row" style="margin-top:6px;">
+          <span style="color:var(--blue); font-size:11px;">&#10003; Streaming healthy &nbsp; &#10003; Recovery active &nbsp; &#10003; Slot active</span>
+        </div>
+      </div>
+
+      <!-- PgBouncer -->
+      <div class="node-box service" style="margin-top:16px;">
+        <div class="node-header">
+          <div>
+            <div class="node-role service">&#9646; PGBOUNCER POOL</div>
+            <div class="node-name">prod-pgcluster-uae-pgbouncer</div>
+          </div>
+          <span class="node-badge" style="background:#1a0a2e; color:var(--purple); border-color:var(--purple);">2 REPLICAS</span>
+        </div>
+        <div class="info-row">
+          <span><span class="key">LB: </span><span class="val">10.171.1.205:5555</span></span>
+          <span><span class="key">Mode: </span><span class="val">transaction</span></span>
+        </div>
+        <div class="pgb-pods">
+          <span class="pgb-pod">prod-pgcluster-uae-pgbouncer-6bff86f674-dhhww</span>
+          <span class="pgb-pod">prod-pgcluster-uae-pgbouncer-6bff86f674-t8wfl</span>
+        </div>
+      </div>
+
+      <!-- Backup / WAL Archive -->
+      <div class="node-box backup" style="margin-top:12px;">
+        <div class="node-header">
+          <div>
+            <div class="node-role cyan">&#128190; PGBACKREST &mdash; S3 REPO</div>
+            <div class="node-name">stanza: db &nbsp;|&nbsp; repo: repo1</div>
+          </div>
+          <span class="node-badge amber">JOBS FAILING</span>
+        </div>
+        <div class="info-row">
+          <span><span class="key">S3 Bucket: </span><span class="val" style="font-size:10px;">pgbackrest-uae-prod-609d40f1-26e9-4616-9021-3135255d453e</span></span>
+        </div>
+        <div class="info-row">
+          <span><span class="key">Endpoint: </span><span class="val" style="font-size:10px;">s3-openshift-storage.apps.ocp-prod.habibbank.local</span></span>
+        </div>
+        <div class="info-row" style="margin-top:8px;">
+          <span><span class="key">Total backups: </span><span class="val">35</span></span>
+          <span><span class="key">Last full: </span><span class="val">2026-05-21 12:00 UTC</span></span>
+          <span><span class="key">Last WAL archived: </span><span class="val">2026-05-22 07:22 UTC</span></span>
+        </div>
+        <div class="info-row" style="margin-top:6px;">
+          <span><span class="key">Schedule: </span><span class="val">Full Sun 01:00 | Diff Mon-Sat 01:00 | Incr every 6h</span></span>
+        </div>
+        <div class="info-row">
+          <span><span class="key">Retention: </span><span class="val">4 fulls, 7 diffs</span></span>
+        </div>
+        <div style="margin-top:8px; padding: 8px; background: var(--amber-dim); border-radius:4px; border:1px solid var(--amber); font-size:11px; color:var(--amber);">
+          &#9888; CronJob/Job resources showing BackoffLimitExceeded &mdash; investigate immediately. WAL archiving via primary container still active.
+        </div>
+      </div>
+    </div>
+
+    <!-- DR SIDE -->
+    <div>
+      <div class="topo-section-title">&#128737; DR CLUSTER &mdash; DISASTER RECOVERY SITE</div>
+
+      <div class="node-box warning">
+        <div class="node-header">
+          <div>
+            <div class="node-role warning">&#9888; DR STANDBY &mdash; DEGRADED</div>
+            <div class="node-name">dr-pgcluster-uae</div>
+          </div>
+          <span class="node-badge amber">WARNING</span>
+        </div>
+        <div class="info-row">
+          <span><span class="key">DR Namespace: </span><span class="val">dr-pgcluster-uae</span></span>
+        </div>
+        <div class="info-row">
+          <span><span class="key">DR Context: </span><span class="val" style="font-size:10px;">dr-pgcluster-uae/api-ocp-dr-habibbank-local:6443/mohsinali</span></span>
+        </div>
+        <div class="info-row">
+          <span><span class="key">Upstream: </span><span class="val">10.171.1.229:5555</span></span>
+          <span><span class="key">TL: </span><span class="val">8</span></span>
+        </div>
+        <div style="margin-top:12px; padding: 12px; background: var(--red-dim); border-radius:4px; border:1px solid var(--red);">
+          <div style="font-weight:700; color:var(--red); font-size:12px; margin-bottom:6px;">&#10060; API UNREACHABLE &mdash; as of 2026-05-22</div>
+          <div style="font-size:11px; color:#f0a0a0;">
+            <div style="margin-bottom:4px;"><span style="color:var(--text-muted);">Known Blocker 1:</span> Network CIDR mismatch between PROD and DR sites</div>
+            <div style="margin-bottom:4px;"><span style="color:var(--text-muted);">Known Blocker 2:</span> DR OCP API endpoint not reachable from PROD operator</div>
+            <div><span style="color:var(--text-muted);">Action Required:</span> Network team to resolve CIDR routing before DR cutover</div>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <div style="font-size:11px; color:var(--text-secondary); margin-bottom:6px;">DR Connectivity Test:</div>
+          <div class="cmd-block" style="font-size:11px;">oc --context dr-pgcluster-uae/api-ocp-dr-habibbank-local:6443/mohsinali \
+  get pods -n dr-pgcluster-uae<button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>
+        </div>
+      </div>
+
+      <!-- Cluster info summary -->
+      <div class="card" style="margin-top:16px;">
+        <div class="card-title">Cluster Configuration Summary</div>
+        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:6px 0; color:var(--text-muted); width:45%;">PostgresCluster CR</td>
+            <td style="padding:6px 0; font-family:var(--font-mono); color:var(--text-primary);">prod-pgcluster-uae</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:6px 0; color:var(--text-muted);">Patroni Scope</td>
+            <td style="padding:6px 0; font-family:var(--font-mono); color:var(--text-primary);">prod-pgcluster-uae-ha</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:6px 0; color:var(--text-muted);">Working Directory</td>
+            <td style="padding:6px 0; font-family:var(--font-mono); color:var(--text-primary); font-size:11px;">/home/mohsinali@habibbank.local/PROD_PATRONI</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:6px 0; color:var(--text-muted);">Primary LB</td>
+            <td style="padding:6px 0; font-family:var(--font-mono); color:var(--text-primary);">10.171.1.229:5555</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:6px 0; color:var(--text-muted);">PgBouncer LB</td>
+            <td style="padding:6px 0; font-family:var(--font-mono); color:var(--text-primary);">10.171.1.205:5555</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:6px 0; color:var(--text-muted);">Timeline</td>
+            <td style="padding:6px 0; font-family:var(--font-mono); color:var(--text-primary);">8</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0; color:var(--text-muted);">DR Upstream</td>
+            <td style="padding:6px 0; font-family:var(--font-mono); color:var(--text-primary);">10.171.1.229:5555</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Open issues -->
+      <div class="card" style="border-color:var(--amber);">
+        <div class="card-title" style="color:var(--amber);">&#9888; Open Issues Requiring Action</div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div style="padding:10px; background:var(--amber-dim); border-radius:4px; font-size:12px;">
+            <div style="font-weight:700; color:var(--amber);">1. Backup Job BackoffLimitExceeded</div>
+            <div style="color:var(--text-secondary); margin-top:4px;">CronJob-triggered backup jobs are failing. Investigate pod logs and repo health. WAL archiving still active via primary container.</div>
+          </div>
+          <div style="padding:10px; background:var(--red-dim); border-radius:4px; font-size:12px;">
+            <div style="font-weight:700; color:var(--red);">2. DR API Unreachable</div>
+            <div style="color:var(--text-secondary); margin-top:4px;">Cannot validate DR streaming health. Network CIDR mismatch must be resolved before any DR cutover attempt.</div>
+          </div>
+          <div style="padding:10px; background:var(--bg-secondary); border-radius:4px; font-size:12px; border:1px solid var(--border);">
+            <div style="font-weight:700; color:var(--text-primary);">3. DR Cutover Prerequisites</div>
+            <div style="color:var(--text-secondary); margin-top:4px;">DR cutover script (prod_dr_cutover.py) ready. Pending: network fix, DR API reachability, approved change window.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ========== TAB 2: SCENARIOS ========== -->
+<div id="tab-scenarios" class="tab-content">
+<div class="main-container">
+
+  <div class="mb-20">
+    <label style="display:block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-secondary); margin-bottom:8px;">Select Failure Scenario</label>
+    <select class="scenario-select" id="scenario-select" onchange="loadScenario(this.value)">
+      <option value="">-- Choose a scenario to drill --</option>
+      <option value="s1">Scenario 1: Backup Job Failed (BackoffLimitExceeded)</option>
+      <option value="s2">Scenario 2: Sync Standby Disappeared / Replication Broken</option>
+      <option value="s3">Scenario 3: WAL Archive Failing</option>
+      <option value="s4">Scenario 4: Application Cannot Connect</option>
+      <option value="s5">Scenario 5: DR Cutover Required (Planned Switchover)</option>
+    </select>
+  </div>
+
+  <div id="scenario-panel"></div>
+
+</div>
+</div>
+
+<!-- ========== TAB 3: COMMAND GENERATOR ========== -->
+<div id="tab-cmdgen" class="tab-content">
+<div class="main-container">
+
+  <div class="card mb-20">
+    <div class="card-title">Cluster Variables &mdash; Edit to Override</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Leader Pod</label>
+        <input type="text" id="v-leader" value="prod-pgcluster-uae-dc1-9c5j-0" oninput="renderCmds()">
+      </div>
+      <div class="form-group">
+        <label>Standby Pod</label>
+        <input type="text" id="v-standby" value="prod-pgcluster-uae-dc1-5c2q-0" oninput="renderCmds()">
+      </div>
+      <div class="form-group">
+        <label>Namespace</label>
+        <input type="text" id="v-ns" value="prod-pgcluster-uae" oninput="renderCmds()">
+      </div>
+    </div>
+    <div class="form-row" style="grid-template-columns:repeat(3,1fr); gap:16px;">
+      <div class="form-group">
+        <label>PgBouncer Pod 1</label>
+        <input type="text" id="v-pgb1" value="prod-pgcluster-uae-pgbouncer-6bff86f674-dhhww" oninput="renderCmds()">
+      </div>
+      <div class="form-group">
+        <label>PgBouncer Pod 2</label>
+        <input type="text" id="v-pgb2" value="prod-pgcluster-uae-pgbouncer-6bff86f674-t8wfl" oninput="renderCmds()">
+      </div>
+      <div class="form-group">
+        <label>DR Namespace</label>
+        <input type="text" id="v-drns" value="dr-pgcluster-uae" oninput="renderCmds()">
+      </div>
+    </div>
+  </div>
+
+  <div id="cmd-grid-container" class="cmd-grid"></div>
+
+</div>
+</div>
+
+<!-- ========== TAB 4: DECISION TREE ========== -->
+<div id="tab-dtree" class="tab-content">
+<div class="main-container">
+
+  <div id="dtree-path-bar" class="dtree-path" style="display:none;">
+    <span class="dtree-crumb" id="dtree-crumb-text"></span>
+    <button class="dtree-reset" onclick="resetDtree()">&#8634; Start Over</button>
+  </div>
+
+  <div id="dtree-steps-container"></div>
+
+</div>
+</div>
+
+<footer class="site-footer">
+  Based on live cluster capture 2026-05-22 &nbsp;&bull;&nbsp;
+  Prod context: prod-pgcluster-uae/api-ocp-prod-habibbank-local:6443/mohsinali &nbsp;&bull;&nbsp;
+  DR context: dr-pgcluster-uae/api-ocp-dr-habibbank-local:6443/mohsinali &nbsp;&bull;&nbsp;
+  Working dir: /home/mohsinali@habibbank.local/PROD_PATRONI &nbsp;&bull;&nbsp;
+  PostgresCluster: prod-pgcluster-uae &nbsp;&bull;&nbsp; Patroni scope: prod-pgcluster-uae-ha
+</footer>
+
+<script>
+// ========== TAB SWITCHING ==========
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'cmdgen') renderCmds();
+  if (name === 'dtree') initDtree();
+}
+
+// ========== COPY TO CLIPBOARD ==========
+function copyCmd(btn) {
+  const block = btn.closest('.cmd-block');
+  const text = block.innerText.replace(/Copy$/, '').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+function copyCmdLine(btn) {
+  const line = btn.previousElementSibling;
+  navigator.clipboard.writeText(line.textContent.trim()).then(() => {
+    btn.innerHTML = '&#10003;';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.innerHTML = '&#128203;'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ========== SCENARIO STEP TRACKER ==========
+const stepStates = {};
+let currentScenario = null;
+
+function loadScenario(key) {
+  if (!key) { document.getElementById('scenario-panel').innerHTML = ''; return; }
+  currentScenario = key;
+  if (!stepStates[key]) stepStates[key] = {};
+  renderScenario(key);
+}
+
+function markStep(key, idx, total) {
+  if (!stepStates[key]) stepStates[key] = {};
+  stepStates[key][idx] = true;
+  renderScenario(key);
+}
+
+function resetScenario(key) {
+  stepStates[key] = {};
+  renderScenario(key);
+}
+
+const NS = 'prod-pgcluster-uae';
+const LEADER = 'prod-pgcluster-uae-dc1-9c5j-0';
+const STANDBY = 'prod-pgcluster-uae-dc1-5c2q-0';
+
+const scenarios = {
+  s1: {
+    title: 'Backup Job Failed (BackoffLimitExceeded)',
+    severity: 'medium',
+    description: 'A CronJob-triggered backup job has exceeded its retry limit. The S3 repository may still be healthy while the Kubernetes job object has failed.',
+    steps: [
+      {
+        label: 'Check CronJobs and failed Jobs',
+        desc: 'List all CronJobs and Jobs in the namespace to identify which backup job has failed.',
+        cmd: `oc get cronjobs,jobs -n ${NS}`,
+        warning: null
+      },
+      {
+        label: 'Describe the failed job',
+        desc: 'Get details on the failed job including exit codes, events, and container logs pointer.',
+        cmd: `oc describe job <failed-job-name> -n ${NS}\n# Then get pod logs:\noc logs -n ${NS} <failed-job-pod-name> -c pgbackrest`,
+        warning: null
+      },
+      {
+        label: 'Check pgBackRest repo health',
+        desc: 'Verify the S3 repository is still intact and accessible from the primary container. This tells you if data is safe even if the job failed.',
+        cmd: `oc exec -n ${NS} ${LEADER} -c pgbackrest -- \\\n  pgbackrest --stanza=db --repo=1 info`,
+        warning: null
+      },
+      {
+        label: 'Sample WAL archiver status (twice, 60s apart)',
+        desc: 'Run this command, wait 60 seconds, run again. Compare archived_count and failed_count to determine if WAL archiving is working.',
+        cmd: `oc exec -n ${NS} ${LEADER} -c database -- \\\n  psql -U postgres -XAtc \\\n  "select now(),archived_count,last_archived_wal,last_archived_time,\n         failed_count,last_failed_wal from pg_stat_archiver;"`,
+        warning: null
+      },
+      {
+        label: 'Evaluate: repo OK and WAL not failing?',
+        desc: 'If pgbackrest info shows repo healthy AND failed_count not increasing: document the issue, raise a change request, and schedule job investigation during business hours.',
+        cmd: `# Document findings:\n# - Repo status from pgbackrest info\n# - archived_count delta over 60s\n# - failed_count (should be 0 or not increasing)\n# - Job exit code and error message\n# Raise change request if no active data risk`,
+        warning: null
+      },
+      {
+        label: 'ESCALATE if WAL failing',
+        desc: 'If failed_count is increasing or last_failed_wal is recent, PITR window is at risk.',
+        cmd: '',
+        warning: { title: 'STOP AND ESCALATE', msg: 'If WAL archiving is failing (failed_count increasing, last_failed_wal recent): ESCALATE IMMEDIATELY. PITR recovery window is actively shrinking. Do not wait for business hours. Contact DBA lead and storage team.' }
+      }
+    ]
+  },
+  s2: {
+    title: 'Sync Standby Disappeared / Replication Broken',
+    severity: 'high',
+    description: 'The sync standby has dropped from Patroni cluster view or replication lag has spiked. This may indicate pod failure, network partition, or worse — split-brain.',
+    steps: [
+      {
+        label: 'Check Patroni cluster state',
+        desc: 'CRITICAL FIRST STEP: Run patronictl list on the leader pod and examine the output carefully.',
+        cmd: `oc exec -n ${NS} ${LEADER} -c database -- \\\n  patronictl list`,
+        warning: null
+      },
+      {
+        label: 'SPLIT-BRAIN CHECK',
+        desc: 'Count the number of nodes showing "Leader" role. If more than one shows Leader, you have a split-brain condition.',
+        cmd: '# Examine patronictl list output:\n# - Exactly ONE node should show role = Leader\n# - If TWO nodes show Leader: SPLIT-BRAIN\n# - Do NOT write to either node until resolved',
+        warning: { title: 'STOP AND ESCALATE — SPLIT-BRAIN DETECTED', msg: 'If patronictl list shows MORE THAN ONE LEADER: do not allow any writes to either node. Do not attempt manual resolution. ESCALATE IMMEDIATELY to DBA lead. This requires controlled Patroni intervention.' }
+      },
+      {
+        label: 'Check pg_stat_replication on leader',
+        desc: 'Query the leader directly to see if the standby is still connected at the replication level.',
+        cmd: `oc exec -n ${NS} ${LEADER} -c database -- \\\n  psql -U postgres -XAtc \\\n  "SELECT client_addr,state,sent_lsn,write_lsn,flush_lsn,replay_lsn,\n          write_lag,flush_lag,replay_lag,sync_state \\\n   FROM pg_stat_replication;"`,
+        warning: null
+      },
+      {
+        label: 'Check standby pod status',
+        desc: 'Verify the standby pod is in Running state and has not been evicted or OOMKilled.',
+        cmd: `oc get pods -n ${NS} -o wide\noc describe pod ${STANDBY} -n ${NS}`,
+        warning: null
+      },
+      {
+        label: 'Check standby container logs',
+        desc: 'Look for errors in the database container logs on the standby pod.',
+        cmd: `oc logs -n ${NS} ${STANDBY} -c database --tail=100`,
+        warning: null
+      },
+      {
+        label: 'Check replication slot status',
+        desc: 'Verify the replication slot is active and not causing WAL retention bloat.',
+        cmd: `oc exec -n ${NS} ${LEADER} -c database -- \\\n  psql -U postgres -XAtc \\\n  "SELECT slot_name,active,wal_status,safe_wal_size,\n          pg_size_pretty(pg_wal_lsn_diff(pg_current_wal_lsn(),restart_lsn)) AS retained \\\n   FROM pg_replication_slots;"`,
+        warning: null
+      },
+      {
+        label: 'Monitor reconnection and lag drain',
+        desc: 'If standby reconnects and lag drains to 0: monitor for stability, document the incident, and identify root cause.',
+        cmd: `# Monitor lag every 30 seconds:\nwatch -n 30 "oc exec -n ${NS} ${LEADER} -c database -- \\\n  psql -U postgres -XAtc \\\n  \"SELECT now(), pg_size_pretty(pg_wal_lsn_diff(sent_lsn,replay_lsn)) as lag \\\n   FROM pg_stat_replication;\""`,
+        warning: null
+      },
+      {
+        label: 'ESCALATE if standby not recovering',
+        desc: 'If the standby pod is not recovering after 10 minutes, escalate.',
+        cmd: '',
+        warning: { title: 'STOP AND ESCALATE', msg: 'If the standby pod is not recovering on its own: DO NOT manually promote the standby. DO NOT manually trigger failover unless explicitly directed by DBA lead with an approved change. Escalate immediately — Patroni manages promotion automatically only when it is safe.' }
+      }
+    ]
+  },
+  s3: {
+    title: 'WAL Archive Failing',
+    severity: 'high',
+    description: 'WAL segments are not being archived to S3. This directly reduces the PITR recovery window. If unresolved, the cluster cannot perform point-in-time recovery.',
+    steps: [
+      {
+        label: 'Sample pg_stat_archiver twice (60s apart)',
+        desc: 'Run this command, note archived_count and failed_count, wait 60s, run again. Compare values.',
+        cmd: `oc exec -n ${NS} ${LEADER} -c database -- \\\n  psql -U postgres -XAtc \\\n  "SELECT now(),archived_count,last_archived_wal,last_archived_time,\n          failed_count,last_failed_wal,last_failed_time \\\n   FROM pg_stat_archiver;"`,
+        warning: null
+      },
+      {
+        label: 'Assess if this is an active failure',
+        desc: 'If failed_count is higher in the second sample, WAL archiving is actively failing right now.',
+        cmd: `# Compare:\n# Sample 1: archived_count=X, failed_count=Y\n# Sample 2: archived_count=X (unchanged), failed_count=Y+N (increasing)\n# Active failure confirmed if failed_count increases and archived_count does NOT`,
+        warning: { title: 'ESCALATION TRIGGER', msg: 'If failed_count is actively increasing: PITR window is shrinking NOW. Proceed through remaining steps quickly and escalate if not resolved within 15 minutes.' }
+      },
+      {
+        label: 'Check spool disk usage',
+        desc: 'WAL archiving spools segments before sending to S3. If disk is full, archiving stalls.',
+        cmd: `oc exec -n ${NS} ${LEADER} -c pgbackrest -- \\\n  bash -ceu 'du -sh /pgdata/pgbackrest-spool /pgwal/pgbackrest-spool 2>/dev/null || echo "Spool paths not found"\ndf -h /pgdata /pgwal'`,
+        warning: null
+      },
+      {
+        label: 'Check pgBackRest container logs',
+        desc: 'Look for S3 errors, auth failures, TLS issues, or network timeouts in the pgbackrest container logs.',
+        cmd: `oc logs -n ${NS} ${LEADER} -c pgbackrest --tail=200 | grep -E 'ERROR|WARN|error|timeout|S3|TLS'`,
+        warning: null
+      },
+      {
+        label: 'Check S3 endpoint reachability',
+        desc: 'Test if the pgbackrest container can reach the S3 endpoint.',
+        cmd: `oc exec -n ${NS} ${LEADER} -c pgbackrest -- \\\n  bash -c 'curl -sv --connect-timeout 5 \\\n    https://s3-openshift-storage.apps.ocp-prod.habibbank.local \\\n    2>&1 | grep -E "Connected|SSL|certificate|refused|timeout"'`,
+        warning: null
+      },
+      {
+        label: 'ESCALATE if spool growing or S3 unreachable',
+        desc: 'These require immediate escalation to different teams.',
+        cmd: `# If spool growing: PITR window shrinking\n# If S3 unreachable: storage team must restore connectivity\n# Both require immediate escalation`,
+        warning: { title: 'STOP AND ESCALATE', msg: 'Spool growing = active PITR risk. ESCALATE to DBA lead. S3 unreachable = ESCALATE to storage / infrastructure team immediately. Include: current pg_stat_archiver output, du output, curl result, and pgbackrest log snippet.' }
+      }
+    ]
+  },
+  s4: {
+    title: 'Application Cannot Connect',
+    severity: 'high',
+    description: 'Applications are reporting connection failures. This may be PgBouncer pod issues, connection pool exhaustion, load balancer misconfiguration, or primary unavailability.',
+    steps: [
+      {
+        label: 'Check PgBouncer pods',
+        desc: 'Verify both PgBouncer pods are Running and have recent start times (not restarting in loop).',
+        cmd: `oc get pods -n ${NS} -l postgres-operator.crunchydata.com/role=pgbouncer -o wide\noc get pods -n ${NS} | grep pgbouncer`,
+        warning: null
+      },
+      {
+        label: 'Check PgBouncer LB endpoint',
+        desc: 'Confirm the load balancer endpoint has healthy backends registered.',
+        cmd: `oc get endpoints -n ${NS} | grep pgbouncer\noc get svc -n ${NS} | grep pgbouncer`,
+        warning: null
+      },
+      {
+        label: 'Check PgBouncer logs for errors',
+        desc: 'Look for authentication failures, backend connection errors, or pool limit messages.',
+        cmd: `oc logs -n ${NS} prod-pgcluster-uae-pgbouncer-6bff86f674-dhhww \\\n  -c pgbouncer --tail=120\n\n# Also check the second pod:\noc logs -n ${NS} prod-pgcluster-uae-pgbouncer-6bff86f674-t8wfl \\\n  -c pgbouncer --tail=120`,
+        warning: null
+      },
+      {
+        label: 'Check session counts on primary',
+        desc: 'Identify total connections, active queries, and idle-in-transaction sessions which may be holding connection slots.',
+        cmd: `oc exec -n ${NS} ${LEADER} -c database -- \\\n  psql -U postgres -XAtc \\\n  "SELECT count(*) AS total,\n          count(*) FILTER(WHERE state='active') AS active,\n          count(*) FILTER(WHERE state='idle in transaction') AS idle_in_txn,\n          count(*) FILTER(WHERE state='idle') AS idle,\n          count(*) FILTER(WHERE wait_event_type='Lock') AS waiting \\\n   FROM pg_stat_activity WHERE datname IS NOT NULL;"`,
+        warning: null
+      },
+      {
+        label: 'Check if primary is accepting connections',
+        desc: 'Test direct connectivity to the primary pod to rule out PgBouncer as the issue.',
+        cmd: `oc exec -n ${NS} ${LEADER} -c database -- \\\n  psql -U postgres -XAtc "SELECT now(), pg_is_in_recovery();"`,
+        warning: null
+      },
+      {
+        label: 'Find and kill idle-in-transaction sessions',
+        desc: 'Idle-in-transaction sessions holding locks for >5 minutes can cause connection pool starvation.',
+        cmd: `oc exec -n ${NS} ${LEADER} -c database -- \\\n  psql -U postgres -XAtc \\\n  "SELECT pid,usename,application_name,client_addr,state,\n          now()-xact_start AS txn_age,query_start,left(query,80) AS last_query \\\n   FROM pg_stat_activity \\\n   WHERE state='idle in transaction' \\\n     AND xact_start < now()-interval '5 minutes' \\\n   ORDER BY txn_age DESC;"\n\n# To terminate (with caution, confirm with DBA lead):\n# SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE state='idle in transaction' AND xact_start < now()-interval '10 minutes';`,
+        warning: { title: 'CAUTION', msg: 'Terminating sessions affects active transactions. Confirm with DBA lead before running pg_terminate_backend in production. Only terminate sessions idle in transaction for >10 minutes as a last resort.' }
+      }
+    ]
+  },
+  s5: {
+    title: 'DR Cutover Required (Planned Switchover)',
+    severity: 'low',
+    description: 'Initiating a planned switchover from PROD to DR. This is a structured operation requiring change approval, all blockers resolved, and zero replication lag at execution time.',
+    steps: [
+      {
+        label: 'PREREQUISITE: Verify all DR blockers resolved',
+        desc: 'Before proceeding with any other step, confirm ALL known blockers are resolved.',
+        cmd: `# Verify DR API reachability:\noc --context dr-pgcluster-uae/api-ocp-dr-habibbank-local:6443/mohsinali \\\n  get pods -n dr-pgcluster-uae\n\n# Verify network CIDR routing is fixed (confirm with network team)\n# Verify DNS resolution for DR services works from PROD\n# Verify DR nodes are healthy and have sufficient storage`,
+        warning: { title: 'MANDATORY PREREQUISITE', msg: 'DO NOT proceed with DR cutover if: DR API is unreachable, network CIDR mismatch is unresolved, change window is not approved and active, or any team member is not available for rollback. All blockers listed in the topology view must be resolved first.' }
+      },
+      {
+        label: 'Verify PROD Patroni healthy and DR streaming',
+        desc: 'Confirm PROD cluster is fully healthy and DR is receiving WAL from PROD primary.',
+        cmd: `oc exec -n ${NS} ${LEADER} -c database -- patronictl list\n\n# Check DR replication lag:\noc --context dr-pgcluster-uae/api-ocp-dr-habibbank-local:6443/mohsinali \\\n  exec -n dr-pgcluster-uae <dr-pod-name> -c database -- \\\n  psql -U postgres -XAtc \\\n  "SELECT now(),pg_is_in_recovery(),pg_last_wal_receive_lsn(),\n          pg_last_wal_replay_lsn(),pg_last_xact_replay_timestamp();"`,
+        warning: null
+      },
+      {
+        label: 'Confirm approved change window is active',
+        desc: 'Verify with your change management system that the change window is currently open and all approvers have signed off.',
+        cmd: `# Record change ticket number: _________________\n# Change window start: _________________\n# Change window end: _________________\n# Approver 1: _________________\n# Approver 2: _________________\n# Rollback lead: _________________`,
+        warning: null
+      },
+      {
+        label: 'Run precheck script',
+        desc: 'The precheck validates all preconditions: lag, connectivity, cluster health, and configuration.',
+        cmd: `cd /home/mohsinali@habibbank.local/PROD_PATRONI\npython3 prod_dr_cutover.py precheck \\\n  --mode planned-switchover \\\n  --max-lag-bytes 0`,
+        warning: null
+      },
+      {
+        label: 'Generate cutover command manifest',
+        desc: 'Generate the command sequence. Review every command before approving.',
+        cmd: `cd /home/mohsinali@habibbank.local/PROD_PATRONI\npython3 prod_dr_cutover.py generate \\\n  --mode planned-switchover`,
+        warning: null
+      },
+      {
+        label: 'Review and obtain approval on manifest',
+        desc: 'The generated command_manifest.json must be reviewed by at least one other DBA and approved before execution.',
+        cmd: `cat command_manifest.json | python3 -m json.tool\n# Share manifest with DBA lead for review\n# Document approval in change ticket`,
+        warning: null
+      },
+      {
+        label: 'Dry-run the cutover sequence',
+        desc: 'Execute the dry-run to validate all commands parse correctly without making changes.',
+        cmd: `python3 prod_dr_cutover.py execute \\\n  --manifest command_manifest.json \\\n  --dry-run-execute`,
+        warning: null
+      },
+      {
+        label: 'Freeze application writes',
+        desc: 'Coordinate with application teams to stop write traffic to PROD before executing cutover.',
+        cmd: `# Application teams confirm writes stopped\n# Monitor connection count drops to zero active queries:\noc exec -n ${NS} ${LEADER} -c database -- \\\n  psql -U postgres -XAtc \\\n  "SELECT count(*) FROM pg_stat_activity WHERE state='active' AND datname IS NOT NULL;"`,
+        warning: { title: 'COORDINATION REQUIRED', msg: 'Application writes must be stopped before cutover execution. Coordinate with application team leads. Confirm no active write transactions remain. This is a point of no return — once writes are frozen, complete the cutover quickly.' }
+      },
+      {
+        label: 'Verify lag = 0 bytes immediately before cutover',
+        desc: 'The final lag check must show 0 bytes of replication lag before proceeding.',
+        cmd: `oc --context dr-pgcluster-uae/api-ocp-dr-habibbank-local:6443/mohsinali \\\n  exec -n dr-pgcluster-uae <dr-pod-name> -c database -- \\\n  psql -U postgres -XAtc \\\n  "SELECT pg_wal_lsn_diff(pg_last_wal_receive_lsn(), pg_last_wal_replay_lsn()) AS lag_bytes;"`,
+        warning: null
+      },
+      {
+        label: 'Execute approved cutover sequence',
+        desc: 'Run the approved manifest. Do not interrupt once started.',
+        cmd: `python3 prod_dr_cutover.py execute \\\n  --manifest command_manifest.json`,
+        warning: null
+      },
+      {
+        label: 'Verify DR is writable primary',
+        desc: 'Confirm DR cluster is accepting writes and PROD is now a standby.',
+        cmd: `oc --context dr-pgcluster-uae/api-ocp-dr-habibbank-local:6443/mohsinali \\\n  exec -n dr-pgcluster-uae <dr-leader-pod> -c database -- \\\n  psql -U postgres -XAtc \\\n  "SELECT now(),pg_is_in_recovery(),current_setting('listen_addresses');"`,
+        warning: null
+      },
+      {
+        label: 'Route applications to DR',
+        desc: 'Update DNS / load balancer entries to point application traffic to the DR PgBouncer endpoint.',
+        cmd: `# Update DNS / LB VIP to DR PgBouncer endpoint\n# Verify application connectivity to new primary\n# Monitor pg_stat_activity on new DR primary\n# Document completion in change ticket`,
+        warning: null
+      }
+    ]
+  }
+};
+
+const severityLabel = { high: 'HIGH SEVERITY', medium: 'MEDIUM SEVERITY', low: 'LOW SEVERITY (Planned)' };
+const severityClass = { high: 'sev-high', medium: 'sev-medium', low: 'sev-low' };
+
+function renderScenario(key) {
+  const sc = scenarios[key];
+  if (!sc) return;
+  const state = stepStates[key] || {};
+  const doneCount = Object.keys(state).length;
+  const total = sc.steps.length;
+  const pct = Math.round((doneCount / total) * 100);
+
+  let html = `
+    <div class="scenario-header">
+      <div class="scenario-title">${sc.title}</div>
+      <span class="scenario-severity ${severityClass[sc.severity]}">${severityLabel[sc.severity]}</span>
+    </div>
+    <p style="color:var(--text-secondary); font-size:13px; margin-bottom:16px;">${sc.description}</p>
+    <div class="progress-bar-wrap">
+      <div class="progress-label">
+        <span>Progress: ${doneCount} of ${total} steps acknowledged</span>
+        <span>${pct}%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>
+    <ol class="step-list">`;
+
+  sc.steps.forEach((step, i) => {
+    const done = !!state[i];
+    const isActive = !done && i === sc.steps.findIndex((_, j) => !state[j]);
+    const cls = done ? 'done-step' : (isActive ? 'active-step' : '');
+    const numIcon = done ? '&#10003;' : (i + 1);
+
+    html += `<li class="step-item ${cls}">
+      <div class="step-num">${numIcon}</div>
+      <div class="step-body">
+        <div style="font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Step ${i+1}</div>
+        <div class="step-desc"><strong>${step.label}</strong></div>
+        <div style="font-size:12px; color:var(--text-secondary); margin-bottom:8px;">${step.desc}</div>`;
+
+    if (step.warning) {
+      html += `<div class="escalate-box">
+        <span class="escalate-icon">&#9888;&#65039;</span>
+        <div>
+          <div class="escalate-title">${step.warning.title}</div>
+          <div class="escalate-body">${step.warning.msg}</div>
+        </div>
+      </div>`;
+    }
+
+    if (step.cmd) {
+      html += `<div class="cmd-block"><span class="prompt">$</span> ${escHtml(step.cmd)}<button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>`;
+    }
+
+    if (!done) {
+      html += `<button class="step-btn" onclick="markStep('${key}', ${i}, ${total})">&#10003; Acknowledge Step ${i+1}</button>`;
+    }
+
+    html += `</div></li>`;
+  });
+
+  html += `</ol>
+    <div style="margin-top:16px; display:flex; gap:12px;">
+      <button class="step-btn" onclick="resetScenario('${key}')">&#8634; Reset All Steps</button>
+    </div>`;
+
+  document.getElementById('scenario-panel').innerHTML = html;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ========== COMMAND GENERATOR ==========
+function v(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+
+function renderCmds() {
+  const leader = v('v-leader') || LEADER;
+  const standby = v('v-standby') || STANDBY;
+  const ns = v('v-ns') || NS;
+  const pgb1 = v('v-pgb1') || 'prod-pgcluster-uae-pgbouncer-6bff86f674-dhhww';
+  const pgb2 = v('v-pgb2') || 'prod-pgcluster-uae-pgbouncer-6bff86f674-t8wfl';
+  const drns = v('v-drns') || 'dr-pgcluster-uae';
+
+  const categories = [
+    {
+      name: 'PATRONI', icon: '&#9881;',
+      cmds: [
+        { label: 'Patroni list (from leader)', cmd: `oc exec -n ${ns} ${leader} -c database -- patronictl list` },
+        { label: 'Is leader in recovery? (both pods)', cmd: `oc exec -n ${ns} ${leader} -c database -- psql -U postgres -XAtc "SELECT pg_is_in_recovery();" ; oc exec -n ${ns} ${standby} -c database -- psql -U postgres -XAtc "SELECT pg_is_in_recovery();"` },
+        { label: 'Replication lag (from leader)', cmd: `oc exec -n ${ns} ${leader} -c database -- psql -U postgres -XAtc "SELECT client_addr,state,sent_lsn,write_lsn,flush_lsn,replay_lsn,write_lag,flush_lag,replay_lag,sync_state FROM pg_stat_replication;"` },
+        { label: 'Current WAL position', cmd: `oc exec -n ${ns} ${leader} -c database -- psql -U postgres -XAtc "SELECT now(), pg_current_wal_lsn(), pg_current_wal_insert_lsn(), pg_walfile_name(pg_current_wal_lsn());"` },
+        { label: 'Replication slots', cmd: `oc exec -n ${ns} ${leader} -c database -- psql -U postgres -XAtc "SELECT slot_name,active,wal_status,safe_wal_size,pg_size_pretty(pg_wal_lsn_diff(pg_current_wal_lsn(),restart_lsn)) AS retained FROM pg_replication_slots;"` },
+      ]
+    },
+    {
+      name: 'PGBACKREST', icon: '&#128190;',
+      cmds: [
+        { label: 'pgBackRest info (human readable)', cmd: `oc exec -n ${ns} ${leader} -c pgbackrest -- pgbackrest --stanza=db --repo=1 info` },
+        { label: 'pgBackRest info (JSON)', cmd: `oc exec -n ${ns} ${leader} -c pgbackrest -- pgbackrest --stanza=db --repo=1 --output=json info` },
+        { label: 'pgBackRest check', cmd: `oc exec -n ${ns} ${leader} -c pgbackrest -- pgbackrest --stanza=db --repo=1 check` },
+        { label: 'WAL archiver status', cmd: `oc exec -n ${ns} ${leader} -c database -- psql -U postgres -XAtc "SELECT now(),archived_count,last_archived_wal,last_archived_time,failed_count,last_failed_wal,last_failed_time FROM pg_stat_archiver;"` },
+        { label: 'pgBackRest container logs (200 lines)', cmd: `oc logs -n ${ns} ${leader} -c pgbackrest --tail=200` },
+        { label: 'List backup jobs', cmd: `oc get cronjobs,jobs -n ${ns}` },
+      ]
+    },
+    {
+      name: 'SESSIONS & CONNECTIONS', icon: '&#128101;',
+      cmds: [
+        { label: 'Connection count summary', cmd: `oc exec -n ${ns} ${leader} -c database -- psql -U postgres -XAtc "SELECT count(*) AS total, count(*) FILTER(WHERE state='active') AS active, count(*) FILTER(WHERE state='idle in transaction') AS idle_in_txn, count(*) FILTER(WHERE state='idle') AS idle, count(*) FILTER(WHERE wait_event_type='Lock') AS waiting FROM pg_stat_activity WHERE datname IS NOT NULL;"` },
+        { label: 'Idle-in-transaction sessions (>5min)', cmd: `oc exec -n ${ns} ${leader} -c database -- psql -U postgres -XAtc "SELECT pid,usename,application_name,client_addr,state,now()-xact_start AS txn_age,left(query,80) FROM pg_stat_activity WHERE state='idle in transaction' AND xact_start < now()-interval '5 minutes' ORDER BY txn_age DESC;"` },
+        { label: 'Database sizes', cmd: `oc exec -n ${ns} ${leader} -c database -- psql -U postgres -XAtc "SELECT datname,pg_size_pretty(pg_database_size(datname)) AS size FROM pg_database ORDER BY pg_database_size(datname) DESC;"` },
+        { label: 'Long-running queries (>30s)', cmd: `oc exec -n ${ns} ${leader} -c database -- psql -U postgres -XAtc "SELECT pid,usename,now()-query_start AS duration,state,wait_event_type,wait_event,left(query,100) AS query FROM pg_stat_activity WHERE query_start < now()-interval '30 seconds' AND state != 'idle' ORDER BY duration DESC;"` },
+        { label: 'Lock waits', cmd: `oc exec -n ${ns} ${leader} -c database -- psql -U postgres -XAtc "SELECT blocked.pid AS blocked_pid, blocked.usename, blocking.pid AS blocking_pid, blocking.usename AS blocking_user, blocked.query AS blocked_query FROM pg_stat_activity blocked JOIN pg_stat_activity blocking ON blocking.pid = ANY(pg_blocking_pids(blocked.pid)) WHERE blocked.pid != blocking.pid;"` },
+      ]
+    },
+    {
+      name: 'PODS & SERVICES', icon: '&#128663;',
+      cmds: [
+        { label: 'Get all pods (wide)', cmd: `oc get pods -n ${ns} -o wide` },
+        { label: 'Get services and endpoints', cmd: `oc get svc,endpoints -n ${ns}` },
+        { label: 'Describe leader pod', cmd: `oc describe pod ${leader} -n ${ns}` },
+        { label: 'Describe standby pod', cmd: `oc describe pod ${standby} -n ${ns}` },
+        { label: 'Leader pod events (recent)', cmd: `oc get events -n ${ns} --field-selector involvedObject.name=${leader} --sort-by='.lastTimestamp'` },
+        { label: 'PostgresCluster CR status', cmd: `oc get postgrescluster prod-pgcluster-uae -n ${ns} -o yaml | grep -A 50 'status:'` },
+      ]
+    },
+    {
+      name: 'PGBOUNCER', icon: '&#9646;',
+      cmds: [
+        { label: 'PgBouncer pods status', cmd: `oc get pods -n ${ns} -l postgres-operator.crunchydata.com/role=pgbouncer -o wide` },
+        { label: 'PgBouncer LB endpoints', cmd: `oc get endpoints -n ${ns} | grep pgbouncer` },
+        { label: `PgBouncer logs (pod 1)`, cmd: `oc logs -n ${ns} ${pgb1} -c pgbouncer --tail=120` },
+        { label: `PgBouncer logs (pod 2)`, cmd: `oc logs -n ${ns} ${pgb2} -c pgbouncer --tail=120` },
+        { label: 'PgBouncer stats via psql', cmd: `oc exec -n ${ns} ${pgb1} -c pgbouncer -- psql -p 5432 -U pgbouncer pgbouncer -c "SHOW STATS;" 2>/dev/null || oc exec -n ${ns} ${pgb1} -c pgbouncer -- psql -p 5555 -U pgbouncer pgbouncer -c "SHOW STATS;"` },
+        { label: 'PgBouncer pools', cmd: `oc exec -n ${ns} ${pgb1} -c pgbouncer -- psql -p 5555 -U pgbouncer pgbouncer -c "SHOW POOLS;"` },
+      ]
+    },
+    {
+      name: 'DR CLUSTER', icon: '&#128737;',
+      cmds: [
+        { label: 'DR API connectivity test', cmd: `oc --context dr-pgcluster-uae/api-ocp-dr-habibbank-local:6443/mohsinali get pods -n ${drns}` },
+        { label: 'DR pods status', cmd: `oc --context dr-pgcluster-uae/api-ocp-dr-habibbank-local:6443/mohsinali get pods -n ${drns} -o wide` },
+        { label: 'DR services', cmd: `oc --context dr-pgcluster-uae/api-ocp-dr-habibbank-local:6443/mohsinali get svc,endpoints -n ${drns}` },
+        { label: 'PROD-to-DR lag check', cmd: `oc exec -n ${ns} ${leader} -c database -- psql -U postgres -XAtc "SELECT now(), pg_current_wal_lsn();" # Compare with DR replay LSN` },
+        { label: 'DR cutover precheck', cmd: `cd /home/mohsinali@habibbank.local/PROD_PATRONI && python3 prod_dr_cutover.py precheck --mode planned-switchover --max-lag-bytes 0` },
+        { label: 'DR cutover generate manifest', cmd: `cd /home/mohsinali@habibbank.local/PROD_PATRONI && python3 prod_dr_cutover.py generate --mode planned-switchover` },
+      ]
+    },
+    {
+      name: 'STORAGE & DISK', icon: '&#128264;',
+      cmds: [
+        { label: 'PVC usage', cmd: `oc get pvc -n ${ns}` },
+        { label: 'pgdata disk usage (leader)', cmd: `oc exec -n ${ns} ${leader} -c database -- df -h /pgdata /pgwal` },
+        { label: 'pgBackRest spool size (leader)', cmd: `oc exec -n ${ns} ${leader} -c pgbackrest -- du -sh /pgdata/pgbackrest-spool /pgwal/pgbackrest-spool 2>/dev/null` },
+        { label: 'WAL directory size', cmd: `oc exec -n ${ns} ${leader} -c database -- du -sh /pgwal/pg_wal/` },
+        { label: 'S3 endpoint curl test', cmd: `oc exec -n ${ns} ${leader} -c pgbackrest -- curl -sv --connect-timeout 5 https://s3-openshift-storage.apps.ocp-prod.habibbank.local 2>&1 | grep -E "Connected|SSL|refused|timeout"` },
+      ]
+    },
+    {
+      name: 'CONTEXT & CLUSTER SWITCH', icon: '&#128260;',
+      cmds: [
+        { label: 'Switch to PROD context', cmd: `oc config use-context prod-pgcluster-uae/api-ocp-prod-habibbank-local:6443/mohsinali` },
+        { label: 'Switch to DR context', cmd: `oc config use-context dr-pgcluster-uae/api-ocp-dr-habibbank-local:6443/mohsinali` },
+        { label: 'Current context', cmd: `oc config current-context` },
+        { label: 'List contexts', cmd: `oc config get-contexts` },
+        { label: 'Set PROD namespace default', cmd: `oc config set-context --current --namespace=${ns}` },
+      ]
+    }
+  ];
+
+  let html = '<div class="cmd-grid">';
+  categories.forEach(cat => {
+    html += `<div class="cmd-category">
+      <div class="cmd-category-title"><span class="cat-icon">${cat.icon}</span>${cat.name}</div>`;
+    cat.cmds.forEach(c => {
+      html += `<div class="cmd-item">
+        <div class="cmd-item-label">${c.label}</div>
+        <div class="cmd-line-wrap">
+          <div class="cmd-line">${escHtml(c.cmd)}</div>
+          <button class="cmd-line-copy" title="Copy" onclick="copyCmdLine(this)">&#128203;</button>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+  document.getElementById('cmd-grid-container').innerHTML = html;
+}
+
+// ========== DECISION TREE ==========
+const dtree = {
+  id: 'root',
+  q: 'What is the symptom?',
+  hint: 'Select the primary symptom you are observing. Be specific — different symptoms lead to different response paths.',
+  choices: [
+    {
+      label: 'Application cannot connect',
+      next: {
+        id: 'app-conn',
+        q: 'Are PgBouncer pods Running?',
+        hint: 'Run: oc get pods -n prod-pgcluster-uae -l postgres-operator.crunchydata.com/role=pgbouncer',
+        choices: [
+          {
+            label: 'No — pods not running / restarting',
+            next: {
+              id: 'pgb-down',
+              q: 'Are pod logs showing OOMKill or CrashLoopBackOff?',
+              hint: 'Run: oc describe pod <pgbouncer-pod> -n prod-pgcluster-uae',
+              choices: [
+                {
+                  label: 'OOMKilled',
+                  next: { id: 'pgb-oom', terminal: true, title: 'PgBouncer OOMKilled', esc: false,
+                    msg: 'PgBouncer has exceeded its memory limit. Check resource limits and current pool sizes. Consider temporary restart while raising a change to increase memory limits.',
+                    cmds: ['oc describe pod <pgbouncer-pod> -n prod-pgcluster-uae | grep -A5 OOM', 'oc delete pod <pgbouncer-pod> -n prod-pgcluster-uae  # triggers restart', 'oc get pods -n prod-pgcluster-uae | grep pgbouncer  # monitor recovery'] }
+                },
+                {
+                  label: 'CrashLoopBackOff / config error',
+                  next: { id: 'pgb-crash', terminal: true, title: 'PgBouncer Config/Crash', esc: true,
+                    msg: 'PgBouncer is crashing on startup. Check container logs for configuration errors. This requires DBA investigation of the pgbouncer config Secret.',
+                    cmds: ['oc logs -n prod-pgcluster-uae <pgbouncer-pod> -c pgbouncer --previous', 'oc get secret -n prod-pgcluster-uae | grep pgbouncer', 'oc describe postgrescluster prod-pgcluster-uae -n prod-pgcluster-uae | grep -A20 pgBouncer'] }
+                }
+              ]
+            }
+          },
+          {
+            label: 'Yes — pods Running but connections failing',
+            next: {
+              id: 'pgb-up-fail',
+              q: 'Are PgBouncer logs showing pool exhaustion or backend errors?',
+              hint: 'Run: oc logs -n prod-pgcluster-uae prod-pgcluster-uae-pgbouncer-6bff86f674-dhhww -c pgbouncer --tail=120',
+              choices: [
+                {
+                  label: 'Pool exhausted / too many clients',
+                  next: { id: 'pool-exhaust', terminal: true, title: 'Connection Pool Exhausted', esc: false,
+                    msg: 'PgBouncer pool is full. Check for idle-in-transaction sessions on the primary hogging connections. May need to terminate long-running idle sessions.',
+                    cmds: ["oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- psql -U postgres -XAtc \"SELECT count(*) FILTER(WHERE state='idle in transaction'), count(*) FILTER(WHERE state='active') FROM pg_stat_activity WHERE datname IS NOT NULL;\"", "oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- psql -U postgres -XAtc \"SELECT pid,usename,now()-xact_start AS age,left(query,60) FROM pg_stat_activity WHERE state='idle in transaction' AND xact_start < now()-interval '5 minutes' ORDER BY age DESC;\""] }
+                },
+                {
+                  label: 'Backend connection refused / primary unreachable',
+                  next: { id: 'primary-check', terminal: true, title: 'Primary Unreachable from PgBouncer', esc: true,
+                    msg: 'PgBouncer cannot connect to the primary. Check if the primary pod is healthy and if the primary LB endpoint is correct.',
+                    cmds: ['oc get pods -n prod-pgcluster-uae -o wide | grep dc1', 'oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- psql -U postgres -XAtc "SELECT now(), pg_is_in_recovery();"', 'oc get endpoints -n prod-pgcluster-uae | grep primary'] }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      label: 'Backup job failed',
+      next: {
+        id: 'backup-fail',
+        q: 'Is WAL archiving (pg_stat_archiver) currently failing?',
+        hint: 'Run twice 60s apart: oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- psql -U postgres -XAtc "select failed_count,last_failed_wal from pg_stat_archiver;"',
+        choices: [
+          {
+            label: 'Yes — failed_count increasing',
+            next: { id: 'wal-fail-active', terminal: true, title: 'Active WAL Archive Failure — ESCALATE', esc: true,
+              msg: 'PITR window is actively shrinking. Escalate immediately. Check spool disk, pgbackrest logs, and S3 connectivity.',
+              cmds: ['oc logs -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c pgbackrest --tail=200', "oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c pgbackrest -- bash -c 'df -h /pgdata /pgwal'", 'oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c pgbackrest -- pgbackrest --stanza=db --repo=1 info'] }
+          },
+          {
+            label: 'No — WAL archiving healthy',
+            next: {
+              id: 'backup-job-only',
+              q: 'Is the pgBackRest repo accessible and showing recent backups?',
+              hint: 'Run: oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c pgbackrest -- pgbackrest --stanza=db --repo=1 info',
+              choices: [
+                {
+                  label: 'Yes — repo accessible and healthy',
+                  next: { id: 'job-only-fail', terminal: true, title: 'Kubernetes Job Failure Only — Non-Critical', esc: false,
+                    msg: 'Data is safe — repo is healthy and WAL is archiving. The Kubernetes CronJob/Job object has failed, likely due to a transient pod scheduling issue. Document and raise a change request to investigate. No immediate PITR risk.',
+                    cmds: ['oc get cronjobs,jobs -n prod-pgcluster-uae', 'oc describe job <failed-job-name> -n prod-pgcluster-uae', 'oc logs -n prod-pgcluster-uae <failed-job-pod> -c pgbackrest'] }
+                },
+                {
+                  label: 'No — repo error or inaccessible',
+                  next: { id: 'repo-fail', terminal: true, title: 'Repository Inaccessible — ESCALATE', esc: true,
+                    msg: 'S3 repository is not accessible. Escalate to storage team. Check S3 endpoint, credentials, and network path from OCP to ODF.',
+                    cmds: ['oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c pgbackrest -- curl -sv --connect-timeout 5 https://s3-openshift-storage.apps.ocp-prod.habibbank.local', 'oc logs -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c pgbackrest --tail=200 | grep -E "ERROR|S3|TLS|auth"'] }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      label: 'High replication lag / No sync standby',
+      next: {
+        id: 'repl-lag',
+        q: 'How many nodes show "Leader" in patronictl list?',
+        hint: 'Run: oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- patronictl list',
+        choices: [
+          {
+            label: 'MORE THAN ONE shows Leader',
+            next: { id: 'split-brain', terminal: true, title: 'SPLIT-BRAIN DETECTED — ESCALATE IMMEDIATELY', esc: true,
+              msg: 'CRITICAL: Two nodes are both acting as Primary/Leader. DO NOT write to either node. DO NOT attempt manual resolution. Call DBA lead immediately. This requires controlled Patroni intervention to fence the wrong leader.',
+              cmds: ['oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- patronictl list', '# DO NOT run any write commands', '# DO NOT manually promote or demote', '# CALL DBA LEAD IMMEDIATELY'] }
+          },
+          {
+            label: 'Exactly one Leader — standby missing/lagging',
+            next: {
+              id: 'standby-check',
+              q: 'Is the standby pod in Running state?',
+              hint: 'Run: oc get pods -n prod-pgcluster-uae -o wide',
+              choices: [
+                {
+                  label: 'Pod not running / evicted / pending',
+                  next: { id: 'standby-pod-fail', terminal: true, title: 'Standby Pod Failure — Escalate', esc: true,
+                    msg: 'Standby pod is not healthy. Check node pressure, resource limits, and OCP scheduler events. Do NOT manually promote. Let Patroni handle cluster management.',
+                    cmds: ['oc describe pod prod-pgcluster-uae-dc1-5c2q-0 -n prod-pgcluster-uae', 'oc get events -n prod-pgcluster-uae --sort-by=.lastTimestamp | tail -30', 'oc get nodes | grep lupr09c05ocpw5'] }
+                },
+                {
+                  label: 'Pod running but lag is high',
+                  next: { id: 'lag-high', terminal: true, title: 'High Replication Lag — Monitor and Alert', esc: false,
+                    msg: 'Standby is running but falling behind. Monitor lag and check for blocking queries or network issues between nodes. If lag continues to grow, escalate.',
+                    cmds: ['oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- psql -U postgres -XAtc "SELECT client_addr,state,write_lag,flush_lag,replay_lag,sync_state FROM pg_stat_replication;"', 'oc logs -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database --tail=100', "watch -n 15 'oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- patronictl list'"] }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      label: 'DR concern / DR cutover needed',
+      next: {
+        id: 'dr-concern',
+        q: 'Is the DR API (api-ocp-dr-habibbank-local:6443) reachable?',
+        hint: 'Run: oc --context dr-pgcluster-uae/api-ocp-dr-habibbank-local:6443/mohsinali get pods -n dr-pgcluster-uae',
+        choices: [
+          {
+            label: 'No — DR API unreachable',
+            next: { id: 'dr-api-down', terminal: true, title: 'DR API Unreachable — Known Issue', esc: true,
+              msg: 'This is the known open issue as of 2026-05-22. Network CIDR mismatch between PROD and DR. Escalate to network team. DR cutover CANNOT proceed until this is resolved.',
+              cmds: ['# Escalate to network team: CIDR routing between PROD (10.171.x.x) and DR OCP API', '# Track in change ticket', '# No DR cutover until API is reachable and DR streaming is validated'] }
+          },
+          {
+            label: 'Yes — DR API reachable, checking DR streaming',
+            next: {
+              id: 'dr-streaming',
+              q: 'Is DR replication lag within acceptable range (< 10MB)?',
+              hint: 'Check lag on DR cluster: pg_wal_lsn_diff(pg_last_wal_receive_lsn(), pg_last_wal_replay_lsn())',
+              choices: [
+                {
+                  label: 'Yes — lag acceptable, proceeding to planned cutover',
+                  next: { id: 'dr-cutover-ready', terminal: true, title: 'DR Ready for Planned Cutover', esc: false,
+                    msg: 'Proceed with the Scenario 5 drill (DR Cutover) in the Scenarios tab. Ensure approved change window is active and all team members are available.',
+                    cmds: ['cd /home/mohsinali@habibbank.local/PROD_PATRONI', 'python3 prod_dr_cutover.py precheck --mode planned-switchover --max-lag-bytes 0', 'python3 prod_dr_cutover.py generate --mode planned-switchover'] }
+                },
+                {
+                  label: 'No — lag too high or DR not receiving WAL',
+                  next: { id: 'dr-lag-high', terminal: true, title: 'DR Lag Too High — Investigate', esc: true,
+                    msg: 'DR is not keeping up with PROD. Do not attempt cutover until lag is resolved. Check DR streaming configuration and network path from PROD LB to DR.',
+                    cmds: ['oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- psql -U postgres -XAtc "SELECT now(), pg_current_wal_lsn();"', '# Check DR side replay LSN and compare', '# Verify upstream 10.171.1.229:5555 is reachable from DR pods'] }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      label: 'Storage alarm / disk pressure',
+      next: {
+        id: 'storage',
+        q: 'Which storage area is showing alarm?',
+        hint: 'Check: oc get pvc -n prod-pgcluster-uae and oc exec ... -- df -h /pgdata /pgwal',
+        choices: [
+          {
+            label: 'pgdata or pgwal PVC approaching capacity',
+            next: {
+              id: 'pvc-full',
+              q: 'Is there an inactive replication slot holding WAL?',
+              hint: 'Run: SELECT slot_name,active,pg_size_pretty(pg_wal_lsn_diff(pg_current_wal_lsn(),restart_lsn)) FROM pg_replication_slots;',
+              choices: [
+                {
+                  label: 'Yes — inactive slot with large retained WAL',
+                  next: { id: 'inactive-slot', terminal: true, title: 'Inactive Replication Slot Retaining WAL — ESCALATE', esc: true,
+                    msg: 'An inactive replication slot is preventing WAL cleanup, causing disk growth. Dropping a production slot requires DBA approval — escalate immediately. Confirm the slot is truly unused before any action.',
+                    cmds: ["oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- psql -U postgres -XAtc \"SELECT slot_name,active,wal_status,safe_wal_size,pg_size_pretty(pg_wal_lsn_diff(pg_current_wal_lsn(),restart_lsn)) AS retained FROM pg_replication_slots;\"", '# DO NOT drop slot without DBA lead approval', '# Escalate: slot name, retained size, and whether consumer is known'] }
+                },
+                {
+                  label: 'No inactive slots — genuine data growth',
+                  next: { id: 'data-growth', terminal: true, title: 'Genuine Data Growth — Escalate for PVC Resize', esc: true,
+                    msg: 'Data growth is genuine. Raise a change request for PVC expansion via OCP storage team. Monitor until expansion is complete. If <10% free, escalate as urgent.',
+                    cmds: ['oc get pvc -n prod-pgcluster-uae', 'oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- df -h /pgdata /pgwal', "oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- psql -U postgres -XAtc \"SELECT datname, pg_size_pretty(pg_database_size(datname)) FROM pg_database ORDER BY 2 DESC;\""] }
+                }
+              ]
+            }
+          },
+          {
+            label: 'pgBackRest spool growing',
+            next: { id: 'spool-grow', terminal: true, title: 'pgBackRest Spool Growing — WAL Archive Failing', esc: true,
+              msg: 'Growing spool means WAL is being produced but not transferred to S3. This is an active WAL archive failure. Follow Scenario 3 steps immediately and escalate.',
+              cmds: ["oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c pgbackrest -- bash -c 'du -sh /pgdata/pgbackrest-spool /pgwal/pgbackrest-spool 2>/dev/null'", 'oc logs -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c pgbackrest --tail=200 | grep -E "ERROR|WARN|S3|timeout"', "oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- psql -U postgres -XAtc \"SELECT now(),archived_count,last_archived_wal,failed_count,last_failed_wal FROM pg_stat_archiver;\""] }
+          }
+        ]
+      }
+    }
+  ]
+};
+
+let dtreePath = [];
+let dtreeCurrentNode = dtree;
+
+function initDtree() {
+  if (dtreePath.length === 0) {
+    renderDtreeStep(dtree, []);
+  }
+}
+
+function renderDtreeStep(node, path) {
+  dtreeCurrentNode = node;
+  dtreePath = path;
+
+  const pathBar = document.getElementById('dtree-path-bar');
+  const crumbText = document.getElementById('dtree-crumb-text');
+  const container = document.getElementById('dtree-steps-container');
+
+  if (path.length > 0) {
+    pathBar.style.display = 'flex';
+    crumbText.innerHTML = ['Start', ...path].map((p, i) => {
+      const cls = i === path.length ? 'active' : '';
+      return `<span class="dtree-crumb ${cls}">${p}</span>`;
+    }).join('<span class="dtree-sep"> &rsaquo; </span>');
+  } else {
+    pathBar.style.display = 'none';
+  }
+
+  if (node.terminal) {
+    const cls = node.esc ? 'esc' : '';
+    container.innerHTML = `<div class="dtree-step">
+      <div class="dtree-node ${node.esc ? 'escalate' : 'terminal'}" style="padding:20px;">
+        <div class="terminal-title ${cls}">${node.esc ? '&#9888;&#65039; ' : '&#10003; '}${node.title}</div>
+        <p style="color:var(--text-secondary); font-size:13px; margin:10px 0 16px;">${node.msg}</p>
+        ${node.cmds.map(c => `<div class="cmd-block"><span class="prompt">$</span> ${escHtml(c)}<button class="copy-btn" onclick="copyCmd(this)">Copy</button></div>`).join('')}
+        <button class="step-btn" style="margin-top:16px;" onclick="resetDtree()">&#8634; Start Over</button>
+      </div>
+    </div>`;
+    return;
+  }
+
+  let html = `<div class="dtree-step">
+    <div class="dtree-node question" style="padding:20px;">
+      <div class="dtree-q">${node.q}</div>
+      <div class="dtree-hint">${node.hint || ''}</div>
+      <div class="dtree-choices">`;
+
+  node.choices.forEach((choice, i) => {
+    html += `<button class="dtree-choice" onclick="dtreeChoose(${i})">${choice.label}</button>`;
+  });
+
+  html += `</div></div></div>`;
+  container.innerHTML = html;
+}
+
+function dtreeChoose(idx) {
+  const choice = dtreeCurrentNode.choices[idx];
+  const newPath = [...dtreePath, choice.label];
+  renderDtreeStep(choice.next, newPath);
+}
+
+function resetDtree() {
+  dtreePath = [];
+  renderDtreeStep(dtree, []);
+}
+
+// Initialize command generator and decision tree on page load
+document.addEventListener('DOMContentLoaded', () => {
+  renderCmds();
+  initDtree();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "name": "admin",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "admin"
+      },
+      "subjects": [
+        {
+          "apiGroup": "rbac.authorization.k8s.io",
+          "kind": "User",
+          "name": "system:admin"
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "name": "admin-user",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "admin"
+      },
+      "subjects": [
+        {
+          "apiGroup": "rbac.authorization.k8s.io",
+          "kind": "User",
+          "name": "mohsinali"
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "name": "openshift-pipelines-edit",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "edit"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "pipeline",
+          "namespace": "prod-pgcluster-uae"
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "annotations": {},
+        "name": "pg-object-monitor-agent-readonly",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Role",
+        "name": "pg-object-monitor-agent-readonly"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "pg-object-monitor-agent",
+          "namespace": "prod-pgcluster-uae"
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "name": "pipelines-scc-rolebinding",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "pipelines-scc-clusterrole"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "pipeline",
+          "namespace": "prod-pgcluster-uae"
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "annotations": {},
+        "name": "prod-pgcluster-uae-dba-operator",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Role",
+        "name": "prod-pgcluster-uae-operator"
+      },
+      "subjects": [
+        {
+          "apiGroup": "rbac.authorization.k8s.io",
+          "kind": "Group",
+          "name": "pg-prod-dba"
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "annotations": {},
+        "name": "prod-pgcluster-uae-dba-readonly",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Role",
+        "name": "prod-pgcluster-uae-readonly"
+      },
+      "subjects": [
+        {
+          "apiGroup": "rbac.authorization.k8s.io",
+          "kind": "Group",
+          "name": "pg-prod-dba-readonly"
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae"
+        },
+        "name": "prod-pgcluster-uae-instance",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Role",
+        "name": "prod-pgcluster-uae-instance"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "prod-pgcluster-uae-instance"
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/pgbackrest": ""
+        },
+        "name": "prod-pgcluster-uae-pgbackrest",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Role",
+        "name": "prod-pgcluster-uae-pgbackrest"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "prod-pgcluster-uae-pgbackrest"
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "annotations": {},
+        "name": "prod-pgo18-prometheus-kubernetes-sd",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Role",
+        "name": "prod-pgo18-prometheus-kubernetes-sd"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "prod-pgo18-prometheus",
+          "namespace": "prod-pgcluster-uae"
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "annotations": {
+          "openshift.io/description": "Allows deploymentconfigs in this namespace to rollout pods in this namespace.  It is auto-managed by a controller; remove subjects to disable."
+        },
+        "name": "system:deployers",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "system:deployer"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "deployer",
+          "namespace": "prod-pgcluster-uae"
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "annotations": {
+          "openshift.io/description": "Allows builds in this namespace to push images to this namespace.  It is auto-managed by a controller; remove subjects to disable."
+        },
+        "name": "system:image-builders",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "system:image-builder"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "builder",
+          "namespace": "prod-pgcluster-uae"
+        }
+      ]
+    }
+  ],
+  "kind": "List",
+  "metadata": {}
+}

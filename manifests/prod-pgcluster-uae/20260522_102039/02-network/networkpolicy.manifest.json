@@ -1,0 +1,204 @@
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "annotations": {},
+        "labels": {
+          "environment": "prod",
+          "region": "uae"
+        },
+        "name": "allow-dr-streaming-replication",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "ingress": [
+          {
+            "from": [
+              {
+                "ipBlock": {
+                  "cidr": "10.181.1.0/24"
+                }
+              },
+              {
+                "ipBlock": {
+                  "cidr": "10.185.0.0/16"
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 5555,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "podSelector": {
+          "matchLabels": {
+            "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+            "postgres-operator.crunchydata.com/data": "postgres"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "allow-from-kube-apiserver-operator",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "ingress": [
+          {
+            "from": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "openshift-kube-apiserver-operator"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "kube-apiserver-operator"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "podSelector": {},
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "allow-from-openshift-ingress",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "ingress": [
+          {
+            "from": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "network.openshift.io/policy-group": "ingress"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "podSelector": {},
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "allow-from-openshift-monitoring",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "ingress": [
+          {
+            "from": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "network.openshift.io/policy-group": "monitoring"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "podSelector": {},
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "allow-from-same-namespace",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {}
+              }
+            ]
+          }
+        ],
+        "podSelector": {},
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "annotations": {},
+        "name": "allow-prod-pgo18-prometheus-metrics",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/name": "prod-pgo18-prometheus"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 8008,
+                "protocol": "TCP"
+              },
+              {
+                "port": 9187,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
+        "podSelector": {
+          "matchLabels": {
+            "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    }
+  ],
+  "kind": "List",
+  "metadata": {}
+}

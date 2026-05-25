@@ -1,0 +1,119 @@
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "apiVersion": "route.openshift.io/v1",
+      "kind": "Route",
+      "metadata": {
+        "annotations": {},
+        "labels": {
+          "app.kubernetes.io/component": "readonly-agent",
+          "app.kubernetes.io/name": "pg-object-monitor-agent"
+        },
+        "name": "pg-object-monitor-agent",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "host": "pg-object-monitor-agent-prod-pgcluster-uae.apps.ocp-prod.habibbank.local",
+        "port": {
+          "targetPort": "http"
+        },
+        "tls": {
+          "insecureEdgeTerminationPolicy": "Redirect",
+          "termination": "edge"
+        },
+        "to": {
+          "kind": "Service",
+          "name": "pg-object-monitor-agent",
+          "weight": 100
+        },
+        "wildcardPolicy": "None"
+      }
+    },
+    {
+      "apiVersion": "route.openshift.io/v1",
+      "kind": "Route",
+      "metadata": {
+        "annotations": {
+          "openshift.io/host.generated": "true"
+        },
+        "name": "prod-pgcluster-uae-pgadmin",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "host": "prod-pgcluster-uae-pgadmin-prod-pgcluster-uae.apps.ocp-prod.habibbank.local",
+        "port": {
+          "targetPort": "http"
+        },
+        "tls": {
+          "insecureEdgeTerminationPolicy": "Redirect",
+          "termination": "edge"
+        },
+        "to": {
+          "kind": "Service",
+          "name": "pgadmin-modern",
+          "weight": 100
+        },
+        "wildcardPolicy": "None"
+      }
+    },
+    {
+      "apiVersion": "route.openshift.io/v1",
+      "kind": "Route",
+      "metadata": {
+        "annotations": {},
+        "labels": {
+          "app.kubernetes.io/component": "metrics-bridge",
+          "app.kubernetes.io/name": "prod-pgo18-pgbackrest-pushgateway"
+        },
+        "name": "prod-pgo18-pgbackrest-pushgateway",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "host": "prod-pgo18-pgbackrest-pushgateway-prod-pgcluster-uae.apps.ocp-prod.habibbank.local",
+        "port": {
+          "targetPort": "web"
+        },
+        "tls": {
+          "insecureEdgeTerminationPolicy": "Redirect",
+          "termination": "edge"
+        },
+        "to": {
+          "kind": "Service",
+          "name": "prod-pgo18-pgbackrest-pushgateway",
+          "weight": 100
+        },
+        "wildcardPolicy": "None"
+      }
+    },
+    {
+      "apiVersion": "route.openshift.io/v1",
+      "kind": "Route",
+      "metadata": {
+        "annotations": {
+          "openshift.io/host.generated": "true"
+        },
+        "name": "prod-pgo18-prometheus",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "host": "prod-pgo18-prometheus-prod-pgcluster-uae.apps.ocp-prod.habibbank.local",
+        "port": {
+          "targetPort": "web"
+        },
+        "tls": {
+          "insecureEdgeTerminationPolicy": "Redirect",
+          "termination": "edge"
+        },
+        "to": {
+          "kind": "Service",
+          "name": "prod-pgo18-prometheus",
+          "weight": 100
+        },
+        "wildcardPolicy": "None"
+      }
+    }
+  ],
+  "kind": "List",
+  "metadata": {}
+}

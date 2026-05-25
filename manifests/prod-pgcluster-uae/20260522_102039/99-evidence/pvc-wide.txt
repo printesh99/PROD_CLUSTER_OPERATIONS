@@ -1,0 +1,6 @@
+NAME                                 STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS                  VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+pgadmin-modern-data                  Bound    pvc-83b9bf6b-2d94-42c7-af74-7db918c943c1   5Gi        RWO            ocs-storagecluster-ceph-rbd   <unset>                 9d    Filesystem
+prod-pgcluster-uae-dc1-5c2q-pgdata   Bound    pvc-07693616-8b5e-4a1a-98cd-19e07f147122   2Ti        RWO            ocs-storagecluster-ceph-rbd   <unset>                 9d    Filesystem
+prod-pgcluster-uae-dc1-5c2q-pgwal    Bound    pvc-455e439a-bb7d-4dcf-b4b0-914b0f6a8cff   500Gi      RWO            ocs-storagecluster-ceph-rbd   <unset>                 9d    Filesystem
+prod-pgcluster-uae-dc1-9c5j-pgdata   Bound    pvc-f9cc577b-8674-4469-ae87-cea27a576ce6   2Ti        RWO            ocs-storagecluster-ceph-rbd   <unset>                 9d    Filesystem
+prod-pgcluster-uae-dc1-9c5j-pgwal    Bound    pvc-704c56b1-9773-4744-b200-6fda16203828   500Gi      RWO            ocs-storagecluster-ceph-rbd   <unset>                 9d    Filesystem

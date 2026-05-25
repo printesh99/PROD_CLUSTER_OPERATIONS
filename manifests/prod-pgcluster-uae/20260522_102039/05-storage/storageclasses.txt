@@ -1,0 +1,8 @@
+NAME                                         PROVISIONER                             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+localvolumeset                               kubernetes.io/no-provisioner            Delete          WaitForFirstConsumer   false                  331d
+ocs-storagecluster-ceph-rbd (default)        openshift-storage.rbd.csi.ceph.com      Delete          Immediate              true                   331d
+ocs-storagecluster-ceph-rbd-virtualization   openshift-storage.rbd.csi.ceph.com      Delete          Immediate              true                   330d
+ocs-storagecluster-ceph-rgw                  openshift-storage.ceph.rook.io/bucket   Delete          Immediate              false                  331d
+ocs-storagecluster-cephfs                    openshift-storage.cephfs.csi.ceph.com   Delete          Immediate              true                   331d
+openshift-storage.noobaa.io                  openshift-storage.noobaa.io/obc         Delete          Immediate              false                  331d
+windows-vms                                  openshift-storage.rbd.csi.ceph.com      Delete          Immediate              true                   330d

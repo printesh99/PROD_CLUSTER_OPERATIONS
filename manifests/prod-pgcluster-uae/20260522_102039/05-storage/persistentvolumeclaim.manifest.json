@@ -1,0 +1,190 @@
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "annotations": {
+          "pv.kubernetes.io/bind-completed": "yes",
+          "pv.kubernetes.io/bound-by-controller": "yes",
+          "reclaimspace.csiaddons.openshift.io/cronjob": "pgadmin-modern-data-1778588993",
+          "reclaimspace.csiaddons.openshift.io/schedule": "@weekly",
+          "volume.beta.kubernetes.io/storage-provisioner": "openshift-storage.rbd.csi.ceph.com",
+          "volume.kubernetes.io/storage-provisioner": "openshift-storage.rbd.csi.ceph.com"
+        },
+        "finalizers": [
+          "kubernetes.io/pvc-protection"
+        ],
+        "name": "pgadmin-modern-data",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "5Gi"
+          }
+        },
+        "storageClassName": "ocs-storagecluster-ceph-rbd",
+        "volumeMode": "Filesystem"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "annotations": {
+          "pv.kubernetes.io/bind-completed": "yes",
+          "pv.kubernetes.io/bound-by-controller": "yes",
+          "reclaimspace.csiaddons.openshift.io/cronjob": "prod-pgcluster-uae-dc1-5c2q-pgdata-1778585616",
+          "reclaimspace.csiaddons.openshift.io/schedule": "@weekly",
+          "volume.beta.kubernetes.io/storage-provisioner": "openshift-storage.rbd.csi.ceph.com",
+          "volume.kubernetes.io/storage-provisioner": "openshift-storage.rbd.csi.ceph.com"
+        },
+        "finalizers": [
+          "kubernetes.io/pvc-protection"
+        ],
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/data": "postgres",
+          "postgres-operator.crunchydata.com/instance": "prod-pgcluster-uae-dc1-5c2q",
+          "postgres-operator.crunchydata.com/instance-set": "dc1",
+          "postgres-operator.crunchydata.com/role": "pgdata"
+        },
+        "name": "prod-pgcluster-uae-dc1-5c2q-pgdata",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "2Ti"
+          }
+        },
+        "storageClassName": "ocs-storagecluster-ceph-rbd",
+        "volumeMode": "Filesystem"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "annotations": {
+          "pv.kubernetes.io/bind-completed": "yes",
+          "pv.kubernetes.io/bound-by-controller": "yes",
+          "reclaimspace.csiaddons.openshift.io/cronjob": "prod-pgcluster-uae-dc1-5c2q-pgwal-1778585616",
+          "reclaimspace.csiaddons.openshift.io/schedule": "@weekly",
+          "volume.beta.kubernetes.io/storage-provisioner": "openshift-storage.rbd.csi.ceph.com",
+          "volume.kubernetes.io/storage-provisioner": "openshift-storage.rbd.csi.ceph.com"
+        },
+        "finalizers": [
+          "kubernetes.io/pvc-protection"
+        ],
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/data": "postgres",
+          "postgres-operator.crunchydata.com/instance": "prod-pgcluster-uae-dc1-5c2q",
+          "postgres-operator.crunchydata.com/instance-set": "dc1",
+          "postgres-operator.crunchydata.com/role": "pgwal"
+        },
+        "name": "prod-pgcluster-uae-dc1-5c2q-pgwal",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "500Gi"
+          }
+        },
+        "storageClassName": "ocs-storagecluster-ceph-rbd",
+        "volumeMode": "Filesystem"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "annotations": {
+          "pv.kubernetes.io/bind-completed": "yes",
+          "pv.kubernetes.io/bound-by-controller": "yes",
+          "reclaimspace.csiaddons.openshift.io/cronjob": "prod-pgcluster-uae-dc1-9c5j-pgdata-1778585615",
+          "reclaimspace.csiaddons.openshift.io/schedule": "@weekly",
+          "volume.beta.kubernetes.io/storage-provisioner": "openshift-storage.rbd.csi.ceph.com",
+          "volume.kubernetes.io/storage-provisioner": "openshift-storage.rbd.csi.ceph.com"
+        },
+        "finalizers": [
+          "kubernetes.io/pvc-protection"
+        ],
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/data": "postgres",
+          "postgres-operator.crunchydata.com/instance": "prod-pgcluster-uae-dc1-9c5j",
+          "postgres-operator.crunchydata.com/instance-set": "dc1",
+          "postgres-operator.crunchydata.com/role": "pgdata"
+        },
+        "name": "prod-pgcluster-uae-dc1-9c5j-pgdata",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "2Ti"
+          }
+        },
+        "storageClassName": "ocs-storagecluster-ceph-rbd",
+        "volumeMode": "Filesystem"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "annotations": {
+          "pv.kubernetes.io/bind-completed": "yes",
+          "pv.kubernetes.io/bound-by-controller": "yes",
+          "reclaimspace.csiaddons.openshift.io/cronjob": "prod-pgcluster-uae-dc1-9c5j-pgwal-1778585615",
+          "reclaimspace.csiaddons.openshift.io/schedule": "@weekly",
+          "volume.beta.kubernetes.io/storage-provisioner": "openshift-storage.rbd.csi.ceph.com",
+          "volume.kubernetes.io/storage-provisioner": "openshift-storage.rbd.csi.ceph.com"
+        },
+        "finalizers": [
+          "kubernetes.io/pvc-protection"
+        ],
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/data": "postgres",
+          "postgres-operator.crunchydata.com/instance": "prod-pgcluster-uae-dc1-9c5j",
+          "postgres-operator.crunchydata.com/instance-set": "dc1",
+          "postgres-operator.crunchydata.com/role": "pgwal"
+        },
+        "name": "prod-pgcluster-uae-dc1-9c5j-pgwal",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "500Gi"
+          }
+        },
+        "storageClassName": "ocs-storagecluster-ceph-rbd",
+        "volumeMode": "Filesystem"
+      }
+    }
+  ],
+  "kind": "List",
+  "metadata": {}
+}

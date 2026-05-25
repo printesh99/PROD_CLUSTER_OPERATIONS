@@ -1,0 +1,179 @@
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "apiVersion": "storage.k8s.io/v1",
+      "kind": "StorageClass",
+      "metadata": {
+        "labels": {
+          "local.storage.openshift.io/owner-kind": "LocalVolumeSet",
+          "local.storage.openshift.io/owner-name": "localvolumeset",
+          "local.storage.openshift.io/owner-namespace": "openshift-local-storage"
+        },
+        "name": "localvolumeset"
+      },
+      "provisioner": "kubernetes.io/no-provisioner",
+      "reclaimPolicy": "Delete",
+      "volumeBindingMode": "WaitForFirstConsumer"
+    },
+    {
+      "allowVolumeExpansion": true,
+      "apiVersion": "storage.k8s.io/v1",
+      "kind": "StorageClass",
+      "metadata": {
+        "annotations": {
+          "description": "Provides RWO Filesystem volumes, and RWO and RWX Block volumes",
+          "reclaimspace.csiaddons.openshift.io/schedule": "@weekly",
+          "storageclass.kubernetes.io/is-default-class": "true"
+        },
+        "labels": {
+          "ramendr.openshift.io/storageid": "df09c96f3ccef6bc241b72661b8a4e78"
+        },
+        "name": "ocs-storagecluster-ceph-rbd"
+      },
+      "parameters": {
+        "clusterID": "openshift-storage",
+        "csi.storage.k8s.io/controller-expand-secret-name": "rook-csi-rbd-provisioner",
+        "csi.storage.k8s.io/controller-expand-secret-namespace": "openshift-storage",
+        "csi.storage.k8s.io/fstype": "ext4",
+        "csi.storage.k8s.io/node-stage-secret-name": "rook-csi-rbd-node",
+        "csi.storage.k8s.io/node-stage-secret-namespace": "openshift-storage",
+        "csi.storage.k8s.io/provisioner-secret-name": "rook-csi-rbd-provisioner",
+        "csi.storage.k8s.io/provisioner-secret-namespace": "openshift-storage",
+        "imageFeatures": "layering,deep-flatten,exclusive-lock,object-map,fast-diff",
+        "imageFormat": "2",
+        "pool": "ocs-storagecluster-cephblockpool"
+      },
+      "provisioner": "openshift-storage.rbd.csi.ceph.com",
+      "reclaimPolicy": "Delete",
+      "volumeBindingMode": "Immediate"
+    },
+    {
+      "allowVolumeExpansion": true,
+      "apiVersion": "storage.k8s.io/v1",
+      "kind": "StorageClass",
+      "metadata": {
+        "annotations": {
+          "description": "Provides RWO and RWX Block volumes suitable for Virtual Machine disks",
+          "reclaimspace.csiaddons.openshift.io/schedule": "@weekly",
+          "storageclass.kubevirt.io/is-default-virt-class": "true"
+        },
+        "labels": {
+          "ramendr.openshift.io/storageid": "df09c96f3ccef6bc241b72661b8a4e78"
+        },
+        "name": "ocs-storagecluster-ceph-rbd-virtualization"
+      },
+      "parameters": {
+        "clusterID": "openshift-storage",
+        "csi.storage.k8s.io/controller-expand-secret-name": "rook-csi-rbd-provisioner",
+        "csi.storage.k8s.io/controller-expand-secret-namespace": "openshift-storage",
+        "csi.storage.k8s.io/fstype": "ext4",
+        "csi.storage.k8s.io/node-stage-secret-name": "rook-csi-rbd-node",
+        "csi.storage.k8s.io/node-stage-secret-namespace": "openshift-storage",
+        "csi.storage.k8s.io/provisioner-secret-name": "rook-csi-rbd-provisioner",
+        "csi.storage.k8s.io/provisioner-secret-namespace": "openshift-storage",
+        "imageFeatures": "layering,deep-flatten,exclusive-lock,object-map,fast-diff",
+        "imageFormat": "2",
+        "mapOptions": "krbd:rxbounce",
+        "mounter": "rbd",
+        "pool": "ocs-storagecluster-cephblockpool"
+      },
+      "provisioner": "openshift-storage.rbd.csi.ceph.com",
+      "reclaimPolicy": "Delete",
+      "volumeBindingMode": "Immediate"
+    },
+    {
+      "apiVersion": "storage.k8s.io/v1",
+      "kind": "StorageClass",
+      "metadata": {
+        "annotations": {
+          "description": "Provides Object Bucket Claims (OBCs)"
+        },
+        "name": "ocs-storagecluster-ceph-rgw"
+      },
+      "parameters": {
+        "objectStoreName": "ocs-storagecluster-cephobjectstore",
+        "objectStoreNamespace": "openshift-storage",
+        "region": "us-east-1"
+      },
+      "provisioner": "openshift-storage.ceph.rook.io/bucket",
+      "reclaimPolicy": "Delete",
+      "volumeBindingMode": "Immediate"
+    },
+    {
+      "allowVolumeExpansion": true,
+      "apiVersion": "storage.k8s.io/v1",
+      "kind": "StorageClass",
+      "metadata": {
+        "annotations": {
+          "description": "Provides RWO and RWX Filesystem volumes"
+        },
+        "labels": {
+          "ramendr.openshift.io/storageid": "6f62cf2cce0fc7fbf192877d97a175f1"
+        },
+        "name": "ocs-storagecluster-cephfs"
+      },
+      "parameters": {
+        "clusterID": "openshift-storage",
+        "csi.storage.k8s.io/controller-expand-secret-name": "rook-csi-cephfs-provisioner",
+        "csi.storage.k8s.io/controller-expand-secret-namespace": "openshift-storage",
+        "csi.storage.k8s.io/node-stage-secret-name": "rook-csi-cephfs-node",
+        "csi.storage.k8s.io/node-stage-secret-namespace": "openshift-storage",
+        "csi.storage.k8s.io/provisioner-secret-name": "rook-csi-cephfs-provisioner",
+        "csi.storage.k8s.io/provisioner-secret-namespace": "openshift-storage",
+        "fsName": "ocs-storagecluster-cephfilesystem"
+      },
+      "provisioner": "openshift-storage.cephfs.csi.ceph.com",
+      "reclaimPolicy": "Delete",
+      "volumeBindingMode": "Immediate"
+    },
+    {
+      "apiVersion": "storage.k8s.io/v1",
+      "kind": "StorageClass",
+      "metadata": {
+        "annotations": {
+          "description": "Provides Object Bucket Claims (OBCs)"
+        },
+        "name": "openshift-storage.noobaa.io"
+      },
+      "parameters": {
+        "bucketclass": "noobaa-default-bucket-class"
+      },
+      "provisioner": "openshift-storage.noobaa.io/obc",
+      "reclaimPolicy": "Delete",
+      "volumeBindingMode": "Immediate"
+    },
+    {
+      "allowVolumeExpansion": true,
+      "apiVersion": "storage.k8s.io/v1",
+      "kind": "StorageClass",
+      "metadata": {
+        "annotations": {},
+        "labels": {
+          "ramendr.openshift.io/storageid": "df09c96f3ccef6bc241b72661b8a4e78"
+        },
+        "name": "windows-vms"
+      },
+      "parameters": {
+        "clusterID": "openshift-storage",
+        "csi.storage.k8s.io/controller-expand-secret-name": "rook-csi-rbd-provisioner",
+        "csi.storage.k8s.io/controller-expand-secret-namespace": "openshift-storage",
+        "csi.storage.k8s.io/fstype": "ext4",
+        "csi.storage.k8s.io/node-stage-secret-name": "rook-csi-rbd-node",
+        "csi.storage.k8s.io/node-stage-secret-namespace": "openshift-storage",
+        "csi.storage.k8s.io/provisioner-secret-name": "rook-csi-rbd-provisioner",
+        "csi.storage.k8s.io/provisioner-secret-namespace": "openshift-storage",
+        "imageFeatures": "layering",
+        "imageFormat": "2",
+        "mapOptions": "krbd:rxbounce",
+        "mounter": "rbd",
+        "pool": "ocs-storagecluster-cephblockpool"
+      },
+      "provisioner": "openshift-storage.rbd.csi.ceph.com",
+      "reclaimPolicy": "Delete",
+      "volumeBindingMode": "Immediate"
+    }
+  ],
+  "kind": "List",
+  "metadata": {}
+}

@@ -1,0 +1,16 @@
+NAME                                                 READY   STATUS    RESTARTS   AGE     IP              NODE                             NOMINATED NODE   READINESS GATES
+pg-object-monitor-agent-7d8bd56f6c-swz7d             1/1     Running   0          2d1h    10.175.17.63    lupr09c05ocpw6.habibbank.local   <none>           <none>
+pgadmin-modern-6d857f9c7b-mz4g6                      1/1     Running   0          18h     10.175.17.211   lupr09c05ocpw6.habibbank.local   <none>           <none>
+prod-pg-inspector-object-metrics-29657265-b8blk      0/1     Error     0          35m     10.175.16.29    lupr09c05ocpw6.habibbank.local   <none>           <none>
+prod-pg-inspector-object-metrics-29657265-jhsdk      0/1     Error     0          35m     10.175.16.28    lupr09c05ocpw6.habibbank.local   <none>           <none>
+prod-pg-inspector-object-metrics-29657280-9kp4q      0/1     Error     0          20m     10.175.16.51    lupr09c05ocpw6.habibbank.local   <none>           <none>
+prod-pg-inspector-object-metrics-29657280-z9b2v      0/1     Error     0          20m     10.175.16.49    lupr09c05ocpw6.habibbank.local   <none>           <none>
+prod-pg-inspector-object-metrics-29657295-5m9g5      0/1     Error     0          5m31s   10.175.16.72    lupr09c05ocpw6.habibbank.local   <none>           <none>
+prod-pg-inspector-object-metrics-29657295-zg4jl      0/1     Error     0          5m46s   10.175.16.71    lupr09c05ocpw6.habibbank.local   <none>           <none>
+prod-pgcluster-uae-dc1-5c2q-0                        5/5     Running   0          3d      10.175.14.83    lupr09c05ocpw5.habibbank.local   <none>           <none>
+prod-pgcluster-uae-dc1-9c5j-0                        5/5     Running   0          3d      10.175.12.60    lupr09c05ocpw4.habibbank.local   <none>           <none>
+prod-pgcluster-uae-pgbouncer-6bff86f674-dhhww        2/2     Running   0          3d      10.175.12.58    lupr09c05ocpw4.habibbank.local   <none>           <none>
+prod-pgcluster-uae-pgbouncer-6bff86f674-t8wfl        2/2     Running   0          3d      10.175.14.105   lupr09c05ocpw5.habibbank.local   <none>           <none>
+prod-pgo18-pgbackrest-pushgateway-7fdf9bf75c-grw8w   1/1     Running   0          3d      10.175.12.49    lupr09c05ocpw4.habibbank.local   <none>           <none>
+prod-pgo18-prometheus-7697695778-vj9cs               1/1     Running   0          3d      10.175.12.54    lupr09c05ocpw4.habibbank.local   <none>           <none>
+testpod-pgadmin22                                    1/1     Running   0          43h     10.175.17.20    lupr09c05ocpw6.habibbank.local   <none>           <none>

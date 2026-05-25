@@ -1,0 +1,14 @@
+NAME                                TYPE           CLUSTER-IP       EXTERNAL-IP    PORT(S)          AGE     SELECTOR
+pg-object-monitor-agent             ClusterIP      10.176.169.113   <none>         8080/TCP         2d1h    app.kubernetes.io/component=readonly-agent,app.kubernetes.io/name=pg-object-monitor-agent
+pgadmin-modern                      ClusterIP      10.176.96.11     <none>         5050/TCP         9d      app=pgadmin-modern
+prod-pgcluster-uae-app-primary      ClusterIP      10.176.79.5      <none>         5555/TCP         9d      postgres-operator.crunchydata.com/cluster=prod-pgcluster-uae,postgres-operator.crunchydata.com/role=master
+prod-pgcluster-uae-ha               ClusterIP      10.176.169.155   <none>         5555/TCP         9d      <none>
+prod-pgcluster-uae-ha-config        ClusterIP      None             <none>         <none>           9d      <none>
+prod-pgcluster-uae-pgbouncer        ClusterIP      10.176.99.245    <none>         5555/TCP         9d      postgres-operator.crunchydata.com/cluster=prod-pgcluster-uae,postgres-operator.crunchydata.com/role=pgbouncer
+prod-pgcluster-uae-pgbouncer-lb     LoadBalancer   10.176.253.1     10.171.1.205   5555:32723/TCP   9d      postgres-operator.crunchydata.com/cluster=prod-pgcluster-uae,postgres-operator.crunchydata.com/role=pgbouncer
+prod-pgcluster-uae-pods             ClusterIP      None             <none>         <none>           9d      postgres-operator.crunchydata.com/cluster=prod-pgcluster-uae
+prod-pgcluster-uae-primary          ClusterIP      None             <none>         5555/TCP         9d      <none>
+prod-pgcluster-uae-primary-lb       LoadBalancer   10.176.149.197   10.171.1.229   5555:32056/TCP   6d16h   postgres-operator.crunchydata.com/cluster=prod-pgcluster-uae,postgres-operator.crunchydata.com/role=master
+prod-pgcluster-uae-replicas         ClusterIP      10.176.23.124    <none>         5555/TCP         9d      postgres-operator.crunchydata.com/cluster=prod-pgcluster-uae,postgres-operator.crunchydata.com/role=replica
+prod-pgo18-pgbackrest-pushgateway   ClusterIP      10.176.99.38     <none>         9091/TCP         6d22h   app.kubernetes.io/name=prod-pgo18-pgbackrest-pushgateway
+prod-pgo18-prometheus               ClusterIP      10.176.200.244   <none>         9090/TCP         7d      app.kubernetes.io/name=prod-pgo18-prometheus

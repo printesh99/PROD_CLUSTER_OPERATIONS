@@ -1,0 +1,32 @@
+{
+  "apiVersion": "v1",
+  "kind": "Namespace",
+  "metadata": {
+    "annotations": {
+      "openshift.io/description": "",
+      "openshift.io/display-name": "",
+      "openshift.io/requester": "system:admin",
+      "security.openshift.io/MinimallySufficientPodSecurityStandard": "baseline"
+    },
+    "finalizers": [
+      "quay.redhat.com/quayintegrations"
+    ],
+    "labels": {
+      "app": "prod-pgcluster-uae",
+      "kubernetes.io/metadata.name": "prod-pgcluster-uae",
+      "openshift-pipelines.tekton.dev/namespace-reconcile-version": "1.21.0",
+      "openshift-pipelines.tekton.dev/namespace-trusted-configmaps-version": "1.21.0",
+      "pod-security.kubernetes.io/audit": "baseline",
+      "pod-security.kubernetes.io/audit-version": "latest",
+      "pod-security.kubernetes.io/warn": "baseline",
+      "pod-security.kubernetes.io/warn-version": "latest",
+      "type": "app"
+    },
+    "name": "prod-pgcluster-uae"
+  },
+  "spec": {
+    "finalizers": [
+      "kubernetes"
+    ]
+  }
+}

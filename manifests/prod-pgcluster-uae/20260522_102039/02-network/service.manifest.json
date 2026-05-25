@@ -1,0 +1,365 @@
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "annotations": {},
+        "labels": {
+          "app.kubernetes.io/component": "readonly-agent",
+          "app.kubernetes.io/name": "pg-object-monitor-agent"
+        },
+        "name": "pg-object-monitor-agent",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "internalTrafficPolicy": "Cluster",
+        "ports": [
+          {
+            "name": "http",
+            "port": 8080,
+            "protocol": "TCP",
+            "targetPort": "http"
+          }
+        ],
+        "selector": {
+          "app.kubernetes.io/component": "readonly-agent",
+          "app.kubernetes.io/name": "pg-object-monitor-agent"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "annotations": {},
+        "labels": {
+          "app": "pgadmin-modern"
+        },
+        "name": "pgadmin-modern",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "internalTrafficPolicy": "Cluster",
+        "ports": [
+          {
+            "name": "http",
+            "port": 5050,
+            "protocol": "TCP",
+            "targetPort": "http"
+          }
+        ],
+        "selector": {
+          "app": "pgadmin-modern"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "annotations": {},
+        "labels": {
+          "app.kubernetes.io/name": "prod-pgcluster-uae"
+        },
+        "name": "prod-pgcluster-uae-app-primary",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "internalTrafficPolicy": "Cluster",
+        "ports": [
+          {
+            "name": "postgres",
+            "port": 5555,
+            "protocol": "TCP",
+            "targetPort": 5555
+          }
+        ],
+        "selector": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/role": "master"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/patroni": "prod-pgcluster-uae-ha"
+        },
+        "name": "prod-pgcluster-uae-ha",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "internalTrafficPolicy": "Cluster",
+        "ports": [
+          {
+            "name": "postgres",
+            "port": 5555,
+            "protocol": "TCP",
+            "targetPort": "postgres"
+          }
+        ],
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/patroni": "prod-pgcluster-uae-ha"
+        },
+        "name": "prod-pgcluster-uae-ha-config",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "internalTrafficPolicy": "Cluster",
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/role": "pgbouncer"
+        },
+        "name": "prod-pgcluster-uae-pgbouncer",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "internalTrafficPolicy": "Cluster",
+        "ports": [
+          {
+            "name": "pgbouncer",
+            "port": 5555,
+            "protocol": "TCP",
+            "targetPort": "pgbouncer"
+          }
+        ],
+        "selector": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/role": "pgbouncer"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "annotations": {
+          "metallb.io/ip-allocated-from-pool": "metallb-pool-1"
+        },
+        "labels": {
+          "app.kubernetes.io/name": "prod-pgcluster-uae"
+        },
+        "name": "prod-pgcluster-uae-pgbouncer-lb",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "allocateLoadBalancerNodePorts": true,
+        "externalTrafficPolicy": "Cluster",
+        "internalTrafficPolicy": "Cluster",
+        "ports": [
+          {
+            "name": "postgres",
+            "nodePort": 32723,
+            "port": 5555,
+            "protocol": "TCP",
+            "targetPort": 5555
+          }
+        ],
+        "selector": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/role": "pgbouncer"
+        },
+        "sessionAffinity": "None",
+        "type": "LoadBalancer"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae"
+        },
+        "name": "prod-pgcluster-uae-pods",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "internalTrafficPolicy": "Cluster",
+        "publishNotReadyAddresses": true,
+        "selector": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/role": "primary"
+        },
+        "name": "prod-pgcluster-uae-primary",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "internalTrafficPolicy": "Cluster",
+        "ports": [
+          {
+            "name": "postgres",
+            "port": 5555,
+            "protocol": "TCP",
+            "targetPort": "postgres"
+          }
+        ],
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "annotations": {
+          "metallb.io/ip-allocated-from-pool": "metallb-pool-2"
+        },
+        "labels": {
+          "environment": "prod",
+          "purpose": "dr-streaming-replication",
+          "region": "uae"
+        },
+        "name": "prod-pgcluster-uae-primary-lb",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "allocateLoadBalancerNodePorts": true,
+        "externalTrafficPolicy": "Local",
+        "healthCheckNodePort": 30087,
+        "internalTrafficPolicy": "Cluster",
+        "loadBalancerIP": "10.171.1.229",
+        "ports": [
+          {
+            "name": "postgres",
+            "nodePort": 32056,
+            "port": 5555,
+            "protocol": "TCP",
+            "targetPort": 5555
+          }
+        ],
+        "selector": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/role": "master"
+        },
+        "sessionAffinity": "None",
+        "type": "LoadBalancer"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/role": "replica"
+        },
+        "name": "prod-pgcluster-uae-replicas",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "internalTrafficPolicy": "Cluster",
+        "ports": [
+          {
+            "name": "postgres",
+            "port": 5555,
+            "protocol": "TCP",
+            "targetPort": "postgres"
+          }
+        ],
+        "selector": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/role": "replica"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "annotations": {},
+        "labels": {
+          "app.kubernetes.io/component": "metrics-bridge",
+          "app.kubernetes.io/name": "prod-pgo18-pgbackrest-pushgateway"
+        },
+        "name": "prod-pgo18-pgbackrest-pushgateway",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "internalTrafficPolicy": "Cluster",
+        "ports": [
+          {
+            "name": "web",
+            "port": 9091,
+            "protocol": "TCP",
+            "targetPort": "web"
+          }
+        ],
+        "selector": {
+          "app.kubernetes.io/name": "prod-pgo18-pgbackrest-pushgateway"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "annotations": {},
+        "name": "prod-pgo18-prometheus",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "internalTrafficPolicy": "Cluster",
+        "ports": [
+          {
+            "name": "web",
+            "port": 9090,
+            "protocol": "TCP",
+            "targetPort": "web"
+          }
+        ],
+        "selector": {
+          "app.kubernetes.io/name": "prod-pgo18-prometheus"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    }
+  ],
+  "kind": "List",
+  "metadata": {}
+}

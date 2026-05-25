@@ -1,0 +1,2653 @@
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "apiVersion": "batch/v1",
+      "kind": "Job",
+      "metadata": {
+        "annotations": {
+          "batch.kubernetes.io/cronjob-scheduled-timestamp": "2026-05-21T12:45:00Z"
+        },
+        "labels": {
+          "app.kubernetes.io/component": "object-metrics-scraper",
+          "app.kubernetes.io/name": "prod-pg-inspector-metrics",
+          "batch.kubernetes.io/controller-uid": "8f372b7e-240d-4ae3-a074-543eafcf7706",
+          "batch.kubernetes.io/job-name": "prod-pg-inspector-object-metrics-29656125",
+          "controller-uid": "8f372b7e-240d-4ae3-a074-543eafcf7706",
+          "job-name": "prod-pg-inspector-object-metrics-29656125"
+        },
+        "name": "prod-pg-inspector-object-metrics-29656125",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "backoffLimit": 1,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "suspend": false,
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "app.kubernetes.io/component": "object-metrics-scraper",
+              "app.kubernetes.io/name": "prod-pg-inspector-metrics",
+              "batch.kubernetes.io/controller-uid": "8f372b7e-240d-4ae3-a074-543eafcf7706",
+              "batch.kubernetes.io/job-name": "prod-pg-inspector-object-metrics-29656125",
+              "controller-uid": "8f372b7e-240d-4ae3-a074-543eafcf7706",
+              "job-name": "prod-pg-inspector-object-metrics-29656125"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "command": [
+                  "/bin/bash",
+                  "-lc",
+                  "/opt/pg-inspector/publish-prod-pg-inspector-metrics.sh"
+                ],
+                "env": [
+                  {
+                    "name": "NS",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "CLUSTER",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "PGINSPECTOR_CONNECT_MODE",
+                    "value": "direct"
+                  },
+                  {
+                    "name": "PUSHGATEWAY_URL",
+                    "value": "http://prod-pgo18-pgbackrest-pushgateway:9091"
+                  },
+                  {
+                    "name": "PUSHGATEWAY_JOB",
+                    "value": "pg-inspector-object-report"
+                  },
+                  {
+                    "name": "PUSHGATEWAY_INSTANCE",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "METRICS_OUTPUT",
+                    "value": "/tmp/pg_inspector_metrics.prom"
+                  },
+                  {
+                    "name": "PYTHONDONTWRITEBYTECODE",
+                    "value": "1"
+                  },
+                  {
+                    "name": "PGHOST",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "host",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGPORT",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "port",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGUSER",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "user",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGPASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "password",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  }
+                ],
+                "image": "registry.connect.redhat.com/crunchydata/crunchy-postgres@sha256:3c38e7be43392c37e7d72ee3a8387e1931f342e42c7c5b7c88559d865c4cc024",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "scraper",
+                "resources": {
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "512Mi"
+                  },
+                  "requests": {
+                    "cpu": "25m",
+                    "memory": "128Mi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/opt/pg-inspector",
+                    "name": "scripts",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "enableServiceLinks": false,
+            "restartPolicy": "Never",
+            "schedulerName": "default-scheduler",
+            "securityContext": {},
+            "serviceAccount": "prod-pg-inspector-metrics",
+            "serviceAccountName": "prod-pg-inspector-metrics",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "configMap": {
+                  "defaultMode": 365,
+                  "name": "prod-pg-inspector-metrics-scripts"
+                },
+                "name": "scripts"
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "32Mi"
+                },
+                "name": "tmp"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "Job",
+      "metadata": {
+        "annotations": {
+          "batch.kubernetes.io/cronjob-scheduled-timestamp": "2026-05-21T13:00:00Z"
+        },
+        "labels": {
+          "app.kubernetes.io/component": "object-metrics-scraper",
+          "app.kubernetes.io/name": "prod-pg-inspector-metrics",
+          "batch.kubernetes.io/controller-uid": "a7099868-8a2a-49dd-87fc-fcfc80c2ee26",
+          "batch.kubernetes.io/job-name": "prod-pg-inspector-object-metrics-29656140",
+          "controller-uid": "a7099868-8a2a-49dd-87fc-fcfc80c2ee26",
+          "job-name": "prod-pg-inspector-object-metrics-29656140"
+        },
+        "name": "prod-pg-inspector-object-metrics-29656140",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "backoffLimit": 1,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "suspend": false,
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "app.kubernetes.io/component": "object-metrics-scraper",
+              "app.kubernetes.io/name": "prod-pg-inspector-metrics",
+              "batch.kubernetes.io/controller-uid": "a7099868-8a2a-49dd-87fc-fcfc80c2ee26",
+              "batch.kubernetes.io/job-name": "prod-pg-inspector-object-metrics-29656140",
+              "controller-uid": "a7099868-8a2a-49dd-87fc-fcfc80c2ee26",
+              "job-name": "prod-pg-inspector-object-metrics-29656140"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "command": [
+                  "/bin/bash",
+                  "-lc",
+                  "/opt/pg-inspector/publish-prod-pg-inspector-metrics.sh"
+                ],
+                "env": [
+                  {
+                    "name": "NS",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "CLUSTER",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "PGINSPECTOR_CONNECT_MODE",
+                    "value": "direct"
+                  },
+                  {
+                    "name": "PUSHGATEWAY_URL",
+                    "value": "http://prod-pgo18-pgbackrest-pushgateway:9091"
+                  },
+                  {
+                    "name": "PUSHGATEWAY_JOB",
+                    "value": "pg-inspector-object-report"
+                  },
+                  {
+                    "name": "PUSHGATEWAY_INSTANCE",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "METRICS_OUTPUT",
+                    "value": "/tmp/pg_inspector_metrics.prom"
+                  },
+                  {
+                    "name": "PYTHONDONTWRITEBYTECODE",
+                    "value": "1"
+                  },
+                  {
+                    "name": "PGHOST",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "host",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGPORT",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "port",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGUSER",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "user",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGPASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "password",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  }
+                ],
+                "image": "registry.connect.redhat.com/crunchydata/crunchy-postgres@sha256:3c38e7be43392c37e7d72ee3a8387e1931f342e42c7c5b7c88559d865c4cc024",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "scraper",
+                "resources": {
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "512Mi"
+                  },
+                  "requests": {
+                    "cpu": "25m",
+                    "memory": "128Mi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/opt/pg-inspector",
+                    "name": "scripts",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "enableServiceLinks": false,
+            "restartPolicy": "Never",
+            "schedulerName": "default-scheduler",
+            "securityContext": {},
+            "serviceAccount": "prod-pg-inspector-metrics",
+            "serviceAccountName": "prod-pg-inspector-metrics",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "configMap": {
+                  "defaultMode": 365,
+                  "name": "prod-pg-inspector-metrics-scripts"
+                },
+                "name": "scripts"
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "32Mi"
+                },
+                "name": "tmp"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "Job",
+      "metadata": {
+        "annotations": {
+          "batch.kubernetes.io/cronjob-scheduled-timestamp": "2026-05-21T13:15:00Z"
+        },
+        "labels": {
+          "app.kubernetes.io/component": "object-metrics-scraper",
+          "app.kubernetes.io/name": "prod-pg-inspector-metrics",
+          "batch.kubernetes.io/controller-uid": "a799e387-3bee-4bd6-a5cd-1deaa0b09de9",
+          "batch.kubernetes.io/job-name": "prod-pg-inspector-object-metrics-29656155",
+          "controller-uid": "a799e387-3bee-4bd6-a5cd-1deaa0b09de9",
+          "job-name": "prod-pg-inspector-object-metrics-29656155"
+        },
+        "name": "prod-pg-inspector-object-metrics-29656155",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "backoffLimit": 1,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "suspend": false,
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "app.kubernetes.io/component": "object-metrics-scraper",
+              "app.kubernetes.io/name": "prod-pg-inspector-metrics",
+              "batch.kubernetes.io/controller-uid": "a799e387-3bee-4bd6-a5cd-1deaa0b09de9",
+              "batch.kubernetes.io/job-name": "prod-pg-inspector-object-metrics-29656155",
+              "controller-uid": "a799e387-3bee-4bd6-a5cd-1deaa0b09de9",
+              "job-name": "prod-pg-inspector-object-metrics-29656155"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "command": [
+                  "/bin/bash",
+                  "-lc",
+                  "/opt/pg-inspector/publish-prod-pg-inspector-metrics.sh"
+                ],
+                "env": [
+                  {
+                    "name": "NS",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "CLUSTER",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "PGINSPECTOR_CONNECT_MODE",
+                    "value": "direct"
+                  },
+                  {
+                    "name": "PUSHGATEWAY_URL",
+                    "value": "http://prod-pgo18-pgbackrest-pushgateway:9091"
+                  },
+                  {
+                    "name": "PUSHGATEWAY_JOB",
+                    "value": "pg-inspector-object-report"
+                  },
+                  {
+                    "name": "PUSHGATEWAY_INSTANCE",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "METRICS_OUTPUT",
+                    "value": "/tmp/pg_inspector_metrics.prom"
+                  },
+                  {
+                    "name": "PYTHONDONTWRITEBYTECODE",
+                    "value": "1"
+                  },
+                  {
+                    "name": "PGHOST",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "host",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGPORT",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "port",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGUSER",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "user",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGPASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "password",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  }
+                ],
+                "image": "registry.connect.redhat.com/crunchydata/crunchy-postgres@sha256:3c38e7be43392c37e7d72ee3a8387e1931f342e42c7c5b7c88559d865c4cc024",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "scraper",
+                "resources": {
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "512Mi"
+                  },
+                  "requests": {
+                    "cpu": "25m",
+                    "memory": "128Mi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/opt/pg-inspector",
+                    "name": "scripts",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "enableServiceLinks": false,
+            "restartPolicy": "Never",
+            "schedulerName": "default-scheduler",
+            "securityContext": {},
+            "serviceAccount": "prod-pg-inspector-metrics",
+            "serviceAccountName": "prod-pg-inspector-metrics",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "configMap": {
+                  "defaultMode": 365,
+                  "name": "prod-pg-inspector-metrics-scripts"
+                },
+                "name": "scripts"
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "32Mi"
+                },
+                "name": "tmp"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "Job",
+      "metadata": {
+        "annotations": {
+          "batch.kubernetes.io/cronjob-scheduled-timestamp": "2026-05-22T07:45:00Z"
+        },
+        "labels": {
+          "app.kubernetes.io/component": "object-metrics-scraper",
+          "app.kubernetes.io/name": "prod-pg-inspector-metrics",
+          "batch.kubernetes.io/controller-uid": "2d9622b2-9980-4e92-a759-c9433385d972",
+          "batch.kubernetes.io/job-name": "prod-pg-inspector-object-metrics-29657265",
+          "controller-uid": "2d9622b2-9980-4e92-a759-c9433385d972",
+          "job-name": "prod-pg-inspector-object-metrics-29657265"
+        },
+        "name": "prod-pg-inspector-object-metrics-29657265",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "backoffLimit": 1,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "suspend": false,
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "app.kubernetes.io/component": "object-metrics-scraper",
+              "app.kubernetes.io/name": "prod-pg-inspector-metrics",
+              "batch.kubernetes.io/controller-uid": "2d9622b2-9980-4e92-a759-c9433385d972",
+              "batch.kubernetes.io/job-name": "prod-pg-inspector-object-metrics-29657265",
+              "controller-uid": "2d9622b2-9980-4e92-a759-c9433385d972",
+              "job-name": "prod-pg-inspector-object-metrics-29657265"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "command": [
+                  "/bin/bash",
+                  "-lc",
+                  "/opt/pg-inspector/publish-prod-pg-inspector-metrics.sh"
+                ],
+                "env": [
+                  {
+                    "name": "NS",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "CLUSTER",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "PGINSPECTOR_CONNECT_MODE",
+                    "value": "direct"
+                  },
+                  {
+                    "name": "PUSHGATEWAY_URL",
+                    "value": "http://prod-pgo18-pgbackrest-pushgateway:9091"
+                  },
+                  {
+                    "name": "PUSHGATEWAY_JOB",
+                    "value": "pg-inspector-object-report"
+                  },
+                  {
+                    "name": "PUSHGATEWAY_INSTANCE",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "METRICS_OUTPUT",
+                    "value": "/tmp/pg_inspector_metrics.prom"
+                  },
+                  {
+                    "name": "PYTHONDONTWRITEBYTECODE",
+                    "value": "1"
+                  },
+                  {
+                    "name": "PGHOST",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "host",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGPORT",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "port",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGUSER",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "user",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGPASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "password",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  }
+                ],
+                "image": "registry.connect.redhat.com/crunchydata/crunchy-postgres@sha256:3c38e7be43392c37e7d72ee3a8387e1931f342e42c7c5b7c88559d865c4cc024",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "scraper",
+                "resources": {
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "512Mi"
+                  },
+                  "requests": {
+                    "cpu": "25m",
+                    "memory": "128Mi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/opt/pg-inspector",
+                    "name": "scripts",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "enableServiceLinks": false,
+            "restartPolicy": "Never",
+            "schedulerName": "default-scheduler",
+            "securityContext": {},
+            "serviceAccount": "prod-pg-inspector-metrics",
+            "serviceAccountName": "prod-pg-inspector-metrics",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "configMap": {
+                  "defaultMode": 365,
+                  "name": "prod-pg-inspector-metrics-scripts"
+                },
+                "name": "scripts"
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "32Mi"
+                },
+                "name": "tmp"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "Job",
+      "metadata": {
+        "annotations": {
+          "batch.kubernetes.io/cronjob-scheduled-timestamp": "2026-05-22T08:00:00Z"
+        },
+        "labels": {
+          "app.kubernetes.io/component": "object-metrics-scraper",
+          "app.kubernetes.io/name": "prod-pg-inspector-metrics",
+          "batch.kubernetes.io/controller-uid": "f312a12e-7de3-4c45-8d83-3980c66464d0",
+          "batch.kubernetes.io/job-name": "prod-pg-inspector-object-metrics-29657280",
+          "controller-uid": "f312a12e-7de3-4c45-8d83-3980c66464d0",
+          "job-name": "prod-pg-inspector-object-metrics-29657280"
+        },
+        "name": "prod-pg-inspector-object-metrics-29657280",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "backoffLimit": 1,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "suspend": false,
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "app.kubernetes.io/component": "object-metrics-scraper",
+              "app.kubernetes.io/name": "prod-pg-inspector-metrics",
+              "batch.kubernetes.io/controller-uid": "f312a12e-7de3-4c45-8d83-3980c66464d0",
+              "batch.kubernetes.io/job-name": "prod-pg-inspector-object-metrics-29657280",
+              "controller-uid": "f312a12e-7de3-4c45-8d83-3980c66464d0",
+              "job-name": "prod-pg-inspector-object-metrics-29657280"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "command": [
+                  "/bin/bash",
+                  "-lc",
+                  "/opt/pg-inspector/publish-prod-pg-inspector-metrics.sh"
+                ],
+                "env": [
+                  {
+                    "name": "NS",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "CLUSTER",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "PGINSPECTOR_CONNECT_MODE",
+                    "value": "direct"
+                  },
+                  {
+                    "name": "PUSHGATEWAY_URL",
+                    "value": "http://prod-pgo18-pgbackrest-pushgateway:9091"
+                  },
+                  {
+                    "name": "PUSHGATEWAY_JOB",
+                    "value": "pg-inspector-object-report"
+                  },
+                  {
+                    "name": "PUSHGATEWAY_INSTANCE",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "METRICS_OUTPUT",
+                    "value": "/tmp/pg_inspector_metrics.prom"
+                  },
+                  {
+                    "name": "PYTHONDONTWRITEBYTECODE",
+                    "value": "1"
+                  },
+                  {
+                    "name": "PGHOST",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "host",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGPORT",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "port",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGUSER",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "user",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGPASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "password",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  }
+                ],
+                "image": "registry.connect.redhat.com/crunchydata/crunchy-postgres@sha256:3c38e7be43392c37e7d72ee3a8387e1931f342e42c7c5b7c88559d865c4cc024",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "scraper",
+                "resources": {
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "512Mi"
+                  },
+                  "requests": {
+                    "cpu": "25m",
+                    "memory": "128Mi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/opt/pg-inspector",
+                    "name": "scripts",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "enableServiceLinks": false,
+            "restartPolicy": "Never",
+            "schedulerName": "default-scheduler",
+            "securityContext": {},
+            "serviceAccount": "prod-pg-inspector-metrics",
+            "serviceAccountName": "prod-pg-inspector-metrics",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "configMap": {
+                  "defaultMode": 365,
+                  "name": "prod-pg-inspector-metrics-scripts"
+                },
+                "name": "scripts"
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "32Mi"
+                },
+                "name": "tmp"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "Job",
+      "metadata": {
+        "annotations": {
+          "batch.kubernetes.io/cronjob-scheduled-timestamp": "2026-05-22T08:15:00Z"
+        },
+        "labels": {
+          "app.kubernetes.io/component": "object-metrics-scraper",
+          "app.kubernetes.io/name": "prod-pg-inspector-metrics",
+          "batch.kubernetes.io/controller-uid": "455c3d30-57a4-4d88-bf88-2a82583b0218",
+          "batch.kubernetes.io/job-name": "prod-pg-inspector-object-metrics-29657295",
+          "controller-uid": "455c3d30-57a4-4d88-bf88-2a82583b0218",
+          "job-name": "prod-pg-inspector-object-metrics-29657295"
+        },
+        "name": "prod-pg-inspector-object-metrics-29657295",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "backoffLimit": 1,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "suspend": false,
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "app.kubernetes.io/component": "object-metrics-scraper",
+              "app.kubernetes.io/name": "prod-pg-inspector-metrics",
+              "batch.kubernetes.io/controller-uid": "455c3d30-57a4-4d88-bf88-2a82583b0218",
+              "batch.kubernetes.io/job-name": "prod-pg-inspector-object-metrics-29657295",
+              "controller-uid": "455c3d30-57a4-4d88-bf88-2a82583b0218",
+              "job-name": "prod-pg-inspector-object-metrics-29657295"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "command": [
+                  "/bin/bash",
+                  "-lc",
+                  "/opt/pg-inspector/publish-prod-pg-inspector-metrics.sh"
+                ],
+                "env": [
+                  {
+                    "name": "NS",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "CLUSTER",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "PGINSPECTOR_CONNECT_MODE",
+                    "value": "direct"
+                  },
+                  {
+                    "name": "PUSHGATEWAY_URL",
+                    "value": "http://prod-pgo18-pgbackrest-pushgateway:9091"
+                  },
+                  {
+                    "name": "PUSHGATEWAY_JOB",
+                    "value": "pg-inspector-object-report"
+                  },
+                  {
+                    "name": "PUSHGATEWAY_INSTANCE",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "METRICS_OUTPUT",
+                    "value": "/tmp/pg_inspector_metrics.prom"
+                  },
+                  {
+                    "name": "PYTHONDONTWRITEBYTECODE",
+                    "value": "1"
+                  },
+                  {
+                    "name": "PGHOST",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "host",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGPORT",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "port",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGUSER",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "user",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGPASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "password",
+                        "name": "prod-pgcluster-uae-pguser-postgres"
+                      }
+                    }
+                  }
+                ],
+                "image": "registry.connect.redhat.com/crunchydata/crunchy-postgres@sha256:3c38e7be43392c37e7d72ee3a8387e1931f342e42c7c5b7c88559d865c4cc024",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "scraper",
+                "resources": {
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "512Mi"
+                  },
+                  "requests": {
+                    "cpu": "25m",
+                    "memory": "128Mi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/opt/pg-inspector",
+                    "name": "scripts",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "enableServiceLinks": false,
+            "restartPolicy": "Never",
+            "schedulerName": "default-scheduler",
+            "securityContext": {},
+            "serviceAccount": "prod-pg-inspector-metrics",
+            "serviceAccountName": "prod-pg-inspector-metrics",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "configMap": {
+                  "defaultMode": 365,
+                  "name": "prod-pg-inspector-metrics-scripts"
+                },
+                "name": "scripts"
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "32Mi"
+                },
+                "name": "tmp"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "Job",
+      "metadata": {
+        "annotations": {
+          "kubectl.kubernetes.io/default-container": "pgbackrest",
+          "postgres-operator.crunchydata.com/pgbackrest-config": "database",
+          "postgres-operator.crunchydata.com/pgbackrest-hash": "7c8dfccf5b"
+        },
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/pgbackrest": "",
+          "postgres-operator.crunchydata.com/pgbackrest-backup": "replica-create",
+          "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+        },
+        "name": "prod-pgcluster-uae-backup-mbpd",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "backoffLimit": 6,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "suspend": false,
+        "template": {
+          "metadata": {
+            "annotations": {
+              "kubectl.kubernetes.io/default-container": "pgbackrest",
+              "postgres-operator.crunchydata.com/pgbackrest-config": "database",
+              "postgres-operator.crunchydata.com/pgbackrest-hash": "7c8dfccf5b"
+            },
+            "creationTimestamp": null,
+            "labels": {
+              "batch.kubernetes.io/controller-uid": "ccd10b3e-507e-415c-9520-78225efcd182",
+              "batch.kubernetes.io/job-name": "prod-pgcluster-uae-backup-mbpd",
+              "controller-uid": "ccd10b3e-507e-415c-9520-78225efcd182",
+              "job-name": "prod-pgcluster-uae-backup-mbpd",
+              "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+              "postgres-operator.crunchydata.com/pgbackrest": "",
+              "postgres-operator.crunchydata.com/pgbackrest-backup": "replica-create",
+              "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "command": [
+                  "/bin/pgbackrest",
+                  "backup",
+                  "--stanza=db",
+                  "--repo=1"
+                ],
+                "image": "registry.connect.redhat.com/crunchydata/crunchy-pgbackrest@sha256:1c7f0a3a31916f8f8658f0d22a019aaf7832a21027e90679fe5ce3c75638f1ea",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "pgbackrest",
+                "resources": {},
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/etc/pgbackrest/conf.d",
+                    "name": "pgbackrest-config",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "enableServiceLinks": false,
+            "restartPolicy": "Never",
+            "schedulerName": "default-scheduler",
+            "securityContext": {
+              "fsGroupChangePolicy": "OnRootMismatch"
+            },
+            "serviceAccount": "prod-pgcluster-uae-pgbackrest",
+            "serviceAccountName": "prod-pgcluster-uae-pgbackrest",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "name": "pgbackrest-config",
+                "projected": {
+                  "defaultMode": 420,
+                  "sources": [
+                    {
+                      "secret": {
+                        "name": "prod-pgcluster-uae-pgbackrest-secret"
+                      }
+                    },
+                    {
+                      "configMap": {
+                        "items": [
+                          {
+                            "key": "pgbackrest_cloud.conf",
+                            "path": "pgbackrest_cloud.conf"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest-config"
+                      }
+                    },
+                    {
+                      "secret": {
+                        "items": [
+                          {
+                            "key": "pgbackrest.ca-roots",
+                            "path": "~postgres-operator/tls-ca.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.crt",
+                            "path": "~postgres-operator/client-tls.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.key",
+                            "mode": 384,
+                            "path": "~postgres-operator/client-tls.key"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "16Mi"
+                },
+                "name": "tmp"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "Job",
+      "metadata": {
+        "annotations": {
+          "batch.kubernetes.io/cronjob-scheduled-timestamp": "2026-05-19T01:00:00Z",
+          "kubectl.kubernetes.io/default-container": "pgbackrest"
+        },
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/pgbackrest": "",
+          "postgres-operator.crunchydata.com/pgbackrest-backup": "scheduled",
+          "postgres-operator.crunchydata.com/pgbackrest-cronjob": "diff",
+          "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+        },
+        "name": "prod-pgcluster-uae-repo1-diff-29652540",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "backoffLimit": 6,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "suspend": false,
+        "template": {
+          "metadata": {
+            "annotations": {
+              "kubectl.kubernetes.io/default-container": "pgbackrest"
+            },
+            "creationTimestamp": null,
+            "labels": {
+              "batch.kubernetes.io/controller-uid": "ee0e231d-3bb4-450d-8947-904bb4569358",
+              "batch.kubernetes.io/job-name": "prod-pgcluster-uae-repo1-diff-29652540",
+              "controller-uid": "ee0e231d-3bb4-450d-8947-904bb4569358",
+              "job-name": "prod-pgcluster-uae-repo1-diff-29652540",
+              "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+              "postgres-operator.crunchydata.com/pgbackrest": "",
+              "postgres-operator.crunchydata.com/pgbackrest-backup": "scheduled",
+              "postgres-operator.crunchydata.com/pgbackrest-cronjob": "diff",
+              "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "command": [
+                  "/bin/pgbackrest",
+                  "backup",
+                  "--stanza=db",
+                  "--repo=1",
+                  "--type=diff"
+                ],
+                "image": "registry.connect.redhat.com/crunchydata/crunchy-pgbackrest@sha256:1c7f0a3a31916f8f8658f0d22a019aaf7832a21027e90679fe5ce3c75638f1ea",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "pgbackrest",
+                "resources": {},
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/etc/pgbackrest/conf.d",
+                    "name": "pgbackrest-config",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "enableServiceLinks": false,
+            "restartPolicy": "Never",
+            "schedulerName": "default-scheduler",
+            "securityContext": {
+              "fsGroupChangePolicy": "OnRootMismatch"
+            },
+            "serviceAccount": "prod-pgcluster-uae-pgbackrest",
+            "serviceAccountName": "prod-pgcluster-uae-pgbackrest",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "name": "pgbackrest-config",
+                "projected": {
+                  "defaultMode": 420,
+                  "sources": [
+                    {
+                      "secret": {
+                        "name": "prod-pgcluster-uae-pgbackrest-secret"
+                      }
+                    },
+                    {
+                      "configMap": {
+                        "items": [
+                          {
+                            "key": "pgbackrest_cloud.conf",
+                            "path": "pgbackrest_cloud.conf"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest-config"
+                      }
+                    },
+                    {
+                      "secret": {
+                        "items": [
+                          {
+                            "key": "pgbackrest.ca-roots",
+                            "path": "~postgres-operator/tls-ca.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.crt",
+                            "path": "~postgres-operator/client-tls.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.key",
+                            "mode": 384,
+                            "path": "~postgres-operator/client-tls.key"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "16Mi"
+                },
+                "name": "tmp"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "Job",
+      "metadata": {
+        "annotations": {
+          "batch.kubernetes.io/cronjob-scheduled-timestamp": "2026-05-20T01:00:00Z",
+          "kubectl.kubernetes.io/default-container": "pgbackrest"
+        },
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/pgbackrest": "",
+          "postgres-operator.crunchydata.com/pgbackrest-backup": "scheduled",
+          "postgres-operator.crunchydata.com/pgbackrest-cronjob": "diff",
+          "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+        },
+        "name": "prod-pgcluster-uae-repo1-diff-29653980",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "backoffLimit": 6,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "suspend": false,
+        "template": {
+          "metadata": {
+            "annotations": {
+              "kubectl.kubernetes.io/default-container": "pgbackrest"
+            },
+            "creationTimestamp": null,
+            "labels": {
+              "batch.kubernetes.io/controller-uid": "f16d3866-19d8-4db8-8ed5-f7ad74497e37",
+              "batch.kubernetes.io/job-name": "prod-pgcluster-uae-repo1-diff-29653980",
+              "controller-uid": "f16d3866-19d8-4db8-8ed5-f7ad74497e37",
+              "job-name": "prod-pgcluster-uae-repo1-diff-29653980",
+              "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+              "postgres-operator.crunchydata.com/pgbackrest": "",
+              "postgres-operator.crunchydata.com/pgbackrest-backup": "scheduled",
+              "postgres-operator.crunchydata.com/pgbackrest-cronjob": "diff",
+              "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "command": [
+                  "/bin/pgbackrest",
+                  "backup",
+                  "--stanza=db",
+                  "--repo=1",
+                  "--type=diff"
+                ],
+                "image": "registry.connect.redhat.com/crunchydata/crunchy-pgbackrest@sha256:1c7f0a3a31916f8f8658f0d22a019aaf7832a21027e90679fe5ce3c75638f1ea",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "pgbackrest",
+                "resources": {},
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/etc/pgbackrest/conf.d",
+                    "name": "pgbackrest-config",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "enableServiceLinks": false,
+            "restartPolicy": "Never",
+            "schedulerName": "default-scheduler",
+            "securityContext": {
+              "fsGroupChangePolicy": "OnRootMismatch"
+            },
+            "serviceAccount": "prod-pgcluster-uae-pgbackrest",
+            "serviceAccountName": "prod-pgcluster-uae-pgbackrest",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "name": "pgbackrest-config",
+                "projected": {
+                  "defaultMode": 420,
+                  "sources": [
+                    {
+                      "secret": {
+                        "name": "prod-pgcluster-uae-pgbackrest-secret"
+                      }
+                    },
+                    {
+                      "configMap": {
+                        "items": [
+                          {
+                            "key": "pgbackrest_cloud.conf",
+                            "path": "pgbackrest_cloud.conf"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest-config"
+                      }
+                    },
+                    {
+                      "secret": {
+                        "items": [
+                          {
+                            "key": "pgbackrest.ca-roots",
+                            "path": "~postgres-operator/tls-ca.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.crt",
+                            "path": "~postgres-operator/client-tls.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.key",
+                            "mode": 384,
+                            "path": "~postgres-operator/client-tls.key"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "16Mi"
+                },
+                "name": "tmp"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "Job",
+      "metadata": {
+        "annotations": {
+          "batch.kubernetes.io/cronjob-scheduled-timestamp": "2026-05-21T01:00:00Z",
+          "kubectl.kubernetes.io/default-container": "pgbackrest"
+        },
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/pgbackrest": "",
+          "postgres-operator.crunchydata.com/pgbackrest-backup": "scheduled",
+          "postgres-operator.crunchydata.com/pgbackrest-cronjob": "diff",
+          "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+        },
+        "name": "prod-pgcluster-uae-repo1-diff-29655420",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "backoffLimit": 6,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "suspend": false,
+        "template": {
+          "metadata": {
+            "annotations": {
+              "kubectl.kubernetes.io/default-container": "pgbackrest"
+            },
+            "creationTimestamp": null,
+            "labels": {
+              "batch.kubernetes.io/controller-uid": "20096422-7484-4e6d-8846-30ff19b17441",
+              "batch.kubernetes.io/job-name": "prod-pgcluster-uae-repo1-diff-29655420",
+              "controller-uid": "20096422-7484-4e6d-8846-30ff19b17441",
+              "job-name": "prod-pgcluster-uae-repo1-diff-29655420",
+              "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+              "postgres-operator.crunchydata.com/pgbackrest": "",
+              "postgres-operator.crunchydata.com/pgbackrest-backup": "scheduled",
+              "postgres-operator.crunchydata.com/pgbackrest-cronjob": "diff",
+              "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "command": [
+                  "/bin/pgbackrest",
+                  "backup",
+                  "--stanza=db",
+                  "--repo=1",
+                  "--type=diff"
+                ],
+                "image": "registry.connect.redhat.com/crunchydata/crunchy-pgbackrest@sha256:1c7f0a3a31916f8f8658f0d22a019aaf7832a21027e90679fe5ce3c75638f1ea",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "pgbackrest",
+                "resources": {},
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/etc/pgbackrest/conf.d",
+                    "name": "pgbackrest-config",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "enableServiceLinks": false,
+            "restartPolicy": "Never",
+            "schedulerName": "default-scheduler",
+            "securityContext": {
+              "fsGroupChangePolicy": "OnRootMismatch"
+            },
+            "serviceAccount": "prod-pgcluster-uae-pgbackrest",
+            "serviceAccountName": "prod-pgcluster-uae-pgbackrest",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "name": "pgbackrest-config",
+                "projected": {
+                  "defaultMode": 420,
+                  "sources": [
+                    {
+                      "secret": {
+                        "name": "prod-pgcluster-uae-pgbackrest-secret"
+                      }
+                    },
+                    {
+                      "configMap": {
+                        "items": [
+                          {
+                            "key": "pgbackrest_cloud.conf",
+                            "path": "pgbackrest_cloud.conf"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest-config"
+                      }
+                    },
+                    {
+                      "secret": {
+                        "items": [
+                          {
+                            "key": "pgbackrest.ca-roots",
+                            "path": "~postgres-operator/tls-ca.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.crt",
+                            "path": "~postgres-operator/client-tls.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.key",
+                            "mode": 384,
+                            "path": "~postgres-operator/client-tls.key"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "16Mi"
+                },
+                "name": "tmp"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "Job",
+      "metadata": {
+        "annotations": {
+          "batch.kubernetes.io/cronjob-scheduled-timestamp": "2026-05-22T01:00:00Z",
+          "kubectl.kubernetes.io/default-container": "pgbackrest"
+        },
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/pgbackrest": "",
+          "postgres-operator.crunchydata.com/pgbackrest-backup": "scheduled",
+          "postgres-operator.crunchydata.com/pgbackrest-cronjob": "diff",
+          "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+        },
+        "name": "prod-pgcluster-uae-repo1-diff-29656860",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "backoffLimit": 6,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "suspend": false,
+        "template": {
+          "metadata": {
+            "annotations": {
+              "kubectl.kubernetes.io/default-container": "pgbackrest"
+            },
+            "creationTimestamp": null,
+            "labels": {
+              "batch.kubernetes.io/controller-uid": "68d3891d-d6a9-47cb-a061-c84b8fd37fdf",
+              "batch.kubernetes.io/job-name": "prod-pgcluster-uae-repo1-diff-29656860",
+              "controller-uid": "68d3891d-d6a9-47cb-a061-c84b8fd37fdf",
+              "job-name": "prod-pgcluster-uae-repo1-diff-29656860",
+              "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+              "postgres-operator.crunchydata.com/pgbackrest": "",
+              "postgres-operator.crunchydata.com/pgbackrest-backup": "scheduled",
+              "postgres-operator.crunchydata.com/pgbackrest-cronjob": "diff",
+              "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "command": [
+                  "/bin/pgbackrest",
+                  "backup",
+                  "--stanza=db",
+                  "--repo=1",
+                  "--type=diff"
+                ],
+                "image": "registry.connect.redhat.com/crunchydata/crunchy-pgbackrest@sha256:1c7f0a3a31916f8f8658f0d22a019aaf7832a21027e90679fe5ce3c75638f1ea",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "pgbackrest",
+                "resources": {},
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/etc/pgbackrest/conf.d",
+                    "name": "pgbackrest-config",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "enableServiceLinks": false,
+            "restartPolicy": "Never",
+            "schedulerName": "default-scheduler",
+            "securityContext": {
+              "fsGroupChangePolicy": "OnRootMismatch"
+            },
+            "serviceAccount": "prod-pgcluster-uae-pgbackrest",
+            "serviceAccountName": "prod-pgcluster-uae-pgbackrest",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "name": "pgbackrest-config",
+                "projected": {
+                  "defaultMode": 420,
+                  "sources": [
+                    {
+                      "secret": {
+                        "name": "prod-pgcluster-uae-pgbackrest-secret"
+                      }
+                    },
+                    {
+                      "configMap": {
+                        "items": [
+                          {
+                            "key": "pgbackrest_cloud.conf",
+                            "path": "pgbackrest_cloud.conf"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest-config"
+                      }
+                    },
+                    {
+                      "secret": {
+                        "items": [
+                          {
+                            "key": "pgbackrest.ca-roots",
+                            "path": "~postgres-operator/tls-ca.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.crt",
+                            "path": "~postgres-operator/client-tls.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.key",
+                            "mode": 384,
+                            "path": "~postgres-operator/client-tls.key"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "16Mi"
+                },
+                "name": "tmp"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "Job",
+      "metadata": {
+        "annotations": {
+          "batch.kubernetes.io/cronjob-scheduled-timestamp": "2026-05-17T01:00:00Z",
+          "kubectl.kubernetes.io/default-container": "pgbackrest"
+        },
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/pgbackrest": "",
+          "postgres-operator.crunchydata.com/pgbackrest-backup": "scheduled",
+          "postgres-operator.crunchydata.com/pgbackrest-cronjob": "full",
+          "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+        },
+        "name": "prod-pgcluster-uae-repo1-full-29649660",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "backoffLimit": 6,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "suspend": false,
+        "template": {
+          "metadata": {
+            "annotations": {
+              "kubectl.kubernetes.io/default-container": "pgbackrest"
+            },
+            "creationTimestamp": null,
+            "labels": {
+              "batch.kubernetes.io/controller-uid": "64bb3205-f60f-40c8-abc5-932ad231c32c",
+              "batch.kubernetes.io/job-name": "prod-pgcluster-uae-repo1-full-29649660",
+              "controller-uid": "64bb3205-f60f-40c8-abc5-932ad231c32c",
+              "job-name": "prod-pgcluster-uae-repo1-full-29649660",
+              "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+              "postgres-operator.crunchydata.com/pgbackrest": "",
+              "postgres-operator.crunchydata.com/pgbackrest-backup": "scheduled",
+              "postgres-operator.crunchydata.com/pgbackrest-cronjob": "full",
+              "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "command": [
+                  "/bin/pgbackrest",
+                  "backup",
+                  "--stanza=db",
+                  "--repo=1",
+                  "--type=full"
+                ],
+                "image": "registry.connect.redhat.com/crunchydata/crunchy-pgbackrest@sha256:1c7f0a3a31916f8f8658f0d22a019aaf7832a21027e90679fe5ce3c75638f1ea",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "pgbackrest",
+                "resources": {},
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/etc/pgbackrest/conf.d",
+                    "name": "pgbackrest-config",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "enableServiceLinks": false,
+            "restartPolicy": "Never",
+            "schedulerName": "default-scheduler",
+            "securityContext": {
+              "fsGroupChangePolicy": "OnRootMismatch"
+            },
+            "serviceAccount": "prod-pgcluster-uae-pgbackrest",
+            "serviceAccountName": "prod-pgcluster-uae-pgbackrest",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "name": "pgbackrest-config",
+                "projected": {
+                  "defaultMode": 420,
+                  "sources": [
+                    {
+                      "secret": {
+                        "name": "prod-pgcluster-uae-pgbackrest-secret"
+                      }
+                    },
+                    {
+                      "configMap": {
+                        "items": [
+                          {
+                            "key": "pgbackrest_cloud.conf",
+                            "path": "pgbackrest_cloud.conf"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest-config"
+                      }
+                    },
+                    {
+                      "secret": {
+                        "items": [
+                          {
+                            "key": "pgbackrest.ca-roots",
+                            "path": "~postgres-operator/tls-ca.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.crt",
+                            "path": "~postgres-operator/client-tls.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.key",
+                            "mode": 384,
+                            "path": "~postgres-operator/client-tls.key"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "16Mi"
+                },
+                "name": "tmp"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "Job",
+      "metadata": {
+        "annotations": {
+          "batch.kubernetes.io/cronjob-scheduled-timestamp": "2026-05-21T00:00:00Z",
+          "kubectl.kubernetes.io/default-container": "pgbackrest"
+        },
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/pgbackrest": "",
+          "postgres-operator.crunchydata.com/pgbackrest-backup": "scheduled",
+          "postgres-operator.crunchydata.com/pgbackrest-cronjob": "incr",
+          "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+        },
+        "name": "prod-pgcluster-uae-repo1-incr-29655360",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "backoffLimit": 6,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "suspend": false,
+        "template": {
+          "metadata": {
+            "annotations": {
+              "kubectl.kubernetes.io/default-container": "pgbackrest"
+            },
+            "creationTimestamp": null,
+            "labels": {
+              "batch.kubernetes.io/controller-uid": "492e1311-306e-495a-90e8-5f0229d6939d",
+              "batch.kubernetes.io/job-name": "prod-pgcluster-uae-repo1-incr-29655360",
+              "controller-uid": "492e1311-306e-495a-90e8-5f0229d6939d",
+              "job-name": "prod-pgcluster-uae-repo1-incr-29655360",
+              "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+              "postgres-operator.crunchydata.com/pgbackrest": "",
+              "postgres-operator.crunchydata.com/pgbackrest-backup": "scheduled",
+              "postgres-operator.crunchydata.com/pgbackrest-cronjob": "incr",
+              "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "command": [
+                  "/bin/pgbackrest",
+                  "backup",
+                  "--stanza=db",
+                  "--repo=1",
+                  "--type=incr"
+                ],
+                "image": "registry.connect.redhat.com/crunchydata/crunchy-pgbackrest@sha256:1c7f0a3a31916f8f8658f0d22a019aaf7832a21027e90679fe5ce3c75638f1ea",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "pgbackrest",
+                "resources": {},
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/etc/pgbackrest/conf.d",
+                    "name": "pgbackrest-config",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "enableServiceLinks": false,
+            "restartPolicy": "Never",
+            "schedulerName": "default-scheduler",
+            "securityContext": {
+              "fsGroupChangePolicy": "OnRootMismatch"
+            },
+            "serviceAccount": "prod-pgcluster-uae-pgbackrest",
+            "serviceAccountName": "prod-pgcluster-uae-pgbackrest",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "name": "pgbackrest-config",
+                "projected": {
+                  "defaultMode": 420,
+                  "sources": [
+                    {
+                      "secret": {
+                        "name": "prod-pgcluster-uae-pgbackrest-secret"
+                      }
+                    },
+                    {
+                      "configMap": {
+                        "items": [
+                          {
+                            "key": "pgbackrest_cloud.conf",
+                            "path": "pgbackrest_cloud.conf"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest-config"
+                      }
+                    },
+                    {
+                      "secret": {
+                        "items": [
+                          {
+                            "key": "pgbackrest.ca-roots",
+                            "path": "~postgres-operator/tls-ca.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.crt",
+                            "path": "~postgres-operator/client-tls.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.key",
+                            "mode": 384,
+                            "path": "~postgres-operator/client-tls.key"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "16Mi"
+                },
+                "name": "tmp"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "Job",
+      "metadata": {
+        "annotations": {
+          "batch.kubernetes.io/cronjob-scheduled-timestamp": "2026-05-21T06:00:00Z",
+          "kubectl.kubernetes.io/default-container": "pgbackrest"
+        },
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/pgbackrest": "",
+          "postgres-operator.crunchydata.com/pgbackrest-backup": "scheduled",
+          "postgres-operator.crunchydata.com/pgbackrest-cronjob": "incr",
+          "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+        },
+        "name": "prod-pgcluster-uae-repo1-incr-29655720",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "backoffLimit": 6,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "suspend": false,
+        "template": {
+          "metadata": {
+            "annotations": {
+              "kubectl.kubernetes.io/default-container": "pgbackrest"
+            },
+            "creationTimestamp": null,
+            "labels": {
+              "batch.kubernetes.io/controller-uid": "dd4a5d82-7667-4ead-83c4-b877f96bc95a",
+              "batch.kubernetes.io/job-name": "prod-pgcluster-uae-repo1-incr-29655720",
+              "controller-uid": "dd4a5d82-7667-4ead-83c4-b877f96bc95a",
+              "job-name": "prod-pgcluster-uae-repo1-incr-29655720",
+              "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+              "postgres-operator.crunchydata.com/pgbackrest": "",
+              "postgres-operator.crunchydata.com/pgbackrest-backup": "scheduled",
+              "postgres-operator.crunchydata.com/pgbackrest-cronjob": "incr",
+              "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "command": [
+                  "/bin/pgbackrest",
+                  "backup",
+                  "--stanza=db",
+                  "--repo=1",
+                  "--type=incr"
+                ],
+                "image": "registry.connect.redhat.com/crunchydata/crunchy-pgbackrest@sha256:1c7f0a3a31916f8f8658f0d22a019aaf7832a21027e90679fe5ce3c75638f1ea",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "pgbackrest",
+                "resources": {},
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/etc/pgbackrest/conf.d",
+                    "name": "pgbackrest-config",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "enableServiceLinks": false,
+            "restartPolicy": "Never",
+            "schedulerName": "default-scheduler",
+            "securityContext": {
+              "fsGroupChangePolicy": "OnRootMismatch"
+            },
+            "serviceAccount": "prod-pgcluster-uae-pgbackrest",
+            "serviceAccountName": "prod-pgcluster-uae-pgbackrest",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "name": "pgbackrest-config",
+                "projected": {
+                  "defaultMode": 420,
+                  "sources": [
+                    {
+                      "secret": {
+                        "name": "prod-pgcluster-uae-pgbackrest-secret"
+                      }
+                    },
+                    {
+                      "configMap": {
+                        "items": [
+                          {
+                            "key": "pgbackrest_cloud.conf",
+                            "path": "pgbackrest_cloud.conf"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest-config"
+                      }
+                    },
+                    {
+                      "secret": {
+                        "items": [
+                          {
+                            "key": "pgbackrest.ca-roots",
+                            "path": "~postgres-operator/tls-ca.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.crt",
+                            "path": "~postgres-operator/client-tls.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.key",
+                            "mode": 384,
+                            "path": "~postgres-operator/client-tls.key"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "16Mi"
+                },
+                "name": "tmp"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "Job",
+      "metadata": {
+        "annotations": {
+          "batch.kubernetes.io/cronjob-scheduled-timestamp": "2026-05-21T12:00:00Z",
+          "kubectl.kubernetes.io/default-container": "pgbackrest"
+        },
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/pgbackrest": "",
+          "postgres-operator.crunchydata.com/pgbackrest-backup": "scheduled",
+          "postgres-operator.crunchydata.com/pgbackrest-cronjob": "incr",
+          "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+        },
+        "name": "prod-pgcluster-uae-repo1-incr-29656080",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "backoffLimit": 6,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "suspend": false,
+        "template": {
+          "metadata": {
+            "annotations": {
+              "kubectl.kubernetes.io/default-container": "pgbackrest"
+            },
+            "creationTimestamp": null,
+            "labels": {
+              "batch.kubernetes.io/controller-uid": "cb25cee1-d163-4ca7-9c7c-a02f238e713c",
+              "batch.kubernetes.io/job-name": "prod-pgcluster-uae-repo1-incr-29656080",
+              "controller-uid": "cb25cee1-d163-4ca7-9c7c-a02f238e713c",
+              "job-name": "prod-pgcluster-uae-repo1-incr-29656080",
+              "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+              "postgres-operator.crunchydata.com/pgbackrest": "",
+              "postgres-operator.crunchydata.com/pgbackrest-backup": "scheduled",
+              "postgres-operator.crunchydata.com/pgbackrest-cronjob": "incr",
+              "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "command": [
+                  "/bin/pgbackrest",
+                  "backup",
+                  "--stanza=db",
+                  "--repo=1",
+                  "--type=incr"
+                ],
+                "image": "registry.connect.redhat.com/crunchydata/crunchy-pgbackrest@sha256:1c7f0a3a31916f8f8658f0d22a019aaf7832a21027e90679fe5ce3c75638f1ea",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "pgbackrest",
+                "resources": {},
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/etc/pgbackrest/conf.d",
+                    "name": "pgbackrest-config",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "enableServiceLinks": false,
+            "restartPolicy": "Never",
+            "schedulerName": "default-scheduler",
+            "securityContext": {
+              "fsGroupChangePolicy": "OnRootMismatch"
+            },
+            "serviceAccount": "prod-pgcluster-uae-pgbackrest",
+            "serviceAccountName": "prod-pgcluster-uae-pgbackrest",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "name": "pgbackrest-config",
+                "projected": {
+                  "defaultMode": 420,
+                  "sources": [
+                    {
+                      "secret": {
+                        "name": "prod-pgcluster-uae-pgbackrest-secret"
+                      }
+                    },
+                    {
+                      "configMap": {
+                        "items": [
+                          {
+                            "key": "pgbackrest_cloud.conf",
+                            "path": "pgbackrest_cloud.conf"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest-config"
+                      }
+                    },
+                    {
+                      "secret": {
+                        "items": [
+                          {
+                            "key": "pgbackrest.ca-roots",
+                            "path": "~postgres-operator/tls-ca.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.crt",
+                            "path": "~postgres-operator/client-tls.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.key",
+                            "mode": 384,
+                            "path": "~postgres-operator/client-tls.key"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "16Mi"
+                },
+                "name": "tmp"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "Job",
+      "metadata": {
+        "annotations": {
+          "batch.kubernetes.io/cronjob-scheduled-timestamp": "2026-05-22T06:00:00Z",
+          "kubectl.kubernetes.io/default-container": "pgbackrest"
+        },
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/pgbackrest": "",
+          "postgres-operator.crunchydata.com/pgbackrest-backup": "scheduled",
+          "postgres-operator.crunchydata.com/pgbackrest-cronjob": "incr",
+          "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+        },
+        "name": "prod-pgcluster-uae-repo1-incr-29657160",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "backoffLimit": 6,
+        "completionMode": "NonIndexed",
+        "completions": 1,
+        "manualSelector": false,
+        "parallelism": 1,
+        "podReplacementPolicy": "TerminatingOrFailed",
+        "suspend": false,
+        "template": {
+          "metadata": {
+            "annotations": {
+              "kubectl.kubernetes.io/default-container": "pgbackrest"
+            },
+            "creationTimestamp": null,
+            "labels": {
+              "batch.kubernetes.io/controller-uid": "e3701b01-27c1-4e4f-b8fb-507bf2ab9aba",
+              "batch.kubernetes.io/job-name": "prod-pgcluster-uae-repo1-incr-29657160",
+              "controller-uid": "e3701b01-27c1-4e4f-b8fb-507bf2ab9aba",
+              "job-name": "prod-pgcluster-uae-repo1-incr-29657160",
+              "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+              "postgres-operator.crunchydata.com/pgbackrest": "",
+              "postgres-operator.crunchydata.com/pgbackrest-backup": "scheduled",
+              "postgres-operator.crunchydata.com/pgbackrest-cronjob": "incr",
+              "postgres-operator.crunchydata.com/pgbackrest-repo": "repo1"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "command": [
+                  "/bin/pgbackrest",
+                  "backup",
+                  "--stanza=db",
+                  "--repo=1",
+                  "--type=incr"
+                ],
+                "image": "registry.connect.redhat.com/crunchydata/crunchy-pgbackrest@sha256:1c7f0a3a31916f8f8658f0d22a019aaf7832a21027e90679fe5ce3c75638f1ea",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "pgbackrest",
+                "resources": {},
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/etc/pgbackrest/conf.d",
+                    "name": "pgbackrest-config",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "enableServiceLinks": false,
+            "restartPolicy": "Never",
+            "schedulerName": "default-scheduler",
+            "securityContext": {
+              "fsGroupChangePolicy": "OnRootMismatch"
+            },
+            "serviceAccount": "prod-pgcluster-uae-pgbackrest",
+            "serviceAccountName": "prod-pgcluster-uae-pgbackrest",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "name": "pgbackrest-config",
+                "projected": {
+                  "defaultMode": 420,
+                  "sources": [
+                    {
+                      "secret": {
+                        "name": "prod-pgcluster-uae-pgbackrest-secret"
+                      }
+                    },
+                    {
+                      "configMap": {
+                        "items": [
+                          {
+                            "key": "pgbackrest_cloud.conf",
+                            "path": "pgbackrest_cloud.conf"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest-config"
+                      }
+                    },
+                    {
+                      "secret": {
+                        "items": [
+                          {
+                            "key": "pgbackrest.ca-roots",
+                            "path": "~postgres-operator/tls-ca.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.crt",
+                            "path": "~postgres-operator/client-tls.crt"
+                          },
+                          {
+                            "key": "pgbackrest-client.key",
+                            "mode": 384,
+                            "path": "~postgres-operator/client-tls.key"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbackrest"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "16Mi"
+                },
+                "name": "tmp"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "kind": "List",
+  "metadata": {}
+}

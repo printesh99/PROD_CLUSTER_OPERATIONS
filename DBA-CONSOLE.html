@@ -1,0 +1,3326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PostgreSQL 18 DBA Console — Habib Bank UAE</title>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   DBA CONSOLE — MASTER STYLESHEET
+   Theme: Dark navy / cyan accent — zero external deps
+═══════════════════════════════════════════════════════════ */
+:root{
+  --bg0:#0a0e1a;--bg1:#0f1422;--bg2:#141929;--bg3:#1a2035;
+  --panel:#1e2540;--panel2:#232b4a;--panel3:#2a3356;
+  --border:#2d3a5e;--border2:#3a4a70;
+  --cyan:#00d4ff;--cyan2:#00a8cc;--cyan3:#007fa0;
+  --green:#00e676;--green2:#00c853;
+  --yellow:#ffd740;--yellow2:#ffab00;
+  --red:#ff5252;--red2:#d32f2f;
+  --orange:#ff9800;--orange2:#f57c00;
+  --purple:#7c4dff;--purple2:#5c35cc;
+  --text:#e8edf5;--text2:#a0aec0;--text3:#64748b;
+  --mono:'Fira Mono','Courier New',monospace;
+  --ff:'Segoe UI',system-ui,sans-serif;
+  --radius:6px;--radius2:10px;
+  --shadow:0 4px 20px rgba(0,0,0,.6);
+  --transition:.18s ease;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg0);color:var(--text);font-family:var(--ff);font-size:13px;overflow:hidden;display:flex;flex-direction:column;}
+
+/* ── Top header ────────────────────────────────────────── */
+#header{
+  display:flex;align-items:center;gap:12px;
+  padding:0 16px;height:46px;
+  background:linear-gradient(90deg,var(--bg1),var(--bg2));
+  border-bottom:1px solid var(--border);
+  box-shadow:0 2px 12px rgba(0,0,0,.5);
+  flex-shrink:0;
+}
+#header h1{font-size:14px;font-weight:700;color:var(--cyan);letter-spacing:.5px;white-space:nowrap;}
+#header .badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px;}
+.badge-ok{background:rgba(0,230,118,.15);color:var(--green);border:1px solid rgba(0,230,118,.3);}
+.badge-warn{background:rgba(255,215,64,.15);color:var(--yellow);border:1px solid rgba(255,215,64,.3);}
+.badge-err{background:rgba(255,82,82,.15);color:var(--red);border:1px solid rgba(255,82,82,.3);}
+#header .spacer{flex:1;}
+#hdr-tl{font-size:11px;color:var(--text2);}
+#hdr-clock{font-family:var(--mono);font-size:12px;color:var(--cyan);margin-left:8px;}
+
+/* ── Tab bar ───────────────────────────────────────────── */
+#tabbar{
+  display:flex;align-items:center;gap:1px;
+  padding:4px 8px 0;
+  background:var(--bg1);
+  border-bottom:1px solid var(--border);
+  overflow-x:auto;flex-shrink:0;
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent;
+}
+#tabbar::-webkit-scrollbar{height:3px;}
+#tabbar::-webkit-scrollbar-thumb{background:var(--border2);}
+.tab{
+  padding:7px 13px;border:none;border-radius:var(--radius) var(--radius) 0 0;
+  background:transparent;color:var(--text3);cursor:pointer;
+  font-size:11px;font-weight:600;white-space:nowrap;
+  border-bottom:2px solid transparent;transition:var(--transition);
+  display:flex;align-items:center;gap:5px;
+}
+.tab:hover{background:var(--panel);color:var(--text2);}
+.tab.active{background:var(--panel);color:var(--cyan);border-bottom-color:var(--cyan);}
+.tab-group-sep{width:1px;height:24px;background:var(--border);margin:0 4px;flex-shrink:0;}
+
+/* ── Main layout ───────────────────────────────────────── */
+#main{display:flex;flex:1;overflow:hidden;height:calc(100vh - 46px - 41px - 22px);}
+.tab-page{display:none;flex:1;overflow:hidden;flex-direction:column;}
+.tab-page.active{display:flex;}
+
+/* ── Scrollable content ────────────────────────────────── */
+.page-scroll{flex:1;overflow-y:auto;padding:14px;
+  scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
+.page-scroll::-webkit-scrollbar{width:5px;}
+.page-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+/* ── Grid layouts ──────────────────────────────────────── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.grid-auto{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
+.col-span2{grid-column:span 2;}
+.col-span3{grid-column:span 3;}
+.col-span4{grid-column:span 4;}
+
+/* ── Panel card ────────────────────────────────────────── */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius2);overflow:hidden;}
+.card-head{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 14px;background:var(--panel2);
+  border-bottom:1px solid var(--border);font-size:11px;font-weight:700;
+  color:var(--cyan);letter-spacing:.3px;
+}
+.card-head .icon{font-size:14px;}
+.card-head .ml{margin-left:auto;display:flex;gap:6px;align-items:center;}
+.card-body{padding:12px 14px;}
+.card-body-np{padding:0;}
+
+/* ── KPI tiles ─────────────────────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+.kpi{
+  background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius2);
+  padding:12px 14px;display:flex;flex-direction:column;gap:4px;
+  position:relative;overflow:hidden;
+}
+.kpi::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--kpi-color,var(--cyan));
+}
+.kpi .label{font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.kpi .val{font-size:22px;font-weight:700;color:var(--kpi-color,var(--cyan));font-family:var(--mono);}
+.kpi .sub{font-size:10px;color:var(--text3);}
+.kpi-green{--kpi-color:var(--green);}
+.kpi-yellow{--kpi-color:var(--yellow);}
+.kpi-red{--kpi-color:var(--red);}
+.kpi-orange{--kpi-color:var(--orange);}
+.kpi-purple{--kpi-color:var(--purple);}
+
+/* ── Progress bar ──────────────────────────────────────── */
+.pbar-wrap{background:var(--bg0);border-radius:4px;height:6px;overflow:hidden;}
+.pbar{height:100%;border-radius:4px;transition:width .5s ease;background:var(--cyan);}
+.pbar-green{background:var(--green);}
+.pbar-yellow{background:var(--yellow);}
+.pbar-red{background:var(--red);}
+.pbar-orange{background:var(--orange);}
+
+/* ── Tables ────────────────────────────────────────────── */
+.tbl{width:100%;border-collapse:collapse;font-size:11px;}
+.tbl th{
+  padding:7px 10px;text-align:left;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.4px;
+  color:var(--text2);background:var(--panel2);
+  border-bottom:1px solid var(--border2);white-space:nowrap;
+}
+.tbl td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.tbl tr:hover td{background:rgba(255,255,255,.03);}
+.tbl .mono{font-family:var(--mono);font-size:10px;}
+.tbl .badge{padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;}
+
+/* ── Code / SQL blocks ─────────────────────────────────── */
+.code-block{
+  background:var(--bg0);border:1px solid var(--border);border-radius:var(--radius);
+  padding:10px 14px;font-family:var(--mono);font-size:11px;
+  color:var(--cyan2);overflow-x:auto;white-space:pre;line-height:1.6;
+}
+.sql-kw{color:var(--cyan);}
+.sql-fn{color:var(--green);}
+.sql-str{color:var(--yellow);}
+.sql-comment{color:var(--text3);}
+
+/* ── Command pills ─────────────────────────────────────── */
+.cmd{
+  display:inline-block;background:var(--bg0);border:1px solid var(--border2);
+  border-radius:var(--radius);padding:3px 8px;font-family:var(--mono);
+  font-size:10px;color:var(--cyan2);cursor:default;
+}
+.cmd-list{display:flex;flex-direction:column;gap:4px;}
+
+/* ── Status dots ───────────────────────────────────────── */
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.dot-green{background:var(--green);box-shadow:0 0 6px var(--green);}
+.dot-yellow{background:var(--yellow);box-shadow:0 0 6px var(--yellow);}
+.dot-red{background:var(--red);box-shadow:0 0 6px var(--red);}
+.dot-cyan{background:var(--cyan);box-shadow:0 0 6px var(--cyan);}
+.dot-purple{background:var(--purple);box-shadow:0 0 6px var(--purple);}
+.dot-gray{background:var(--text3);}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.6;transform:scale(1.3);}}
+.dot-green,.dot-cyan{animation:pulse 2s infinite;}
+@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+.spin{display:inline-block;animation:spin 1.5s linear infinite;}
+/* Glow effect on active tab */
+.tab.active{text-shadow:0 0 8px rgba(0,212,255,.4);}
+/* Card hover lift */
+.card{transition:box-shadow .2s ease;}
+.card:hover{box-shadow:0 0 0 1px var(--border2),0 8px 24px rgba(0,0,0,.4);}
+/* Better scrollbar on main */
+#main::-webkit-scrollbar{width:4px;}
+/* KPI hover */
+.kpi:hover{border-color:var(--border2);background:var(--panel3);}
+/* Code block copy feel */
+.code-block{position:relative;}
+/* Scenario pill hover glow */
+.sc-pill:hover{box-shadow:0 0 8px rgba(0,212,255,.2);}
+
+/* ── Inline row helpers ────────────────────────────────── */
+.row{display:flex;align-items:center;gap:8px;}
+.row-between{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.mt4{margin-top:4px;}.mt8{margin-top:8px;}.mt12{margin-top:12px;}.mt16{margin-top:16px;}
+.mb8{margin-bottom:8px;}.mb12{margin-bottom:12px;}
+.flex1{flex:1;}
+.text-sm{font-size:11px;}.text-xs{font-size:10px;}.text-muted{color:var(--text2);}
+.text-mono{font-family:var(--mono);}
+.text-green{color:var(--green);}.text-red{color:var(--red);}
+.text-yellow{color:var(--yellow);}.text-cyan{color:var(--cyan);}
+.text-orange{color:var(--orange);}.text-purple{color:var(--purple);}
+.font-bold{font-weight:700;}
+
+/* ── Section label ─────────────────────────────────────── */
+.sec-label{
+  font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+  color:var(--text3);border-bottom:1px solid var(--border);padding-bottom:5px;
+  margin-bottom:8px;
+}
+
+/* ── Alert pills ───────────────────────────────────────── */
+.alert{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:9px 12px;border-radius:var(--radius);margin-bottom:6px;
+  font-size:11px;border:1px solid;
+}
+.alert-green{background:rgba(0,230,118,.08);border-color:rgba(0,230,118,.3);color:var(--green);}
+.alert-yellow{background:rgba(255,215,64,.08);border-color:rgba(255,215,64,.3);color:var(--yellow);}
+.alert-red{background:rgba(255,82,82,.08);border-color:rgba(255,82,82,.3);color:var(--red);}
+.alert-cyan{background:rgba(0,212,255,.08);border-color:rgba(0,212,255,.3);color:var(--cyan);}
+
+/* ── Scenario badge strip ──────────────────────────────── */
+.sc-pill{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;
+  cursor:pointer;border:1px solid var(--border);background:var(--panel2);
+  color:var(--text2);transition:var(--transition);
+}
+.sc-pill:hover,.sc-pill.active{background:var(--cyan3);color:#fff;border-color:var(--cyan2);}
+.sc-pill-strip{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+
+/* ── SVG architecture ──────────────────────────────────── */
+#arch-svg-wrap{width:100%;overflow:hidden;border-radius:var(--radius2);min-height:350px;}
+#arch-svg-wrap svg{width:100%;height:auto;}
+
+/* ── Patroni member table colours ─────────────────────── */
+.patroni-leader{background:rgba(0,230,118,.06);}
+.patroni-sync{background:rgba(0,212,255,.06);}
+.patroni-replica{background:rgba(124,77,255,.06);}
+
+/* ── Scrollable log ────────────────────────────────────── */
+.log-box{
+  background:var(--bg0);border:1px solid var(--border);border-radius:var(--radius);
+  height:200px;overflow-y:auto;font-family:var(--mono);font-size:10px;
+  padding:8px;color:var(--text2);
+  scrollbar-width:thin;scrollbar-color:var(--border2) transparent;
+}
+.log-box::-webkit-scrollbar{width:4px;}
+.log-box::-webkit-scrollbar-thumb{background:var(--border2);}
+.log-line{padding:1px 0;border-bottom:1px solid rgba(255,255,255,.03);}
+.log-ts{color:var(--text3);}
+.log-ok{color:var(--green);}
+.log-warn{color:var(--yellow);}
+.log-err{color:var(--red);}
+.log-info{color:var(--cyan2);}
+
+/* ── Sparkline canvas ──────────────────────────────────── */
+.spark-wrap{position:relative;height:40px;}
+.spark-wrap canvas{width:100%!important;height:40px!important;}
+
+/* ── Tooltip ───────────────────────────────────────────── */
+.tip{position:relative;cursor:help;}
+.tip::after{
+  content:attr(data-tip);position:absolute;bottom:120%;left:50%;transform:translateX(-50%);
+  background:var(--panel3);border:1px solid var(--border2);border-radius:var(--radius);
+  padding:5px 8px;font-size:10px;color:var(--text);white-space:nowrap;
+  pointer-events:none;opacity:0;transition:.15s;z-index:99;
+}
+.tip:hover::after{opacity:1;}
+
+/* ── Button ────────────────────────────────────────────── */
+.btn{
+  padding:5px 12px;border-radius:var(--radius);border:1px solid var(--border2);
+  background:var(--panel2);color:var(--text);font-size:11px;font-weight:600;
+  cursor:pointer;transition:var(--transition);
+}
+.btn:hover{background:var(--panel3);border-color:var(--cyan3);}
+.btn-cyan{background:var(--cyan3);border-color:var(--cyan2);color:#fff;}
+.btn-cyan:hover{background:var(--cyan2);}
+.btn-red{background:rgba(255,82,82,.15);border-color:var(--red2);color:var(--red);}
+.btn-green{background:rgba(0,230,118,.15);border-color:var(--green2);color:var(--green);}
+
+/* ── Mini badge in tables ──────────────────────────────── */
+.mb-green{background:rgba(0,230,118,.15);color:var(--green);padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;}
+.mb-yellow{background:rgba(255,215,64,.15);color:var(--yellow);padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;}
+.mb-red{background:rgba(255,82,82,.15);color:var(--red);padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;}
+.mb-cyan{background:rgba(0,212,255,.15);color:var(--cyan);padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;}
+.mb-purple{background:rgba(124,77,255,.15);color:var(--purple);padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;}
+.mb-gray{background:rgba(100,116,139,.15);color:var(--text2);padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;}
+
+/* ── Arch SVG fonts ────────────────────────────────────── */
+.arch-label{font-family:var(--ff);fill:var(--text2);font-size:10px;}
+.arch-title{font-family:var(--ff);fill:var(--cyan);font-size:11px;font-weight:700;}
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ══════════════════════════════════════════════ -->
+<div id="header">
+  <h1>🐘 PostgreSQL 18 DBA Console</h1>
+  <span class="badge badge-ok" id="hdr-status">● HEALTHY</span>
+  <span class="badge" id="hdr-scenario" style="background:rgba(0,212,255,.12);color:var(--cyan);border:1px solid rgba(0,212,255,.25);">Normal Operations</span>
+  <div class="spacer"></div>
+  <span id="hdr-tl" style="font-size:11px;color:var(--text2);">PG<b style="color:var(--cyan)">18</b> &nbsp;|&nbsp; TL:<b style="color:var(--cyan)">8</b> &nbsp;|&nbsp; Scope: <b style="color:var(--text)">prod-pgcluster-uae-ha</b> &nbsp;|&nbsp; Sync: <b style="color:var(--green)">ON</b> &nbsp;|&nbsp; DC1: <b style="color:var(--green)">2</b> nodes &nbsp;|&nbsp; DC2: <b style="color:var(--purple)">2</b> nodes</span>
+  <span id="hdr-clock">00:00:00</span>
+</div>
+
+<!-- ═══ TAB BAR ═════════════════════════════════════════════ -->
+<div id="tabbar">
+  <!-- Phase 1 -->
+  <button class="tab active" onclick="switchTab('overview')" id="t-overview">🏠 Overview</button>
+  <button class="tab" onclick="switchTab('arch')" id="t-arch">🏛 Architecture</button>
+  <div class="tab-group-sep"></div>
+  <!-- Phase 2 -->
+  <button class="tab" onclick="switchTab('cmdcenter')" id="t-cmdcenter">⚡ Command Center</button>
+  <button class="tab" onclick="switchTab('sessions')" id="t-sessions">🔒 Sessions & Locks</button>
+  <button class="tab" onclick="switchTab('pgbouncer')" id="t-pgbouncer">🔀 PgBouncer</button>
+  <div class="tab-group-sep"></div>
+  <!-- Phase 3 -->
+  <button class="tab" onclick="switchTab('perf')" id="t-perf">🚀 Performance</button>
+  <button class="tab" onclick="switchTab('memory')" id="t-memory">🧠 Memory</button>
+  <button class="tab" onclick="switchTab('checkpoint')" id="t-checkpoint">💾 Checkpoints</button>
+  <div class="tab-group-sep"></div>
+  <!-- Phase 4 -->
+  <button class="tab" onclick="switchTab('wal')" id="t-wal">📡 WAL & Repl</button>
+  <button class="tab" onclick="switchTab('backup')" id="t-backup">🗄 pgBackRest</button>
+  <button class="tab" onclick="switchTab('bloat')" id="t-bloat">🗃 Storage & Bloat</button>
+  <button class="tab" onclick="switchTab('vacuum')" id="t-vacuum">🌀 Autovacuum</button>
+  <div class="tab-group-sep"></div>
+  <!-- Phase 5 -->
+  <button class="tab" onclick="switchTab('k8s')" id="t-k8s">☸ Kubernetes</button>
+  <button class="tab" onclick="switchTab('alerts')" id="t-alerts">🚨 Alerts & Runbooks</button>
+  <button class="tab" onclick="switchTab('audit')" id="t-audit">📋 Audit</button>
+</div>
+
+<!-- ═══ MAIN ═════════════════════════════════════════════════ -->
+<div id="main">
+
+<!-- ░░ TAB: OVERVIEW ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ -->
+<div class="tab-page active" id="page-overview">
+<div class="page-scroll">
+
+<!-- KPI strip -->
+<div class="kpi-grid mb12">
+  <div class="kpi kpi-green"><div class="label">TPS</div><div class="val" id="ov-tps">120</div><div class="sub">transactions/sec</div></div>
+  <div class="kpi"><div class="label">Client Conn</div><div class="val" id="ov-conn">180</div><div class="sub">of 2000 max</div></div>
+  <div class="kpi kpi-green"><div class="label">Active Queries</div><div class="val" id="ov-active">62</div><div class="sub">pg_stat_activity</div></div>
+  <div class="kpi kpi-yellow"><div class="label">Idle in Txn</div><div class="val" id="ov-idleitxn">2</div><div class="sub">⚠ watch >5</div></div>
+  <div class="kpi"><div class="label">WAL Rate</div><div class="val" id="ov-wal">0.5</div><div class="sub">MB/s generated</div></div>
+  <div class="kpi kpi-green"><div class="label">Sync Lag</div><div class="val" id="ov-sync-lag">0</div><div class="sub">bytes behind</div></div>
+  <div class="kpi kpi-purple"><div class="label">DR Lag</div><div class="val" id="ov-dr-lag">2.0</div><div class="sub">MB behind</div></div>
+  <div class="kpi kpi-green"><div class="label">Archive</div><div class="val" id="ov-arch">✓</div><div class="sub">last: <span id="ov-arch-ago">3</span>s ago</div></div>
+</div>
+
+<div class="grid2">
+<!-- Cluster status -->
+<div class="card">
+  <div class="card-head"><span class="icon">🗂</span> Cluster Members<span class="ml"><span class="dot dot-green"></span><span style="font-size:10px;color:var(--green)">HEALTHY</span></span></div>
+  <div class="card-body-np">
+    <table class="tbl">
+      <thead><tr><th>Member</th><th>Role</th><th>State</th><th>TL</th><th>Lag</th><th>DC</th></tr></thead>
+      <tbody id="ov-members">
+        <tr class="patroni-leader"><td class="mono">pg-primary-0</td><td><span class="mb-green">Leader</span></td><td><span class="mb-green">running</span></td><td class="mono">8</td><td class="mono text-green">—</td><td>DC1</td></tr>
+        <tr class="patroni-sync"><td class="mono">pg-standby-0</td><td><span class="mb-cyan">Sync Standby</span></td><td><span class="mb-green">streaming</span></td><td class="mono">8</td><td class="mono" id="ov-sync-cell">0 B</td><td>DC1</td></tr>
+        <tr class="patroni-replica"><td class="mono">pg-dr-0</td><td><span class="mb-purple">Replica</span></td><td><span class="mb-green">streaming</span></td><td class="mono">8</td><td class="mono" id="ov-dr-cell">2.0 MB</td><td>DC2</td></tr>
+        <tr class="patroni-replica"><td class="mono">pg-dr-1</td><td><span class="mb-purple">Replica</span></td><td><span class="mb-green">streaming</span></td><td class="mono">8</td><td class="mono" id="ov-dr1-cell">2.1 MB</td><td>DC2</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Scenario selector -->
+<div class="card">
+  <div class="card-head"><span class="icon">🎬</span> Simulation Scenario</div>
+  <div class="card-body">
+    <div class="sc-pill-strip" id="sc-strip">
+      <span class="sc-pill active" onclick="setScenario('normal','Normal Operations','ok')">🟢 Normal</span>
+      <span class="sc-pill" onclick="setScenario('highload','High Load','warn')">🔥 High Load</span>
+      <span class="sc-pill" onclick="setScenario('connspike','Connection Spike','warn')">📈 Conn Spike</span>
+      <span class="sc-pill" onclick="setScenario('longtxn','Long Transactions','warn')">⏳ Long Txn</span>
+      <span class="sc-pill" onclick="setScenario('lockwait','Lock Contention','warn')">🔒 Lock Wait</span>
+      <span class="sc-pill" onclick="setScenario('bloat','Table Bloat','warn')">💥 Bloat</span>
+      <span class="sc-pill" onclick="setScenario('vacuumlate','Vacuum Late','warn')">🌀 Vacuum Late</span>
+      <span class="sc-pill" onclick="setScenario('walhigh','WAL Storm','warn')">📡 WAL Storm</span>
+      <span class="sc-pill" onclick="setScenario('failover','Primary Failover','err')">⚠ Failover</span>
+      <span class="sc-pill" onclick="setScenario('switchover','Planned Switchover','warn')">⇄ Switchover</span>
+      <span class="sc-pill" onclick="setScenario('pitr','PITR Recovery','warn')">◀◀ PITR</span>
+      <span class="sc-pill" onclick="setScenario('tablerec','Table Recovery','warn')">⭳ Table Rec</span>
+    </div>
+    <div class="sec-label mt8">Active Alerts</div>
+    <div id="ov-alerts"></div>
+    <div class="sec-label mt8">Simulation Speed</div>
+    <div class="row">
+      <span class="text-muted text-xs">0.5×</span>
+      <input type="range" min="1" max="10" value="3" id="speed-slider" style="flex:1;"
+        oninput="SIM.speed=this.value/3; document.getElementById('speed-val').textContent=(this.value/3).toFixed(1)+'×'">
+      <span class="text-muted text-xs">3×</span>
+      <span id="speed-val" style="font-family:var(--mono);color:var(--cyan);font-size:11px;width:28px;">1.0×</span>
+    </div>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+<!-- DB sizes row -->
+<div class="grid3 mt12">
+  <div class="card">
+    <div class="card-head"><span class="icon">💾</span> Database Sizes</div>
+    <div class="card-body-np">
+      <table class="tbl">
+        <thead><tr><th>Database</th><th>Size</th><th>Growth/day</th></tr></thead>
+        <tbody>
+          <tr><td>hplus_core</td><td class="mono text-cyan" id="ov-dbsize">847 GB</td><td class="mono text-green">+1.2 GB</td></tr>
+          <tr><td>hplus_archive</td><td class="mono">214 GB</td><td class="mono">+0.3 GB</td></tr>
+          <tr><td>hplus_reporting</td><td class="mono">89 GB</td><td class="mono">+0.1 GB</td></tr>
+          <tr><td>postgres</td><td class="mono">8 MB</td><td class="mono">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><span class="icon">🔗</span> Connection Pool</div>
+    <div class="card-body">
+      <div class="row-between mb8">
+        <span class="text-muted">Client → PgBouncer</span>
+        <span class="mono text-cyan" id="ov-client-conn">180 / 2000</span>
+      </div>
+      <div class="pbar-wrap mb12"><div class="pbar pbar-green" id="ov-pb-client" style="width:9%"></div></div>
+      <div class="row-between mb8">
+        <span class="text-muted">Server → PostgreSQL</span>
+        <span class="mono text-cyan" id="ov-server-conn">44 / 150</span>
+      </div>
+      <div class="pbar-wrap mb12"><div class="pbar pbar-green" id="ov-pb-server" style="width:29%"></div></div>
+      <div class="row-between mb8">
+        <span class="text-muted">Wait Queue</span>
+        <span class="mono" id="ov-wait-q">0</span>
+      </div>
+      <div class="row-between">
+        <span class="text-muted">Pool Saturation</span>
+        <span class="mono" id="ov-sat">29%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><span class="icon">📊</span> Cache & I/O</div>
+    <div class="card-body">
+      <div class="row-between mb8">
+        <span class="text-muted">Buffer Hit Rate</span>
+        <span class="mono text-green" id="ov-hit-rate">99.4%</span>
+      </div>
+      <div class="pbar-wrap mb12"><div class="pbar pbar-green" id="ov-pb-hit" style="width:99.4%"></div></div>
+      <div class="row-between mb8">
+        <span class="text-muted">Checkpoint Write</span>
+        <span class="mono" id="ov-ckpt-ms">180 ms</span>
+      </div>
+      <div class="row-between mb8">
+        <span class="text-muted">Temp Files/min</span>
+        <span class="mono text-yellow" id="ov-tmpf">1</span>
+      </div>
+      <div class="row-between">
+        <span class="text-muted">Oldest XID Age</span>
+        <span class="mono" id="ov-xid-age">142M</span>
+      </div>
+    </div>
+  </div>
+</div><!-- /grid3 -->
+
+<!-- patronictl quick ref -->
+<div class="card mt12">
+  <div class="card-head"><span class="icon">⚙</span> Quick: patronictl Commands (alias configured)</div>
+  <div class="card-body">
+    <div class="grid3">
+      <div>
+        <div class="sec-label">Status</div>
+        <div class="cmd-list">
+          <div class="cmd">patronictl status</div>
+          <div class="cmd">patronictl list</div>
+          <div class="cmd">patronictl history</div>
+          <div class="cmd">patronictl topology</div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Switchover / Failover</div>
+        <div class="cmd-list">
+          <div class="cmd">patronictl switchover prod-pgcluster-uae-ha</div>
+          <div class="cmd">patronictl failover prod-pgcluster-uae-ha</div>
+          <div class="cmd">patronictl restart prod-pgcluster-uae-ha pg-primary-0</div>
+          <div class="cmd">patronictl reinit prod-pgcluster-uae-ha pg-dr-0</div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Pause / Config</div>
+        <div class="cmd-list">
+          <div class="cmd">patronictl pause prod-pgcluster-uae-ha</div>
+          <div class="cmd">patronictl resume prod-pgcluster-uae-ha</div>
+          <div class="cmd">patronictl show-config prod-pgcluster-uae-ha</div>
+          <div class="cmd">patronictl edit-config prod-pgcluster-uae-ha</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Health check card -->
+<div class="card mt12">
+  <div class="card-head"><span class="icon">🩺</span> DBA Quick Health Check — All-in-One SQL</div>
+  <div class="card-body">
+    <div class="grid2">
+      <div>
+        <div class="sec-label">Cluster-wide health snapshot</div>
+        <div class="code-block">-- 1. Replication lag
+SELECT application_name, state, sync_state,
+  pg_size_pretty(pg_wal_lsn_diff(
+    pg_current_wal_lsn(), replay_lsn)) AS lag
+FROM pg_stat_replication;
+
+-- 2. Long-running queries (>30s)
+SELECT pid, now()-query_start AS age,
+  state, left(query,80)
+FROM pg_stat_activity
+WHERE now()-query_start > interval '30s'
+  AND state NOT IN ('idle');
+
+-- 3. Bloat & dead tuples (top 5)
+SELECT relname, n_dead_tup, n_live_tup,
+  last_autovacuum, last_autoanalyze
+FROM pg_stat_user_tables
+ORDER BY n_dead_tup DESC LIMIT 5;
+
+-- 4. Cache hit rate
+SELECT sum(blks_hit)*100.0/
+  nullif(sum(blks_hit+blks_read),0) AS hit_pct
+FROM pg_stat_database;</div>
+      </div>
+      <div>
+        <div class="sec-label">Pre-maintenance checklist</div>
+        <div class="code-block">-- 5. Active connections by state
+SELECT state, count(*) FROM pg_stat_activity GROUP BY 1;
+
+-- 6. Locks by type
+SELECT locktype, mode, count(*)
+FROM pg_locks GROUP BY 1,2 ORDER BY 3 DESC;
+
+-- 7. Wraparound risk
+SELECT datname, age(datfrozenxid),
+  round(age(datfrozenxid)::numeric/2e9*100,1)||'%' AS risk
+FROM pg_database ORDER BY 2 DESC;
+
+-- 8. Archive health
+SELECT archived_count, failed_count,
+  now()-last_archived_time AS since_archive
+FROM pg_stat_archiver;
+
+-- 9. PgBouncer pool (from admin console)
+-- psql -h 127.0.0.1 -p 5432 -U pgbouncer pgbouncer
+-- SHOW POOLS; SHOW STATS;
+
+-- 10. Patronictl status
+-- patronictl status</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /page-scroll -->
+</div><!-- /overview -->
+
+<!-- ░░ TAB: ARCHITECTURE ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ -->
+<div class="tab-page" id="page-arch">
+<div class="page-scroll">
+
+<!-- SVG Architecture -->
+<div class="card mb12">
+  <div class="card-head"><span class="icon">🏛</span> Live Architecture — Traffic Flow
+    <span class="ml">
+      <span class="dot dot-cyan" id="arch-pulse"></span>
+      <span style="font-size:10px;color:var(--text2)" id="arch-tps-lbl">TPS: 120</span>
+    </span>
+  </div>
+  <div id="arch-svg-wrap">
+<svg id="arch-svg" viewBox="0 0 1120 600"
+     xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     style="background:#080c18;border-radius:0 0 10px 10px;display:block;">
+<defs>
+  <!-- Arrow markers -->
+  <marker id="arr-w"   viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,1 L10,5 L0,9 Z" fill="#00a8cc"/></marker>
+  <marker id="arr-g"   viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,1 L10,5 L0,9 Z" fill="#00e676"/></marker>
+  <marker id="arr-p"   viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,1 L10,5 L0,9 Z" fill="#b47eff"/></marker>
+  <marker id="arr-s3"  viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,1 L10,5 L0,9 Z" fill="#00a8cc" opacity=".7"/></marker>
+  <marker id="arr-sync" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,1 L10,5 L0,9 Z" fill="#00d4ff"/></marker>
+
+  <!-- Glow filters -->
+  <filter id="glow-green" x="-30%" y="-30%" width="160%" height="160%">
+    <feGaussianBlur stdDeviation="6" result="blur"/>
+    <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+  </filter>
+  <filter id="glow-cyan" x="-30%" y="-30%" width="160%" height="160%">
+    <feGaussianBlur stdDeviation="5" result="blur"/>
+    <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+  </filter>
+  <filter id="glow-purple" x="-30%" y="-30%" width="160%" height="160%">
+    <feGaussianBlur stdDeviation="5" result="blur"/>
+    <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+  </filter>
+  <filter id="drop-shadow">
+    <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity=".5"/>
+  </filter>
+
+  <!-- Gradient fills for zone headers -->
+  <linearGradient id="grad-dc1" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#0d2535" stop-opacity="1"/>
+    <stop offset="100%" stop-color="#0a1a2a" stop-opacity="1"/>
+  </linearGradient>
+  <linearGradient id="grad-dc2" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#14082a" stop-opacity="1"/>
+    <stop offset="100%" stop-color="#0f0520" stop-opacity="1"/>
+  </linearGradient>
+  <linearGradient id="grad-s3" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#071820" stop-opacity="1"/>
+    <stop offset="100%" stop-color="#050e18" stop-opacity="1"/>
+  </linearGradient>
+
+  <!-- Animation paths -->
+  <!-- App → OCP Service -->
+  <path id="pa-app-ocp" d="M 155,108 L 218,108"/>
+  <!-- OCP → PgBouncer -->
+  <path id="pa-ocp-pgb" d="M 335,108 L 400,108"/>
+  <!-- PgBouncer ↓ Primary -->
+  <path id="pa-pgb-pri" d="M 468,145 L 468,248"/>
+  <!-- Primary → Sync Standby (DC1 internal) -->
+  <path id="pa-pri-std" d="M 548,290 L 622,290"/>
+  <!-- Standby → PgBouncer read-only feedback -->
+  <path id="pa-std-pgb" d="M 660,258 Q 660,130 530,120"/>
+  <!-- Primary → DR-0 (DC1→DC2 streaming) -->
+  <path id="pa-pri-dr0" d="M 548,278 Q 620,210 680,150 L 715,138"/>
+  <!-- Primary → DR-1 (DC1→DC2 streaming) -->
+  <path id="pa-pri-dr1" d="M 548,300 Q 630,320 680,320 L 715,310"/>
+  <!-- Primary → S3 WAL archive -->
+  <path id="pa-pri-s3"  d="M 480,335 Q 480,500 700,492"/>
+  <!-- DR-0 → S3 archive fallback -->
+  <path id="pa-dr0-s3"  d="M 795,182 L 795,440"/>
+  <!-- DR-1 → S3 archive fallback -->
+  <path id="pa-dr1-s3"  d="M 795,342 L 795,440"/>
+</defs>
+
+<!-- ═══════════════════════════════════════════════════════
+     DC1 ZONE — Left panel
+═══════════════════════════════════════════════════════ -->
+<!-- DC1 background zone -->
+<rect x="8" y="8" width="665" height="572" rx="14"
+  fill="url(#grad-dc1)" stroke="#1a4060" stroke-width="1.5"/>
+
+<!-- DC1 top header bar -->
+<rect x="8" y="8" width="665" height="36" rx="14"
+  fill="#0e2a3d" stroke="#1a4060" stroke-width="1.5"/>
+<rect x="8" y="30" width="665" height="14" fill="#0e2a3d"/><!-- square bottom -->
+<!-- DC1 header icon + label -->
+<circle cx="32" cy="26" r="7" fill="#00a8cc" opacity=".2"/>
+<circle cx="32" cy="26" r="4" fill="#00a8cc"/>
+<text x="48" y="30" font-family="Segoe UI,sans-serif" font-size="12" font-weight="700"
+  fill="#00d4ff" letter-spacing="1">DC1 — Primary Datacenter</text>
+<text x="568" y="30" font-family="Segoe UI,sans-serif" font-size="10" fill="#4a7a9b">
+  OpenShift / Crunchy PGO</text>
+
+<!-- PGO Operator badge -->
+<rect x="20" y="52" width="96" height="22" rx="6"
+  fill="#0a0e20" stroke="#7c4dff" stroke-width="1"/>
+<text x="68" y="66" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="9" font-weight="700" fill="#9c6dff" letter-spacing=".3">PGO Operator v5</text>
+
+<!-- ── H+ Core Banking ── -->
+<rect x="20" y="82" width="136" height="54" rx="10"
+  fill="#0d1e30" stroke="#2a5070" stroke-width="1.5" filter="url(#drop-shadow)"/>
+<rect x="20" y="82" width="136" height="18" rx="10" fill="#112840"/>
+<rect x="20" y="92" width="136" height="8" fill="#112840"/>
+<text x="88" y="95" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="10" font-weight="700" fill="#00d4ff">H+ Core Banking</text>
+<text x="88" y="110" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="9" fill="#6a9fbf">Application Tier</text>
+<text x="88" y="124" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="8" fill="#3a6080">JDBC Connection Pool</text>
+
+<!-- ── OCP Service ── -->
+<rect x="218" y="82" width="118" height="54" rx="10"
+  fill="#0d1e30" stroke="#2a5070" stroke-width="1.5" filter="url(#drop-shadow)"/>
+<rect x="218" y="82" width="118" height="18" rx="10" fill="#112840"/>
+<rect x="218" y="92" width="118" height="8" fill="#112840"/>
+<text x="277" y="95" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="10" font-weight="700" fill="#00d4ff">OCP Service</text>
+<text x="277" y="110" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="9" fill="#6a9fbf">ClusterIP :5432</text>
+<text x="277" y="124" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="8" fill="#3a6080">Load Balancer</text>
+
+<!-- ── PgBouncer ── -->
+<rect x="398" y="72" width="140" height="72" rx="10"
+  fill="#091828" stroke="#00a8cc" stroke-width="2" filter="url(#drop-shadow)"/>
+<rect x="398" y="72" width="140" height="20" rx="10" fill="#0d2535"/>
+<rect x="398" y="84" width="140" height="8" fill="#0d2535"/>
+<text x="468" y="87" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="11" font-weight="700" fill="#00d4ff">PgBouncer</text>
+<text x="468" y="103" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="9" fill="#6ac8e8">Transaction Mode</text>
+<text x="468" y="116" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="8.5" fill="#4a8faa">max_client = 2000</text>
+<text x="468" y="129" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="8.5" fill="#4a8faa">pool=50 · db_max=150</text>
+
+<!-- ────────────────────────────────────────────────
+     DC1 Internal: pg-primary-0 and pg-standby-0
+──────────────────────────────────────────────────── -->
+
+<!-- DC1 inner "Cluster" sub-zone (subtle rounded rect) -->
+<rect x="22" y="220" width="648" height="200" rx="10"
+  fill="rgba(0,0,0,.15)" stroke="#1a3550" stroke-width="1" stroke-dasharray="5,4"/>
+<text x="36" y="215" font-family="Segoe UI,sans-serif" font-size="9"
+  fill="#2a5070" letter-spacing=".5">PATRONI CLUSTER · prod-pgcluster-uae-ha · TL:8 · sync_mode:on</text>
+
+<!-- pg-primary-0 -->
+<ellipse cx="280" cy="295" rx="108" ry="46" fill="#071a07" filter="url(#glow-green)" opacity=".6"/>
+<ellipse cx="280" cy="295" rx="108" ry="46" fill="#071a07" stroke="#00e676" stroke-width="2.5"/>
+<text x="280" y="282" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="12" font-weight="700" fill="#00e676">pg-primary-0</text>
+<text x="280" y="297" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="10" fill="#00c853">Leader · TL:8</text>
+<text x="280" y="311" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="9" fill="#2a6a40">DC1 · PostgreSQL 18</text>
+
+<!-- Leader crown icon -->
+<text x="280" y="270" text-anchor="middle" font-size="11" fill="#00e676">👑</text>
+
+<!-- pg-standby-0 -->
+<ellipse cx="580" cy="295" rx="95" ry="42" fill="#071428" filter="url(#glow-cyan)" opacity=".5"/>
+<ellipse cx="580" cy="295" rx="95" ry="42" fill="#071428" stroke="#00d4ff" stroke-width="2"/>
+<text x="580" y="282" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="11" font-weight="700" fill="#00d4ff">pg-standby-0</text>
+<text x="580" y="296" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="9.5" fill="#00a8cc">Sync Standby</text>
+<text x="580" y="310" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="8.5" fill="#1a6888">DC1 · streaming</text>
+
+<!-- Sync badge -->
+<rect x="540" y="326" width="80" height="16" rx="8"
+  fill="rgba(0,212,255,.15)" stroke="rgba(0,212,255,.4)" stroke-width="1"/>
+<text x="580" y="338" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="8" font-weight="700" fill="#00d4ff" letter-spacing=".5">SYNC · LAG=0</text>
+
+<!-- ── DC1 Connections ── -->
+<!-- H+ → OCP Service -->
+<line x1="156" y1="109" x2="216" y2="109" stroke="#00a8cc" stroke-width="2.5"
+  marker-end="url(#arr-w)"/>
+<!-- OCP → PgBouncer -->
+<line x1="336" y1="109" x2="396" y2="109" stroke="#00a8cc" stroke-width="2.5"
+  marker-end="url(#arr-w)"/>
+<!-- PgBouncer ↓ pg-primary-0 (write path) -->
+<path d="M 468,144 L 468,220 Q 468,250 350,268" stroke="#00a8cc" stroke-width="2.5"
+  fill="none" marker-end="url(#arr-w)"/>
+<!-- Write path label -->
+<text x="420" y="210" font-family="Segoe UI,sans-serif" font-size="9"
+  fill="#00a8cc" transform="rotate(-12,420,210)">write</text>
+
+<!-- pg-primary-0 → pg-standby-0 (SYNC replication, bold) -->
+<line x1="390" y1="293" x2="482" y2="293" stroke="#00d4ff" stroke-width="3"
+  marker-end="url(#arr-sync)"/>
+<line x1="390" y1="299" x2="482" y2="299" stroke="#00d4ff" stroke-width="1.5" opacity=".4"/>
+<!-- Sync label -->
+<rect x="405" y="268" width="72" height="17" rx="4"
+  fill="rgba(0,212,255,.12)" stroke="rgba(0,212,255,.3)" stroke-width="1"/>
+<text x="441" y="280" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="8.5" font-weight="700" fill="#00d4ff">SYNC STREAM</text>
+
+<!-- pg-standby-0 read-only back to PgBouncer -->
+<path d="M 648,266 Q 660,190 620,160 Q 580,130 540,126"
+  stroke="#2a5070" stroke-width="1.5" stroke-dasharray="5,3" fill="none"
+  marker-end="url(#arr-w)"/>
+<text x="648" y="208" font-family="Segoe UI,sans-serif" font-size="8"
+  fill="#2a6080" transform="rotate(-60,648,208)">read-only</text>
+
+<!-- ─── DC1 → DC2 STREAMING REPLICATION boundary line ─── -->
+<!-- Visual separator between DC1 and DC2 -->
+<line x1="676" y1="50" x2="676" y2="400" stroke="#3a2060" stroke-width="1.5"
+  stroke-dasharray="8,4"/>
+<text x="676" y="42" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="9" fill="#3a2060">— WAN / Inter-DC Link —</text>
+
+<!-- ═══════════════════════════════════════════════════════
+     DC2 ZONE — Right panel (top)
+═══════════════════════════════════════════════════════ -->
+<rect x="685" y="8" width="425" height="395" rx="14"
+  fill="url(#grad-dc2)" stroke="#3a1870" stroke-width="1.5"/>
+
+<!-- DC2 header bar -->
+<rect x="685" y="8" width="425" height="36" rx="14"
+  fill="#180830" stroke="#3a1870" stroke-width="1.5"/>
+<rect x="685" y="30" width="425" height="14" fill="#180830"/>
+<circle cx="710" cy="26" r="7" fill="#7c4dff" opacity=".2"/>
+<circle cx="710" cy="26" r="4" fill="#7c4dff"/>
+<text x="726" y="30" font-family="Segoe UI,sans-serif" font-size="12" font-weight="700"
+  fill="#b47eff" letter-spacing="1">DC2 — Disaster Recovery</text>
+<text x="990" y="30" font-family="Segoe UI,sans-serif" font-size="10" fill="#5a3090">
+  2 Async Replicas</text>
+
+<!-- ── pg-dr-0 ── -->
+<ellipse cx="858" cy="150" rx="100" ry="42" fill="#120828" filter="url(#glow-purple)" opacity=".5"/>
+<ellipse cx="858" cy="150" rx="100" ry="42" fill="#120828" stroke="#7c4dff" stroke-width="2"/>
+<text x="858" y="137" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="11" font-weight="700" fill="#b47eff">pg-dr-0</text>
+<text x="858" y="151" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="9.5" fill="#7c4dff">Async Replica</text>
+<text x="858" y="165" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="8.5" fill="#4a2880">DC2 · streaming</text>
+<rect x="810" y="178" width="96" height="16" rx="8"
+  fill="rgba(124,77,255,.12)" stroke="rgba(124,77,255,.35)" stroke-width="1"/>
+<text x="858" y="190" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="8" font-weight="700" fill="#9c6dff" letter-spacing=".5" id="dr0-lag-badge">ASYNC · LAG≈2MB</text>
+
+<!-- ── pg-dr-1 ── -->
+<ellipse cx="858" cy="305" rx="100" ry="42" fill="#120828" filter="url(#glow-purple)" opacity=".4"/>
+<ellipse cx="858" cy="305" rx="100" ry="42" fill="#120828" stroke="#9c6dff" stroke-width="2"/>
+<text x="858" y="292" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="11" font-weight="700" fill="#c49aff">pg-dr-1</text>
+<text x="858" y="306" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="9.5" fill="#9c6dff">Async Replica</text>
+<text x="858" y="320" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="8.5" fill="#4a2880">DC2 · streaming</text>
+<rect x="810" y="333" width="96" height="16" rx="8"
+  fill="rgba(156,109,255,.1)" stroke="rgba(156,109,255,.3)" stroke-width="1"/>
+<text x="858" y="345" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="8" font-weight="700" fill="#b48aff" letter-spacing=".5" id="dr1-lag-badge">ASYNC · LAG≈2MB</text>
+
+<!-- DC2 internal note -->
+<text x="858" y="385" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="8.5" fill="#3a1870">Failover candidate if DC1 unavailable</text>
+
+<!-- ═══════════════════════════════════════════════════════
+     S3 / ODF NOOBA ZONE — Right panel (bottom)
+═══════════════════════════════════════════════════════ -->
+<rect x="685" y="415" width="425" height="165" rx="14"
+  fill="url(#grad-s3)" stroke="#0d3848" stroke-width="1.5"/>
+<!-- S3 header -->
+<rect x="685" y="415" width="425" height="36" rx="14"
+  fill="#071828" stroke="#0d3848" stroke-width="1.5"/>
+<rect x="685" y="437" width="425" height="14" fill="#071828"/>
+<circle cx="710" cy="433" r="7" fill="#00a8cc" opacity=".15"/>
+<circle cx="710" cy="433" r="4" fill="#00a8cc" opacity=".6"/>
+<text x="726" y="437" font-family="Segoe UI,sans-serif" font-size="12" font-weight="700"
+  fill="#00a8cc" letter-spacing="1">pgBackRest Archive — S3 / ODF Nooba</text>
+
+<!-- S3 content -->
+<rect x="700" y="458" width="195" height="110" rx="8"
+  fill="#050e18" stroke="#0d3040" stroke-width="1"/>
+<text x="797" y="475" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="10" font-weight="700" fill="#00c8e8">pgbackrest-uae-prod-609d40f1</text>
+<text x="797" y="490" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="9" fill="#3a8aaa">Stanza: db · Repo: repo1 (s3)</text>
+<text x="797" y="504" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="9" fill="#2a6a88">Cipher: aes-256-cbc · Compress: lz4</text>
+<text x="797" y="518" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="9" fill="#2a6a88">Endpoint: s3.openshift-storage.svc</text>
+<text x="797" y="532" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="9" fill="#1a5a78">Retention: 7 days WAL · PITR enabled</text>
+<text x="797" y="548" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="8.5" fill="#1a4a60">Full: daily 01:00 · Diff: every 6h</text>
+
+<!-- Backup stats pill -->
+<rect x="910" y="458" width="185" height="110" rx="8"
+  fill="#050e18" stroke="#0d3040" stroke-width="1"/>
+<text x="1002" y="475" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="10" font-weight="700" fill="#00c8e8">Backup Status</text>
+<text x="1002" y="491" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="9" fill="#00e676">✓ Last Full: 20260521-010000F</text>
+<text x="1002" y="505" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="9" fill="#00c853">✓ Last Diff: 22h ago</text>
+<text x="1002" y="519" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="9" fill="#00a8cc">Archived WAL: 704</text>
+<text x="1002" y="533" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="9" fill="#ff5252">⚠ Failed WAL: 212</text>
+<text x="1002" y="547" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="9" fill="#2a6a88">DB Size: 847 GB</text>
+
+<!-- ═══════════════════════════════════════════════════════
+     DC1 → DC2 ASYNC STREAMING ARROWS
+     Bold purple arrows clearly crossing the zone boundary
+═══════════════════════════════════════════════════════ -->
+
+<!-- Async streaming label banner -->
+<rect x="610" y="160" width="110" height="50" rx="8"
+  fill="rgba(124,77,255,.08)" stroke="rgba(124,77,255,.35)" stroke-width="1.2"/>
+<text x="665" y="178" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="8.5" font-weight="700" fill="#9c6dff">ASYNC STREAMING</text>
+<text x="665" y="191" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="8" fill="#7c4dff">via Load Balancer</text>
+<text x="665" y="203" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="8" fill="#5a3090">(WAN link)</text>
+
+<!-- Primary → DR-0 (upper arrow) -->
+<path d="M 388,278 Q 520,200 650,170 L 754,152"
+  stroke="#7c4dff" stroke-width="2.5" fill="none"
+  stroke-dasharray="9,4" marker-end="url(#arr-p)"/>
+
+<!-- Primary → DR-1 (lower arrow) -->
+<path d="M 388,310 Q 520,330 650,315 L 754,308"
+  stroke="#9c6dff" stroke-width="2" fill="none"
+  stroke-dasharray="9,4" marker-end="url(#arr-p)"/>
+
+<!-- ═══════════════════════════════════════════════════════
+     WAL ARCHIVE ARROWS → S3/ODF (dashed teal)
+═══════════════════════════════════════════════════════ -->
+
+<!-- Archive path label in DC1 -->
+<rect x="22" y="460" width="175" height="38" rx="8"
+  fill="rgba(0,168,204,.06)" stroke="rgba(0,168,204,.25)" stroke-width="1"/>
+<text x="109" y="475" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="8.5" font-weight="700" fill="#00a8cc">pgBackRest WAL Archive</text>
+<text x="109" y="489" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="8" fill="#2a7090">archive_command → repo1</text>
+
+<!-- pg-primary-0 → S3 (WAL archive, main path) -->
+<path d="M 340,338 Q 340,420 400,480 Q 500,540 680,488"
+  stroke="#00a8cc" stroke-width="2" fill="none"
+  stroke-dasharray="8,4" marker-end="url(#arr-s3)" opacity=".85"/>
+<!-- WAL archive label -->
+<text x="400" y="540" font-family="Segoe UI,sans-serif" font-size="8.5"
+  fill="#007fa0">WAL archive (primary)</text>
+
+<!-- DC2 → S3: archive fallback label -->
+<rect x="690" y="378" width="175" height="32" rx="8"
+  fill="rgba(0,168,204,.06)" stroke="rgba(0,168,204,.2)" stroke-width="1"/>
+<text x="777" y="391" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="8" font-weight="700" fill="#00a8cc">Archive Fallback (repo-based)</text>
+<text x="777" y="403" text-anchor="middle" font-family="Segoe UI,sans-serif"
+  font-size="7.5" fill="#2a7090">If streaming lost → pgBackRest restore</text>
+
+<!-- DR-0 → S3 (archive fallback) -->
+<line x1="858" y1="193" x2="858" y2="412"
+  stroke="#00a8cc" stroke-width="1.8" stroke-dasharray="6,4"
+  marker-end="url(#arr-s3)" opacity=".7"/>
+
+<!-- DR-1 → S3 (archive fallback) -->
+<line x1="895" y1="344" x2="930" y2="413"
+  stroke="#00a8cc" stroke-width="1.8" stroke-dasharray="6,4"
+  marker-end="url(#arr-s3)" opacity=".7"/>
+
+<!-- ═══════════════════════════════════════════════════════
+     ANIMATED PARTICLES
+═══════════════════════════════════════════════════════ -->
+<!-- App → OCP -->
+<circle r="4" fill="#00d4ff" opacity=".9">
+  <animateMotion dur="1.4s" repeatCount="indefinite">
+    <mpath xlink:href="#pa-app-ocp" href="#pa-app-ocp"/>
+  </animateMotion>
+</circle>
+<!-- OCP → PgBouncer -->
+<circle r="4" fill="#00d4ff" opacity=".9">
+  <animateMotion dur="1.0s" repeatCount="indefinite" begin="0.4s">
+    <mpath xlink:href="#pa-ocp-pgb" href="#pa-ocp-pgb"/>
+  </animateMotion>
+</circle>
+<!-- PgBouncer → Primary (2 particles offset) -->
+<circle r="4.5" fill="#00e676" opacity=".95">
+  <animateMotion dur="0.9s" repeatCount="indefinite" begin="0.8s">
+    <mpath xlink:href="#pa-pgb-pri" href="#pa-pgb-pri"/>
+  </animateMotion>
+</circle>
+<circle r="3.5" fill="#00e676" opacity=".6">
+  <animateMotion dur="0.9s" repeatCount="indefinite" begin="1.25s">
+    <mpath xlink:href="#pa-pgb-pri" href="#pa-pgb-pri"/>
+  </animateMotion>
+</circle>
+<!-- Primary → Sync Standby (2 particles, fast) -->
+<circle r="4" fill="#00d4ff" opacity=".9">
+  <animateMotion dur="1.0s" repeatCount="indefinite">
+    <mpath xlink:href="#pa-pri-std" href="#pa-pri-std"/>
+  </animateMotion>
+</circle>
+<circle r="3" fill="#00d4ff" opacity=".5">
+  <animateMotion dur="1.0s" repeatCount="indefinite" begin="0.5s">
+    <mpath xlink:href="#pa-pri-std" href="#pa-pri-std"/>
+  </animateMotion>
+</circle>
+<!-- Primary → DR-0 (async, slower) -->
+<circle r="3.5" fill="#b47eff" opacity=".85">
+  <animateMotion dur="2.2s" repeatCount="indefinite" begin="0.3s">
+    <mpath xlink:href="#pa-pri-dr0" href="#pa-pri-dr0"/>
+  </animateMotion>
+</circle>
+<circle r="2.5" fill="#b47eff" opacity=".5">
+  <animateMotion dur="2.2s" repeatCount="indefinite" begin="1.4s">
+    <mpath xlink:href="#pa-pri-dr0" href="#pa-pri-dr0"/>
+  </animateMotion>
+</circle>
+<!-- Primary → DR-1 (async, slower) -->
+<circle r="3.5" fill="#c49aff" opacity=".85">
+  <animateMotion dur="2.4s" repeatCount="indefinite" begin="0.8s">
+    <mpath xlink:href="#pa-pri-dr1" href="#pa-pri-dr1"/>
+  </animateMotion>
+</circle>
+<circle r="2.5" fill="#c49aff" opacity=".5">
+  <animateMotion dur="2.4s" repeatCount="indefinite" begin="1.8s">
+    <mpath xlink:href="#pa-pri-dr1" href="#pa-pri-dr1"/>
+  </animateMotion>
+</circle>
+<!-- Primary → S3 WAL archive (slow) -->
+<circle r="3" fill="#00a8cc" opacity=".75">
+  <animateMotion dur="4.0s" repeatCount="indefinite" begin="1s">
+    <mpath xlink:href="#pa-pri-s3" href="#pa-pri-s3"/>
+  </animateMotion>
+</circle>
+<!-- DR-0 → S3 -->
+<circle r="2.5" fill="#00a8cc" opacity=".65">
+  <animateMotion dur="3.0s" repeatCount="indefinite" begin="0.5s">
+    <mpath xlink:href="#pa-dr0-s3" href="#pa-dr0-s3"/>
+  </animateMotion>
+</circle>
+<!-- DR-1 → S3 -->
+<circle r="2.5" fill="#00a8cc" opacity=".65">
+  <animateMotion dur="3.0s" repeatCount="indefinite" begin="1.5s">
+    <mpath xlink:href="#pa-dr1-s3" href="#pa-dr1-s3"/>
+  </animateMotion>
+</circle>
+
+<!-- ═══════════════════════════════════════════════════════
+     LEGEND — bottom of DC1
+═══════════════════════════════════════════════════════ -->
+<rect x="22" y="510" width="642" height="58" rx="8"
+  fill="rgba(0,0,0,.25)" stroke="#1a3050" stroke-width="1"/>
+<text x="36" y="526" font-family="Segoe UI,sans-serif" font-size="9"
+  font-weight="700" fill="#6a9fbf" letter-spacing=".5">LEGEND</text>
+<!-- Item 1 -->
+<line x1="100" y1="522" x2="128" y2="522" stroke="#00a8cc" stroke-width="2.5"/>
+<circle cx="118" cy="522" r="3" fill="#00d4ff"/>
+<text x="133" y="526" font-family="Segoe UI,sans-serif" font-size="8.5" fill="#a0b8cc">Write path (App → PgBouncer → Primary)</text>
+<!-- Item 2 -->
+<line x1="100" y1="538" x2="128" y2="538" stroke="#00d4ff" stroke-width="2.5"/>
+<text x="133" y="542" font-family="Segoe UI,sans-serif" font-size="8.5" fill="#a0b8cc">Sync streaming replication (DC1 → Standby, commit-confirmed)</text>
+<!-- Item 3 -->
+<line x1="340" y1="522" x2="368" y2="522" stroke="#9c6dff" stroke-width="2" stroke-dasharray="6,3"/>
+<text x="373" y="526" font-family="Segoe UI,sans-serif" font-size="8.5" fill="#a0b8cc">Async streaming (DC1 → DC2, via LB)</text>
+<!-- Item 4 -->
+<line x1="340" y1="538" x2="368" y2="538" stroke="#00a8cc" stroke-width="1.8" stroke-dasharray="5,3"/>
+<text x="373" y="542" font-family="Segoe UI,sans-serif" font-size="8.5" fill="#a0b8cc">WAL archive / repo-based fallback → S3 ODF Nooba</text>
+
+<!-- ═══════════════════════════════════════════════════════
+     LIVE STATS STRIP (bottom right)
+═══════════════════════════════════════════════════════ -->
+<rect x="22" y="575" width="1085" height="18" rx="0" fill="rgba(0,0,0,0)"/>
+<!-- Stats boxes inline with bottom -->
+</svg>
+  </div><!-- /arch-svg-wrap -->
+</div><!-- /card -->
+
+<!-- Patroni cluster detail -->
+<div class="grid2">
+<div class="card">
+  <div class="card-head"><span class="icon">⚙</span> Patroni Cluster Detail</div>
+  <div class="card-body">
+    <div class="code-block">patronictl status
+
++ Cluster: prod-pgcluster-uae-ha (7341829034561234567) +----+-----------+
+| Member       | Host              | Role         | State     | TL | Lag in MB |
++--------------+-------------------+--------------+-----------+----+-----------+
+| pg-primary-0 | 10.10.1.10:5432   | Leader       | running   |  8 |           |
+| pg-standby-0 | 10.10.1.11:5432   | Sync Standby | streaming |  8 |         0 |
+| pg-dr-0      | 10.20.1.10:5432   | Replica      | streaming |  8 |         2 |
+| pg-dr-1      | 10.20.1.11:5432   | Replica      | streaming |  8 |         2 |
++--------------+-------------------+--------------+-----------+----+-----------+</div>
+    <div class="mt8">
+      <div class="sec-label">Patroni Configuration (key params)</div>
+      <table class="tbl mt4">
+        <tr><td class="text-muted">Scope</td><td class="mono">prod-pgcluster-uae-ha</td></tr>
+        <tr><td class="text-muted">Namespace</td><td class="mono">/service/</td></tr>
+        <tr><td class="text-muted">sync_mode</td><td class="mono text-green">on</td></tr>
+        <tr><td class="text-muted">synchronous_node_count</td><td class="mono text-green">1</td></tr>
+        <tr><td class="text-muted">max_lag_on_failover</td><td class="mono">1048576 (1MB)</td></tr>
+        <tr><td class="text-muted">ttl</td><td class="mono">30s</td></tr>
+        <tr><td class="text-muted">loop_wait</td><td class="mono">10s</td></tr>
+        <tr><td class="text-muted">retry_timeout</td><td class="mono">10s</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><span class="icon">📡</span> Replication Topology</div>
+  <div class="card-body">
+    <div class="sec-label">Streaming Replication</div>
+    <div class="alert alert-green mb8">
+      <span>✓</span>
+      <span><b>DC1 Sync:</b> pg-standby-0 in synchronous_standby_names, commit requires ack</span>
+    </div>
+    <div class="alert alert-cyan mb12">
+      <span>ℹ</span>
+      <span><b>DC2 Async:</b> pg-dr-0 + pg-dr-1 both stream asynchronously from primary via Load Balancer. Each independently falls back to WAL archive via S3/ODF Nooba (pgBackRest repo1) if streaming is interrupted.</span>
+    </div>
+    <div class="sec-label">pgBackRest Archive</div>
+    <div class="code-block">pgbackrest --stanza=db info
+stanza: db  status: ok
+  db: id=1 system-id=7341829034561234567
+  wal archive min/max: 000000080000000100000001/00000008000000040000009A
+  full backup: 20260521-010000F | size=854.2GB | db-size=847.1GB
+  diff backup: 20260522-020000F_20260522-060000D | 12.3GB
+  archived WAL: 704 | failed: 212</div>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+</div><!-- /page-scroll -->
+</div><!-- /page-arch -->
+
+<!-- ░░ TAB: COMMAND CENTER ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ -->
+<div class="tab-page" id="page-cmdcenter">
+<div class="page-scroll">
+
+<div class="kpi-grid mb12">
+  <div class="kpi kpi-green"><div class="label">Cluster State</div><div class="val" id="cc-state">OK</div><div class="sub">All members running</div></div>
+  <div class="kpi"><div class="label">DB Size (main)</div><div class="val" id="cc-dbsz">847GB</div><div class="sub">hplus_core</div></div>
+  <div class="kpi kpi-yellow"><div class="label">Idle in Txn</div><div class="val" id="cc-idleitxn">2</div><div class="sub">⚠ kill if >5min</div></div>
+  <div class="kpi kpi-red"><div class="label">Blocked</div><div class="val" id="cc-blocked">0</div><div class="sub">sessions waiting</div></div>
+  <div class="kpi"><div class="label">Longest Txn</div><div class="val" id="cc-longtxn">0:42</div><div class="sub">m:s running</div></div>
+  <div class="kpi"><div class="label">Wait Events</div><div class="val" id="cc-waits">3</div><div class="sub">Lock, LWLock, IO</div></div>
+  <div class="kpi kpi-orange"><div class="label">XID Age</div><div class="val" id="cc-xid">142M</div><div class="sub">⚠ autovac at 200M</div></div>
+  <div class="kpi kpi-green"><div class="label">Timeline</div><div class="val">8</div><div class="sub">prod-pgcluster-uae-ha</div></div>
+</div>
+
+<div class="grid2 mb12">
+<!-- Active Sessions -->
+<div class="card">
+  <div class="card-head"><span class="icon">👥</span> Active Sessions (pg_stat_activity)</div>
+  <div class="card-body-np">
+    <table class="tbl" id="cc-act-tbl">
+      <thead><tr><th>PID</th><th>User</th><th>DB</th><th>State</th><th>Wait</th><th>Duration</th><th>Query Snippet</th></tr></thead>
+      <tbody id="cc-act-body">
+        <tr><td class="mono">18342</td><td>hplus_app</td><td>hplus_core</td><td><span class="mb-green">active</span></td><td>—</td><td class="mono">0.003s</td><td class="mono text-muted">SELECT bal FROM accounts WHERE acc_id=...</td></tr>
+        <tr><td class="mono">18343</td><td>hplus_app</td><td>hplus_core</td><td><span class="mb-green">active</span></td><td>—</td><td class="mono">0.012s</td><td class="mono text-muted">INSERT INTO txn_log VALUES (...</td></tr>
+        <tr><td class="mono">18400</td><td>hplus_app</td><td>hplus_core</td><td><span class="mb-yellow">idle in txn</span></td><td>Client</td><td class="mono text-yellow" id="cc-idle-dur">2:13</td><td class="mono text-muted">BEGIN; UPDATE accounts SET...</td></tr>
+        <tr><td class="mono">18501</td><td>pgbouncer</td><td>hplus_core</td><td><span class="mb-cyan">idle</span></td><td>—</td><td class="mono">—</td><td class="mono text-muted">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Long Transactions -->
+<div class="card">
+  <div class="card-head"><span class="icon">⏱</span> Long Running Transactions</div>
+  <div class="card-body">
+    <div class="sec-label">SQL: Find long transactions</div>
+    <div class="code-block">SELECT pid, usename, datname, state,
+  now() - xact_start AS txn_age,
+  now() - query_start AS query_age,
+  left(query,80) AS query
+FROM pg_stat_activity
+WHERE xact_start IS NOT NULL
+  AND now() - xact_start > interval '1 minute'
+ORDER BY txn_age DESC;</div>
+    <div class="sec-label mt8">Current Long Transactions</div>
+    <table class="tbl">
+      <thead><tr><th>PID</th><th>User</th><th>Txn Age</th><th>State</th><th>Action</th></tr></thead>
+      <tbody id="cc-longtxn-body">
+        <tr><td class="mono">18400</td><td>hplus_app</td><td class="mono text-yellow" id="cc-lt-age">0:42</td><td><span class="mb-yellow">idle in txn</span></td>
+          <td><span class="cmd" style="cursor:pointer">pg_terminate_backend(18400)</span></td></tr>
+      </tbody>
+    </table>
+    <div class="alert alert-yellow mt8">
+      <span>⚠</span>
+      <span>Idle-in-txn >5min: run <code>SELECT pg_terminate_backend(pid)</code> or kill via PgBouncer KILL</span>
+    </div>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+<div class="grid2 mb12">
+<!-- Wait Events -->
+<div class="card">
+  <div class="card-head"><span class="icon">⏳</span> Wait Event Analysis</div>
+  <div class="card-body">
+    <div class="sec-label">SQL: Wait events breakdown</div>
+    <div class="code-block">SELECT wait_event_type, wait_event,
+  count(*) AS count
+FROM pg_stat_activity
+WHERE wait_event IS NOT NULL
+  AND state = 'active'
+GROUP BY 1,2
+ORDER BY 3 DESC;</div>
+    <div class="sec-label mt8">Live Wait Events</div>
+    <table class="tbl">
+      <thead><tr><th>Type</th><th>Event</th><th>Count</th><th>Risk</th></tr></thead>
+      <tbody id="cc-wait-body">
+        <tr><td>Lock</td><td class="mono">relation</td><td class="mono text-yellow" id="cc-lock-cnt">1</td><td><span class="mb-yellow">MEDIUM</span></td></tr>
+        <tr><td>LWLock</td><td class="mono">BufferPin</td><td class="mono" id="cc-lwl-cnt">1</td><td><span class="mb-cyan">LOW</span></td></tr>
+        <tr><td>IO</td><td class="mono">DataFileRead</td><td class="mono" id="cc-io-cnt">1</td><td><span class="mb-green">LOW</span></td></tr>
+        <tr><td>Client</td><td class="mono">ClientRead</td><td class="mono" id="cc-cr-cnt">8</td><td><span class="mb-green">NORMAL</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Wraparound Risk -->
+<div class="card">
+  <div class="card-head"><span class="icon">♻</span> XID Wraparound Risk</div>
+  <div class="card-body">
+    <div class="sec-label">SQL: Wraparound check</div>
+    <div class="code-block">SELECT datname,
+  age(datfrozenxid) AS xid_age,
+  pg_size_pretty(pg_database_size(datname)) AS size,
+  round(age(datfrozenxid)::numeric/2000000000*100,2) AS pct_to_wrap
+FROM pg_database
+ORDER BY xid_age DESC;</div>
+    <div class="sec-label mt8">Wraparound Status</div>
+    <table class="tbl">
+      <thead><tr><th>Database</th><th>XID Age</th><th>% to Wrap</th><th>Risk</th></tr></thead>
+      <tbody>
+        <tr><td>hplus_core</td><td class="mono text-orange" id="cc-xid-age1">142,341,221</td><td class="mono" id="cc-xid-pct1">7.1%</td><td><span class="mb-green">LOW</span></td></tr>
+        <tr><td>hplus_archive</td><td class="mono">98,441,002</td><td class="mono">4.9%</td><td><span class="mb-green">LOW</span></td></tr>
+        <tr><td>template1</td><td class="mono">188,000,000</td><td class="mono text-yellow">9.4%</td><td><span class="mb-yellow">WATCH</span></td></tr>
+      </tbody>
+    </table>
+    <div class="alert alert-cyan mt8">
+      <span>ℹ</span>
+      <span>autovacuum_freeze_max_age=200M triggers emergency vacuum. Current age: <b id="cc-xid-age2">142M</b> — headroom: <b>58M</b></span>
+    </div>
+    <div class="sec-label mt8">Emergency SQL</div>
+    <div class="code-block">-- Force freeze (run as superuser)
+VACUUM FREEZE VERBOSE hplus_core;</div>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+<!-- Cluster ops quick commands -->
+<div class="card">
+  <div class="card-head"><span class="icon">🛠</span> Cluster Operations — patronictl</div>
+  <div class="card-body">
+    <div class="grid4">
+      <div>
+        <div class="sec-label">Cluster Status</div>
+        <div class="cmd-list">
+          <div class="cmd">patronictl status</div>
+          <div class="cmd">patronictl list</div>
+          <div class="cmd">patronictl topology</div>
+          <div class="cmd">patronictl history</div>
+          <div class="cmd">patronictl show-config prod-pgcluster-uae-ha</div>
+          <div class="cmd">patronictl version</div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Planned Switchover</div>
+        <div class="cmd-list">
+          <div class="cmd">patronictl switchover prod-pgcluster-uae-ha \</div>
+          <div class="cmd">  --master pg-primary-0 \</div>
+          <div class="cmd">  --candidate pg-standby-0 \</div>
+          <div class="cmd">  --scheduled now --force</div>
+          <div class="cmd"># Switchover to DR (emergency)</div>
+          <div class="cmd">patronictl switchover prod-pgcluster-uae-ha \</div>
+          <div class="cmd">  --master pg-primary-0 \</div>
+          <div class="cmd">  --candidate pg-dr-0 --force</div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Failover / Recovery</div>
+        <div class="cmd-list">
+          <div class="cmd">patronictl failover prod-pgcluster-uae-ha \</div>
+          <div class="cmd">  --master pg-primary-0 \</div>
+          <div class="cmd">  --candidate pg-standby-0 --force</div>
+          <div class="cmd">patronictl reinit prod-pgcluster-uae-ha pg-dr-0</div>
+          <div class="cmd">patronictl reinit prod-pgcluster-uae-ha pg-dr-1</div>
+          <div class="cmd">patronictl restart prod-pgcluster-uae-ha pg-standby-0</div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Pause / Config / Debug</div>
+        <div class="cmd-list">
+          <div class="cmd">patronictl pause prod-pgcluster-uae-ha</div>
+          <div class="cmd">patronictl resume prod-pgcluster-uae-ha</div>
+          <div class="cmd">patronictl edit-config prod-pgcluster-uae-ha</div>
+          <div class="cmd">patronictl flush prod-pgcluster-uae-ha \</div>
+          <div class="cmd">  pg-standby-0 restart --force</div>
+          <div class="cmd">patronictl check-leader prod-pgcluster-uae-ha</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /page-scroll -->
+</div><!-- /page-cmdcenter -->
+
+<!-- ░░ TAB: SESSIONS & LOCKS ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ -->
+<div class="tab-page" id="page-sessions">
+<div class="page-scroll">
+
+<div class="kpi-grid mb12">
+  <div class="kpi kpi-green"><div class="label">Total Connections</div><div class="val" id="sl-total">95</div><div class="sub">pg_stat_activity</div></div>
+  <div class="kpi kpi-green"><div class="label">Active</div><div class="val" id="sl-active">62</div><div class="sub">executing queries</div></div>
+  <div class="kpi kpi-yellow"><div class="label">Idle in Txn</div><div class="val" id="sl-idle">2</div><div class="sub">holding locks!</div></div>
+  <div class="kpi kpi-red"><div class="label">Blocked</div><div class="val" id="sl-blocked">0</div><div class="sub">waiting on lock</div></div>
+  <div class="kpi"><div class="label">Idle (clean)</div><div class="val" id="sl-clean-idle">31</div><div class="sub">safe to kill</div></div>
+  <div class="kpi kpi-orange"><div class="label">Lock Waits</div><div class="val" id="sl-lockwait">0</div><div class="sub">relation locks</div></div>
+</div>
+
+<div class="grid2 mb12">
+<!-- pg_stat_activity full view -->
+<div class="card">
+  <div class="card-head"><span class="icon">📊</span> pg_stat_activity — Full View</div>
+  <div class="card-body-np">
+    <table class="tbl">
+      <thead><tr><th>PID</th><th>App</th><th>User</th><th>State</th><th>Wait Type</th><th>Wait Event</th><th>Duration</th></tr></thead>
+      <tbody id="sl-stat-body">
+        <tr><td class="mono">18300</td><td>hplus-jdbc</td><td>hplus_app</td><td><span class="mb-green">active</span></td><td>—</td><td>—</td><td class="mono">3ms</td></tr>
+        <tr><td class="mono">18301</td><td>hplus-jdbc</td><td>hplus_app</td><td><span class="mb-green">active</span></td><td>—</td><td>—</td><td class="mono">7ms</td></tr>
+        <tr><td class="mono">18302</td><td>hplus-jdbc</td><td>hplus_app</td><td><span class="mb-yellow">idle in txn</span></td><td>Client</td><td>ClientRead</td><td class="mono text-yellow">2:17</td></tr>
+        <tr><td class="mono">18350</td><td>pgbouncer</td><td>hplus_app</td><td><span class="mb-cyan">idle</span></td><td>—</td><td>—</td><td class="mono">—</td></tr>
+        <tr><td class="mono">18360</td><td>pgbouncer</td><td>hplus_app</td><td><span class="mb-cyan">idle</span></td><td>—</td><td>—</td><td class="mono">—</td></tr>
+        <tr><td class="mono">18400</td><td>pg_dump</td><td>postgres</td><td><span class="mb-green">active</span></td><td>IO</td><td>DataFileRead</td><td class="mono">14s</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Blocking tree -->
+<div class="card">
+  <div class="card-head"><span class="icon">🌲</span> Blocking Tree</div>
+  <div class="card-body">
+    <div class="sec-label">SQL: Lock blocking tree</div>
+    <div class="code-block">SELECT
+  blocked.pid AS blocked_pid,
+  blocked.usename AS blocked_user,
+  blocking.pid AS blocking_pid,
+  blocking.usename AS blocking_user,
+  now() - blocked.query_start AS blocked_for,
+  blocked_activity.query AS blocked_query,
+  blocking_activity.query AS blocking_query
+FROM pg_catalog.pg_locks AS blocked_locks
+JOIN pg_catalog.pg_stat_activity AS blocked_activity
+  ON blocked_activity.pid = blocked_locks.pid
+JOIN pg_catalog.pg_locks AS blocking_locks
+  ON blocking_locks.locktype = blocked_locks.locktype
+  AND blocking_locks.relation IS NOT DISTINCT FROM blocked_locks.relation
+  AND blocking_locks.granted = true
+  AND blocked_locks.granted = false
+  AND blocking_locks.pid != blocked_locks.pid
+JOIN pg_catalog.pg_stat_activity AS blocking_activity
+  ON blocking_activity.pid = blocking_locks.pid;</div>
+    <div class="sec-label mt8">Current Blocks</div>
+    <div id="sl-block-tree">
+      <div class="alert alert-green">
+        <span>✓</span>
+        <span>No blocking chains detected — all sessions running freely</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+<div class="grid2">
+<!-- Lock modes -->
+<div class="card">
+  <div class="card-head"><span class="icon">🔐</span> Lock Mode Reference</div>
+  <div class="card-body">
+    <table class="tbl">
+      <thead><tr><th>Lock Mode</th><th>Who Gets It</th><th>Blocks</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">AccessShareLock</td><td>SELECT</td><td class="text-muted">AccessExclusiveLock only</td></tr>
+        <tr><td class="mono">RowShareLock</td><td>SELECT FOR UPDATE</td><td class="text-muted">ExclusiveLock+</td></tr>
+        <tr><td class="mono">RowExclusiveLock</td><td>INSERT/UPDATE/DELETE</td><td class="text-muted">ShareLock+</td></tr>
+        <tr><td class="mono">ShareUpdateExclusiveLock</td><td>VACUUM, ANALYZE</td><td class="text-muted">ShareUpdateExclusive+</td></tr>
+        <tr><td class="mono">ShareLock</td><td>CREATE INDEX</td><td class="text-muted">RowExclusive+</td></tr>
+        <tr><td class="mono text-yellow">AccessExclusiveLock</td><td>ALTER TABLE, TRUNCATE</td><td class="text-red">ALL — dangerous!</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Kill / Terminate actions -->
+<div class="card">
+  <div class="card-head"><span class="icon">🔫</span> Session Termination SQLs</div>
+  <div class="card-body">
+    <div class="sec-label">Cancel query (soft)</div>
+    <div class="code-block">SELECT pg_cancel_backend(pid)
+FROM pg_stat_activity
+WHERE state = 'active'
+  AND now() - query_start > interval '5 minutes';</div>
+    <div class="sec-label mt8">Terminate connection (hard)</div>
+    <div class="code-block">SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE state = 'idle in transaction'
+  AND now() - xact_start > interval '5 minutes';</div>
+    <div class="sec-label mt8">Kill all from specific user</div>
+    <div class="code-block">SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE usename = 'hplus_app'
+  AND state != 'active';</div>
+    <div class="alert alert-yellow mt8">
+      <span>⚠</span>
+      <span>Always cancel before terminate. PgBouncer will reconnect terminated server connections automatically.</span>
+    </div>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+</div><!-- /page-scroll -->
+</div><!-- /page-sessions -->
+
+<!-- ░░ TAB: PGBOUNCER ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ -->
+<div class="tab-page" id="page-pgbouncer">
+<div class="page-scroll">
+
+<div class="kpi-grid mb12">
+  <div class="kpi"><div class="label">Client Connections</div><div class="val" id="pb-clients">180</div><div class="sub">of 2000 max</div></div>
+  <div class="kpi kpi-green"><div class="label">Server Connections</div><div class="val" id="pb-servers">44</div><div class="sub">of 150 db_max</div></div>
+  <div class="kpi kpi-red"><div class="label">Wait Queue</div><div class="val" id="pb-waitq">0</div><div class="sub">cl_waiting</div></div>
+  <div class="kpi"><div class="label">Pool Saturation</div><div class="val" id="pb-sat">29%</div><div class="sub">server/max</div></div>
+  <div class="kpi kpi-green"><div class="label">Pool Mode</div><div class="val">Txn</div><div class="sub">transaction mode</div></div>
+  <div class="kpi"><div class="label">Default Pool</div><div class="val">50</div><div class="sub">per db/user pair</div></div>
+</div>
+
+<div class="grid2 mb12">
+<!-- Pool stats -->
+<div class="card">
+  <div class="card-head"><span class="icon">🔀</span> Pool Statistics (SHOW POOLS)</div>
+  <div class="card-body-np">
+    <table class="tbl">
+      <thead><tr><th>Database</th><th>User</th><th>cl_active</th><th>cl_waiting</th><th>sv_active</th><th>sv_idle</th><th>sv_used</th><th>maxwait</th></tr></thead>
+      <tbody id="pb-pool-body">
+        <tr>
+          <td>hplus_core</td><td>hplus_app</td>
+          <td class="mono text-green" id="pb-clact">44</td>
+          <td class="mono" id="pb-clwait">0</td>
+          <td class="mono" id="pb-svact">44</td>
+          <td class="mono" id="pb-svidle">6</td>
+          <td class="mono">0</td>
+          <td class="mono" id="pb-maxwait">0</td>
+        </tr>
+        <tr>
+          <td>hplus_reporting</td><td>hplus_ro</td>
+          <td class="mono">8</td><td class="mono">0</td>
+          <td class="mono">8</td><td class="mono">2</td>
+          <td class="mono">0</td><td class="mono">0</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- PgBouncer config -->
+<div class="card">
+  <div class="card-head"><span class="icon">⚙</span> PgBouncer Configuration</div>
+  <div class="card-body">
+    <table class="tbl">
+      <tr><td class="text-muted">pool_mode</td><td class="mono text-cyan">transaction</td></tr>
+      <tr><td class="text-muted">max_client_conn</td><td class="mono">2000</td></tr>
+      <tr><td class="text-muted">default_pool_size</td><td class="mono">50</td></tr>
+      <tr><td class="text-muted">max_db_connections</td><td class="mono">150</td></tr>
+      <tr><td class="text-muted">reserve_pool_size</td><td class="mono">10</td></tr>
+      <tr><td class="text-muted">reserve_pool_timeout</td><td class="mono">3s</td></tr>
+      <tr><td class="text-muted">server_idle_timeout</td><td class="mono">600s</td></tr>
+      <tr><td class="text-muted">client_idle_timeout</td><td class="mono">0 (disabled)</td></tr>
+      <tr><td class="text-muted">server_connect_timeout</td><td class="mono">15s</td></tr>
+      <tr><td class="text-muted">auth_type</td><td class="mono">scram-sha-256</td></tr>
+    </table>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+<div class="grid2">
+<!-- Saturation gauge -->
+<div class="card">
+  <div class="card-head"><span class="icon">📈</span> Pool Saturation Analysis</div>
+  <div class="card-body">
+    <div class="sec-label">Client connections</div>
+    <div class="row-between mb8">
+      <span class="text-mono" id="pb-sat-client-lbl">180 / 2000</span>
+      <span class="text-muted text-xs" id="pb-sat-client-pct">9%</span>
+    </div>
+    <div class="pbar-wrap mb12"><div class="pbar pbar-green" id="pb-sat-client-bar" style="width:9%"></div></div>
+    <div class="sec-label">Server connections (db_max)</div>
+    <div class="row-between mb8">
+      <span class="text-mono" id="pb-sat-server-lbl">44 / 150</span>
+      <span class="text-muted text-xs" id="pb-sat-server-pct">29%</span>
+    </div>
+    <div class="pbar-wrap mb12"><div class="pbar pbar-green" id="pb-sat-server-bar" style="width:29%"></div></div>
+    <div class="alert alert-green" id="pb-sat-alert">
+      <span>✓</span>
+      <span>Pool operating normally. Wait queue = 0. No saturation risk.</span>
+    </div>
+    <div class="sec-label mt8">Saturation Thresholds</div>
+    <table class="tbl">
+      <tr><td class="text-muted">sv_active / max_db_connections</td><td>&lt;70% <span class="mb-green">OK</span> / 70-90% <span class="mb-yellow">WARN</span> / &gt;90% <span class="mb-red">CRIT</span></td></tr>
+      <tr><td class="text-muted">cl_waiting &gt; 0</td><td><span class="mb-yellow">WARN</span> — clients queuing</td></tr>
+      <tr><td class="text-muted">maxwait &gt; 5s</td><td><span class="mb-red">CRIT</span> — immediate action needed</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- Admin commands -->
+<div class="card">
+  <div class="card-head"><span class="icon">🛠</span> PgBouncer Admin Commands</div>
+  <div class="card-body">
+    <div class="sec-label">Connect to admin console</div>
+    <div class="code-block">psql -h 127.0.0.1 -p 5432 -U pgbouncer pgbouncer</div>
+    <div class="sec-label mt8">Monitoring queries</div>
+    <div class="code-block">SHOW POOLS;
+SHOW CLIENTS;
+SHOW SERVERS;
+SHOW STATS;
+SHOW STATS_TOTALS;
+SHOW CONFIG;</div>
+    <div class="sec-label mt8">Switchover / Failover procedure</div>
+    <div class="code-block">-- 1. Pause new connections (during switchover)
+PAUSE hplus_core;
+
+-- 2. Perform patronictl switchover
+-- (run in separate terminal)
+patronictl switchover prod-pgcluster-uae-ha \
+  --master pg-primary-0 \
+  --candidate pg-standby-0 \
+  --scheduled now --force
+
+-- 3. Resume after new primary up
+RESUME hplus_core;</div>
+    <div class="sec-label mt8">Kill a specific client</div>
+    <div class="code-block">KILL hplus_core;     -- disconnect all from db
+DISCONNECT hplus_app; -- disconnect specific user</div>
+    <div class="sec-label mt8">Reload config (no restart)</div>
+    <div class="code-block">RELOAD;</div>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+</div><!-- /page-scroll -->
+</div><!-- /page-pgbouncer -->
+
+<!-- ░░ TAB: PERFORMANCE ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ -->
+<div class="tab-page" id="page-perf">
+<div class="page-scroll">
+
+<div class="kpi-grid mb12">
+  <div class="kpi kpi-green"><div class="label">Buffer Hit Rate</div><div class="val" id="pf-hit">99.4%</div><div class="sub">blks_hit/reads</div></div>
+  <div class="kpi kpi-yellow"><div class="label">Temp Files/min</div><div class="val" id="pf-tmp">1</div><div class="sub">work_mem spills</div></div>
+  <div class="kpi"><div class="label">Seq Scans/min</div><div class="val" id="pf-seq">14</div><div class="sub">missing indexes?</div></div>
+  <div class="kpi kpi-green"><div class="label">Index Hit Rate</div><div class="val" id="pf-idxhit">98.7%</div><div class="sub">idx vs heapfetch</div></div>
+  <div class="kpi"><div class="label">Avg Query Time</div><div class="val" id="pf-avgq">4.2ms</div><div class="sub">pg_stat_statements</div></div>
+  <div class="kpi kpi-red"><div class="label">Slow Queries</div><div class="val" id="pf-slow">2</div><div class="sub">&gt;1s execution</div></div>
+</div>
+
+<div class="grid2 mb12">
+<!-- Top SQL by total time -->
+<div class="card">
+  <div class="card-head"><span class="icon">🏆</span> Top 10 SQL by Total Time (pg_stat_statements)</div>
+  <div class="card-body-np">
+    <table class="tbl">
+      <thead><tr><th>#</th><th>Calls</th><th>Total ms</th><th>Avg ms</th><th>Rows</th><th>Query</th></tr></thead>
+      <tbody id="pf-top-sql">
+        <tr><td class="mono">1</td><td class="mono">42,881</td><td class="mono text-red">183,420</td><td class="mono text-yellow">4.27</td><td class="mono">42,881</td><td class="mono text-muted">SELECT bal FROM accounts WHERE acc_id=$1</td></tr>
+        <tr><td class="mono">2</td><td class="mono">18,320</td><td class="mono">94,100</td><td class="mono">5.14</td><td class="mono">18,320</td><td class="mono text-muted">INSERT INTO txn_log VALUES($1,$2,$3,$4)</td></tr>
+        <tr><td class="mono">3</td><td class="mono">8,441</td><td class="mono">72,330</td><td class="mono text-yellow">8.57</td><td class="mono">8,441</td><td class="mono text-muted">UPDATE accounts SET bal=$1 WHERE acc_id=$2</td></tr>
+        <tr><td class="mono">4</td><td class="mono">1,204</td><td class="mono text-red">61,400</td><td class="mono text-red">51.0</td><td class="mono">1,204,000</td><td class="mono text-muted">SELECT * FROM txn_log WHERE branch_id=$1 AND ...</td></tr>
+        <tr><td class="mono">5</td><td class="mono">342</td><td class="mono">12,000</td><td class="mono">35.1</td><td class="mono">342,000</td><td class="mono text-muted">SELECT * FROM audit_log WHERE ts>$1 ORDER BY ts</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SQL: pg_stat_statements -->
+<div class="card">
+  <div class="card-head"><span class="icon">📋</span> pg_stat_statements Queries</div>
+  <div class="card-body">
+    <div class="sec-label">Top slow queries (avg > 10ms)</div>
+    <div class="code-block">SELECT queryid, calls, 
+  round(total_exec_time::numeric,2) AS total_ms,
+  round(mean_exec_time::numeric,2) AS avg_ms,
+  round(stddev_exec_time::numeric,2) AS stddev_ms,
+  rows,
+  round(100*shared_blks_hit/
+    nullif(shared_blks_hit+shared_blks_read,0),2) AS hit_pct,
+  left(query,100) AS query
+FROM pg_stat_statements
+WHERE mean_exec_time > 10
+ORDER BY mean_exec_time DESC
+LIMIT 20;</div>
+    <div class="sec-label mt8">Reset statistics</div>
+    <div class="code-block">SELECT pg_stat_statements_reset();
+-- Reset per-relation stats
+SELECT pg_stat_reset();</div>
+    <div class="sec-label mt8">Most I/O intensive</div>
+    <div class="code-block">SELECT left(query,80) AS query,
+  shared_blks_read, shared_blks_written,
+  shared_blks_dirtied, temp_blks_read, temp_blks_written
+FROM pg_stat_statements
+ORDER BY shared_blks_read + temp_blks_read DESC
+LIMIT 10;</div>
+    <div class="sec-label mt8">EXPLAIN ANALYZE best practice</div>
+    <div class="code-block">-- Safe: use BUFFERS for I/O details
+EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
+  SELECT bal FROM accounts WHERE acc_id = 12345;
+
+-- Format JSON for tooling
+EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)
+  SELECT * FROM txn_log WHERE branch_id = 42
+  ORDER BY ts DESC LIMIT 100;
+
+-- Auto-explain for slow queries (postgresql.conf)
+-- shared_preload_libraries = 'auto_explain'
+-- auto_explain.log_min_duration = '500ms'
+-- auto_explain.log_analyze = on
+-- auto_explain.log_buffers = on</div>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+<div class="grid2 mb12">
+<!-- Missing indexes -->
+<div class="card">
+  <div class="card-head"><span class="icon">🔍</span> Missing Index Detection</div>
+  <div class="card-body">
+    <div class="sec-label">High seq-scan tables (candidates for indexing)</div>
+    <div class="code-block">SELECT schemaname, relname AS tablename,
+  seq_scan, seq_tup_read,
+  idx_scan, idx_tup_fetch,
+  round(seq_scan::numeric/(seq_scan+idx_scan+1)*100,1) AS seq_pct,
+  pg_size_pretty(pg_total_relation_size(relid)) AS size
+FROM pg_stat_user_tables
+WHERE seq_scan > 100
+  AND seq_tup_read > 10000
+ORDER BY seq_tup_read DESC
+LIMIT 15;</div>
+    <div class="sec-label mt8">Unused indexes (wasting write perf)</div>
+    <div class="code-block">SELECT schemaname, tablename, indexname,
+  idx_scan, idx_tup_read, idx_tup_fetch,
+  pg_size_pretty(pg_relation_size(indexrelid)) AS idx_size
+FROM pg_stat_user_indexes
+WHERE idx_scan = 0
+  AND schemaname NOT IN ('pg_catalog')
+ORDER BY pg_relation_size(indexrelid) DESC;</div>
+    <div class="sec-label mt8">Current seq scan tables</div>
+    <table class="tbl">
+      <thead><tr><th>Table</th><th>Seq Scans</th><th>Seq Rows</th><th>Idx Scans</th><th>Size</th></tr></thead>
+      <tbody id="pf-seqscan">
+        <tr><td>txn_log</td><td class="mono text-yellow">1,204</td><td class="mono text-red">1.2M</td><td class="mono">0</td><td class="mono">18 GB</td></tr>
+        <tr><td>audit_log</td><td class="mono text-yellow">342</td><td class="mono">342K</td><td class="mono">12</td><td class="mono">8 GB</td></tr>
+        <tr><td>accounts</td><td class="mono">14</td><td class="mono">14K</td><td class="mono text-green">42,881</td><td class="mono">2 GB</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Buffer hit rate analysis -->
+<div class="card">
+  <div class="card-head"><span class="icon">🧮</span> Buffer Hit Rate by Table</div>
+  <div class="card-body">
+    <div class="code-block">SELECT relname,
+  heap_blks_read, heap_blks_hit,
+  round(heap_blks_hit::numeric /
+    nullif(heap_blks_hit+heap_blks_read,0)*100,2) AS hit_pct,
+  idx_blks_read, idx_blks_hit,
+  round(idx_blks_hit::numeric /
+    nullif(idx_blks_hit+idx_blks_read,0)*100,2) AS idx_hit_pct
+FROM pg_statio_user_tables
+ORDER BY heap_blks_read DESC
+LIMIT 15;</div>
+    <div class="sec-label mt8">Current by-table hit rates</div>
+    <table class="tbl">
+      <thead><tr><th>Table</th><th>Hit%</th><th>Idx Hit%</th><th>Risk</th></tr></thead>
+      <tbody>
+        <tr><td>accounts</td><td class="mono text-green" id="pf-hit-accounts">99.8%</td><td class="mono text-green">99.9%</td><td><span class="mb-green">OK</span></td></tr>
+        <tr><td>txn_log</td><td class="mono text-yellow">92.4%</td><td class="mono text-yellow">91.1%</td><td><span class="mb-yellow">WATCH</span></td></tr>
+        <tr><td>audit_log</td><td class="mono">87.2%</td><td class="mono">89.4%</td><td><span class="mb-yellow">LOW</span></td></tr>
+      </tbody>
+    </table>
+    <div class="alert alert-yellow mt8">
+      <span>⚠</span>
+      <span>txn_log hit rate 92.4% — consider increasing shared_buffers or partitioning by date</span>
+    </div>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+</div><!-- /page-scroll -->
+</div><!-- /page-perf -->
+
+<!-- ░░ TAB: MEMORY ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ -->
+<div class="tab-page" id="page-memory">
+<div class="page-scroll">
+
+<div class="kpi-grid mb12">
+  <div class="kpi"><div class="label">shared_buffers</div><div class="val">32 GB</div><div class="sub">25% of 128GB RAM</div></div>
+  <div class="kpi kpi-yellow"><div class="label">work_mem</div><div class="val">64 MB</div><div class="sub">per-sort/hash op</div></div>
+  <div class="kpi"><div class="label">Effective Cache</div><div class="val">96 GB</div><div class="sub">planner hint</div></div>
+  <div class="kpi"><div class="label">maintenance_work_mem</div><div class="val">2 GB</div><div class="sub">vacuum, index build</div></div>
+  <div class="kpi kpi-yellow"><div class="label">Temp Spills</div><div class="val" id="mem-tmpspills">1</div><div class="sub">/min — work_mem?</div></div>
+  <div class="kpi kpi-green"><div class="label">OS Cache Hit</div><div class="val" id="mem-oshit">99.4%</div><div class="sub">blks in pg cache</div></div>
+</div>
+
+<div class="grid2 mb12">
+<div class="card">
+  <div class="card-head"><span class="icon">🧠</span> Memory Structure Overview</div>
+  <div class="card-body">
+    <div class="sec-label">PostgreSQL Memory Architecture</div>
+    <!-- ASCII-style memory diagram -->
+    <div class="code-block" style="line-height:1.8;">
+┌─────────────────────────────────────────────────────┐
+│              Shared Memory (32 GB)                  │
+│  ┌──────────────────────────────────────────────┐   │
+│  │  Shared Buffer Pool (shared_buffers = 32 GB) │   │
+│  │  8192-byte pages · WAL buffers (64 MB)       │   │
+│  │  Lock table · procarray · clog buffers       │   │
+│  └──────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────┘
+┌──────────────────────┐  ┌──────────────────────────┐
+│  Backend Process 1   │  │  Backend Process N       │
+│  work_mem = 64 MB    │  │  work_mem = 64 MB        │
+│  (per sort/hash op)  │  │  (per sort/hash op)      │
+│  temp_buffers = 8 MB │  │  temp_buffers = 8 MB     │
+└──────────────────────┘  └──────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│       OS Page Cache (effective_cache_size = 96 GB)  │
+│       Kernel-managed · transparent to PG            │
+└─────────────────────────────────────────────────────┘</div>
+    <div class="sec-label mt8">Key memory parameters</div>
+    <table class="tbl">
+      <tr><td class="text-muted">shared_buffers</td><td class="mono">32GB</td><td class="text-muted">Start at 25% RAM, tune up to 40%</td></tr>
+      <tr><td class="text-muted">work_mem</td><td class="mono">64MB</td><td class="text-muted">×active_sorts per backend — watch RAM</td></tr>
+      <tr><td class="text-muted">effective_cache_size</td><td class="mono">96GB</td><td class="text-muted">Planner hint only — 75% RAM</td></tr>
+      <tr><td class="text-muted">maintenance_work_mem</td><td class="mono">2GB</td><td class="text-muted">Vacuum, CREATE INDEX — can be set per-session</td></tr>
+      <tr><td class="text-muted">wal_buffers</td><td class="mono">64MB</td><td class="text-muted">auto-tuned from shared_buffers</td></tr>
+      <tr><td class="text-muted">temp_buffers</td><td class="mono">8MB</td><td class="text-muted">Temp tables per session</td></tr>
+      <tr><td class="text-muted">huge_pages</td><td class="mono">try</td><td class="text-muted">Reduces TLB misses on large shared_buffers</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><span class="icon">💧</span> Temp File Spill Analysis</div>
+  <div class="card-body">
+    <div class="sec-label">Find temp file-generating queries</div>
+    <div class="code-block">-- Current sessions generating temp files
+SELECT pid, usename, datname,
+  temp_files, temp_bytes,
+  left(query,80) AS query
+FROM pg_stat_activity
+JOIN pg_stat_database ON datname = current_database()
+WHERE temp_files > 0;</div>
+    <div class="sec-label mt8">Aggregate temp file stats</div>
+    <div class="code-block">SELECT datname,
+  temp_files, temp_bytes,
+  pg_size_pretty(temp_bytes) AS temp_size
+FROM pg_stat_database
+WHERE temp_files > 0
+ORDER BY temp_bytes DESC;</div>
+    <div class="sec-label mt8">Fix: increase work_mem per session</div>
+    <div class="code-block">-- Increase for a specific query (DBA session)
+SET work_mem = '256MB';
+-- Increase for a specific role
+ALTER ROLE hplus_app SET work_mem = '128MB';
+-- Check current active spills
+SELECT count(*), sum(temp_bytes)
+FROM pg_stat_activity
+WHERE temp_bytes > 0;</div>
+    <div class="alert alert-yellow mt8">
+      <span>⚠</span>
+      <span>1 temp spill/min detected. If work_mem raised globally: 95 backends × 64MB = 6GB peak. Monitor with <code>pg_stat_database.temp_bytes</code></span>
+    </div>
+    <div class="sec-label mt8">OS kernel tuning (RHEL/OCP nodes)</div>
+    <div class="code-block"># Huge pages (reduce TLB pressure for large shared_buffers)
+vm.nr_hugepages = 16384   # ~32GB at 2MB page size
+# Overcommit — allow PostgreSQL memory model
+vm.overcommit_memory = 2
+vm.overcommit_ratio = 80
+# Swappiness — minimize swapping
+vm.swappiness = 1
+# Dirty page writeback — reduce I/O spikes
+vm.dirty_ratio = 10
+vm.dirty_background_ratio = 3
+
+# Apply immediately
+sysctl -p /etc/sysctl.d/99-postgresql.conf
+
+# In OCP: set via MachineConfig or node tuning operator
+# oc get tuned -n openshift-cluster-node-tuning-operator</div>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+</div><!-- /page-scroll -->
+</div><!-- /page-memory -->
+
+<!-- ░░ TAB: CHECKPOINTS ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ -->
+<div class="tab-page" id="page-checkpoint">
+<div class="page-scroll">
+
+<div class="kpi-grid mb12">
+  <div class="kpi"><div class="label">Checkpoint Interval</div><div class="val" id="ck-interval">5:00</div><div class="sub">m:s avg</div></div>
+  <div class="kpi kpi-yellow"><div class="label">Write Time</div><div class="val" id="ck-write">180ms</div><div class="sub">per checkpoint</div></div>
+  <div class="kpi"><div class="label">Sync Time</div><div class="val" id="ck-sync">22ms</div><div class="sub">fsync duration</div></div>
+  <div class="kpi kpi-green"><div class="label">Buffers Written</div><div class="val" id="ck-bufs">2.1K</div><div class="sub">per checkpoint</div></div>
+  <div class="kpi"><div class="label">Bgwriter Buffers</div><div class="val" id="ck-bgw">340</div><div class="sub">/min proactive</div></div>
+  <div class="kpi kpi-red"><div class="label">Max Written Clean</div><div class="val" id="ck-maxclean">12</div><div class="sub">bgwriter stopped</div></div>
+</div>
+
+<div class="grid2 mb12">
+<div class="card">
+  <div class="card-head"><span class="icon">💾</span> Checkpoint Statistics</div>
+  <div class="card-body">
+    <div class="code-block">SELECT checkpoints_timed, checkpoints_req,
+  round(checkpoint_write_time/1000,2) AS write_s,
+  round(checkpoint_sync_time/1000,2) AS sync_s,
+  buffers_checkpoint, buffers_clean, maxwritten_clean,
+  buffers_backend, buffers_alloc,
+  stats_reset
+FROM pg_stat_bgwriter;</div>
+    <div class="sec-label mt8">Current checkpoint stats</div>
+    <table class="tbl">
+      <tr><td class="text-muted">checkpoints_timed</td><td class="mono text-green" id="ck-timed">1,284</td><td class="text-muted">Scheduled (good)</td></tr>
+      <tr><td class="text-muted">checkpoints_req</td><td class="mono text-yellow" id="ck-req">12</td><td class="text-muted">Forced by WAL — reduce if high</td></tr>
+      <tr><td class="text-muted">checkpoint_write_time</td><td class="mono" id="ck-wt">184ms avg</td><td class="text-muted">Time writing dirty buffers</td></tr>
+      <tr><td class="text-muted">checkpoint_sync_time</td><td class="mono" id="ck-st">23ms avg</td><td class="text-muted">Time fsync-ing to disk</td></tr>
+      <tr><td class="text-muted">buffers_checkpoint</td><td class="mono">2,108</td><td class="text-muted">Dirty bufs written at checkpoint</td></tr>
+      <tr><td class="text-muted">buffers_clean</td><td class="mono">340</td><td class="text-muted">Proactive bgwriter writes</td></tr>
+      <tr><td class="text-muted">maxwritten_clean</td><td class="mono text-red">12</td><td class="text-muted">Bgwriter stopped — I/O pressure</td></tr>
+      <tr><td class="text-muted">buffers_backend</td><td class="mono text-yellow">88</td><td class="text-muted">Backend had to write — bad</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><span class="icon">🎛</span> Checkpoint Tuning</div>
+  <div class="card-body">
+    <div class="sec-label">Current configuration</div>
+    <table class="tbl">
+      <tr><td class="text-muted">checkpoint_timeout</td><td class="mono">5min</td><td class="text-muted">Max time between checkpoints</td></tr>
+      <tr><td class="text-muted">checkpoint_completion_target</td><td class="mono">0.9</td><td class="text-muted">Spread writes over 90% of interval</td></tr>
+      <tr><td class="text-muted">max_wal_size</td><td class="mono">4GB</td><td class="text-muted">Triggers checkpoint if exceeded</td></tr>
+      <tr><td class="text-muted">min_wal_size</td><td class="mono">1GB</td><td class="text-muted">Keep at least 1GB WAL on disk</td></tr>
+      <tr><td class="text-muted">bgwriter_lru_maxpages</td><td class="mono">100</td><td class="text-muted">Pages bgwriter writes per round</td></tr>
+      <tr><td class="text-muted">bgwriter_lru_multiplier</td><td class="mono">2.0</td><td class="text-muted">Demand multiplier</td></tr>
+      <tr><td class="text-muted">bgwriter_delay</td><td class="mono">200ms</td><td class="text-muted">Sleep between rounds</td></tr>
+    </table>
+    <div class="sec-label mt8">Tuning recommendations</div>
+    <div class="alert alert-yellow">
+      <span>⚠</span>
+      <span><b>maxwritten_clean=12</b>: bgwriter hitting limit. Raise <code>bgwriter_lru_maxpages</code> to 200 or increase <code>checkpoint_timeout</code> to 10min to spread load.</span>
+    </div>
+    <div class="alert alert-cyan mt4">
+      <span>ℹ</span>
+      <span><b>checkpoints_req=12</b>: Consider raising <code>max_wal_size</code> to 8GB to reduce forced checkpoints on WAL storms.</span>
+    </div>
+    <div class="code-block mt8">-- Apply tuning (as superuser)
+ALTER SYSTEM SET checkpoint_timeout = '10min';
+ALTER SYSTEM SET max_wal_size = '8GB';
+ALTER SYSTEM SET bgwriter_lru_maxpages = 200;
+ALTER SYSTEM SET bgwriter_delay = '100ms';
+ALTER SYSTEM SET checkpoint_completion_target = 0.9;
+SELECT pg_reload_conf();
+
+-- Force immediate checkpoint (use sparingly)
+CHECKPOINT;
+
+-- Monitor checkpoint progress (PG 16+)
+SELECT phase, blocks_processed, blocks_total,
+  round(blocks_processed::numeric/nullif(blocks_total,0)*100,1) AS pct
+FROM pg_stat_progress_checkpoint;
+
+-- Real-time checkpoint interval monitoring
+SELECT checkpoints_timed, checkpoints_req,
+  round((checkpoints_req::numeric/
+    nullif(checkpoints_timed+checkpoints_req,0))*100,1) AS req_pct,
+  now()-stats_reset AS since_reset
+FROM pg_stat_bgwriter;</div>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+</div><!-- /page-scroll -->
+</div><!-- /page-checkpoint -->
+
+<!-- ░░ TAB: WAL & REPLICATION ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ -->
+<div class="tab-page" id="page-wal">
+<div class="page-scroll">
+
+<div class="kpi-grid mb12">
+  <div class="kpi kpi-green"><div class="label">WAL Rate</div><div class="val" id="wal-rate">0.5</div><div class="sub">MB/s generated</div></div>
+  <div class="kpi kpi-green"><div class="label">Sync Lag</div><div class="val" id="wal-sync-lag">0 B</div><div class="sub">pg-standby-0</div></div>
+  <div class="kpi kpi-purple"><div class="label">DR-0 Lag</div><div class="val" id="wal-dr-lag">2.0 MB</div><div class="sub">pg-dr-0 DC2</div></div>
+  <div class="kpi kpi-purple"><div class="label">DR-1 Lag</div><div class="val" id="wal-dr1-lag">2.1 MB</div><div class="sub">pg-dr-1 DC2</div></div>
+  <div class="kpi kpi-green"><div class="label">Archive Status</div><div class="val" id="wal-arch-ok">OK</div><div class="sub">last: <span id="wal-arch-ago">3</span>s ago</div></div>
+  <div class="kpi"><div class="label">Archived WAL</div><div class="val">704</div><div class="sub">files success</div></div>
+  <div class="kpi kpi-red"><div class="label">Failed Archive</div><div class="val" id="wal-failed">212</div><div class="sub">⚠ investigate!</div></div>
+  <div class="kpi"><div class="label">WAL Slots</div><div class="val" id="wal-slots">2</div><div class="sub">replication slots</div></div>
+  <div class="kpi kpi-green"><div class="label">Slot Lag</div><div class="val" id="wal-slot-lag">0 MB</div><div class="sub">retained WAL</div></div>
+</div>
+
+<div class="grid2 mb12">
+<!-- Replication status -->
+<div class="card">
+  <div class="card-head"><span class="icon">📡</span> pg_stat_replication</div>
+  <div class="card-body-np">
+    <table class="tbl">
+      <thead><tr><th>App Name</th><th>Client IP</th><th>State</th><th>Mode</th><th>Sent LSN</th><th>Write Lag</th><th>Flush Lag</th><th>Replay Lag</th><th>Sync State</th></tr></thead>
+      <tbody id="wal-repl-body">
+        <tr>
+          <td class="mono">pg-standby-0</td><td class="mono">10.10.1.11</td>
+          <td><span class="mb-green">streaming</span></td><td>sync</td>
+          <td class="mono">8/3A000000</td>
+          <td class="mono text-green" id="wal-sync-wl">0ms</td>
+          <td class="mono text-green" id="wal-sync-fl">0ms</td>
+          <td class="mono text-green" id="wal-sync-rl">1ms</td>
+          <td><span class="mb-cyan">sync</span></td>
+        </tr>
+        <tr>
+          <td class="mono">pg-dr-0</td><td class="mono">10.20.1.10</td>
+          <td><span class="mb-green">streaming</span></td><td>async</td>
+          <td class="mono">8/3A000000</td>
+          <td class="mono text-purple" id="wal-dr-wl">120ms</td>
+          <td class="mono text-purple" id="wal-dr-fl">135ms</td>
+          <td class="mono text-purple" id="wal-dr-rl">890ms</td>
+          <td><span class="mb-purple">async</span></td>
+        </tr>
+        <tr>
+          <td class="mono">pg-dr-1</td><td class="mono">10.20.1.11</td>
+          <td><span class="mb-green">streaming</span></td><td>async</td>
+          <td class="mono">8/3A000000</td>
+          <td class="mono text-purple" id="wal-dr1-wl">125ms</td>
+          <td class="mono text-purple" id="wal-dr1-fl">140ms</td>
+          <td class="mono text-purple" id="wal-dr1-rl">910ms</td>
+          <td><span class="mb-purple">async</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- WAL archive -->
+<div class="card">
+  <div class="card-head"><span class="icon">📦</span> WAL Archive Status</div>
+  <div class="card-body">
+    <div class="code-block">SELECT archived_count, failed_count,
+  last_archived_wal,
+  last_archived_time,
+  last_failed_wal,
+  last_failed_time,
+  now() - last_archived_time AS since_last_archive
+FROM pg_stat_archiver;</div>
+    <div class="sec-label mt8">Current archive metrics</div>
+    <table class="tbl">
+      <tr><td class="text-muted">archived_count</td><td class="mono text-green">704</td></tr>
+      <tr><td class="text-muted">failed_count</td><td class="mono text-red" id="wal-fc">212</td></tr>
+      <tr><td class="text-muted">last_archived_wal</td><td class="mono">00000008000000040000009A</td></tr>
+      <tr><td class="text-muted">last_archived_time</td><td class="mono" id="wal-lat">3s ago</td></tr>
+      <tr><td class="text-muted">last_failed_wal</td><td class="mono text-yellow">000000080000000300000084</td></tr>
+    </table>
+    <div class="alert alert-red mt8" id="wal-arch-alert">
+      <span>⚠</span>
+      <span><b>212 failed archives!</b> Check pgBackRest connectivity to S3/ODF Nooba. Run: <code>pgbackrest --stanza=db check</code></span>
+    </div>
+    <div class="code-block mt8">-- Check archive failures
+pgbackrest --stanza=db check
+pgbackrest --stanza=db info
+-- Manual archive push
+pgbackrest --stanza=db archive-push /pg/wal/00000008.../</div>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+<div class="grid2">
+<!-- Replication slots -->
+<div class="card">
+  <div class="card-head"><span class="icon">🎯</span> Replication Slots</div>
+  <div class="card-body">
+    <div class="code-block">SELECT slot_name, plugin, slot_type, active,
+  restart_lsn, confirmed_flush_lsn,
+  pg_size_pretty(
+    pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn)
+  ) AS retained_wal
+FROM pg_replication_slots;</div>
+    <div class="sec-label mt8">Active slots</div>
+    <table class="tbl">
+      <thead><tr><th>Slot Name</th><th>Type</th><th>Active</th><th>Retained WAL</th><th>Risk</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">pg_standby_0</td><td>physical</td><td><span class="dot dot-green"></span></td><td class="mono text-green">0 B</td><td><span class="mb-green">OK</span></td></tr>
+        <tr><td class="mono">pg_dr_0</td><td>physical</td><td><span class="dot dot-green"></span></td><td class="mono text-yellow">2 MB</td><td><span class="mb-yellow">WATCH</span></td></tr>
+      </tbody>
+    </table>
+    <div class="alert alert-yellow mt8">
+      <span>⚠</span>
+      <span>Unused slots accumulate WAL — can fill disk. Drop if not needed: <code>SELECT pg_drop_replication_slot('slotname');</code></span>
+    </div>
+  </div>
+</div>
+
+<!-- WAL configuration -->
+<div class="card">
+  <div class="card-head"><span class="icon">⚙</span> WAL Configuration</div>
+  <div class="card-body">
+    <table class="tbl">
+      <tr><td class="text-muted">wal_level</td><td class="mono text-green">replica</td></tr>
+      <tr><td class="text-muted">synchronous_commit</td><td class="mono text-green">on</td></tr>
+      <tr><td class="text-muted">synchronous_standby_names</td><td class="mono">pg-standby-0</td></tr>
+      <tr><td class="text-muted">wal_compression</td><td class="mono">lz4</td></tr>
+      <tr><td class="text-muted">archive_mode</td><td class="mono text-green">on</td></tr>
+      <tr><td class="text-muted">archive_command</td><td class="mono">pgbackrest --stanza=db archive-push %p</td></tr>
+      <tr><td class="text-muted">restore_command</td><td class="mono">pgbackrest --stanza=db archive-get %f %p</td></tr>
+      <tr><td class="text-muted">max_wal_senders</td><td class="mono">10</td></tr>
+      <tr><td class="text-muted">wal_keep_size</td><td class="mono">1GB</td></tr>
+      <tr><td class="text-muted">hot_standby</td><td class="mono">on</td></tr>
+    </table>
+    <div class="sec-label mt8">WAL LSN checks</div>
+    <div class="code-block">-- Current WAL position
+SELECT pg_current_wal_lsn(), pg_current_wal_insert_lsn();
+
+-- WAL lag from standby perspective
+SELECT now() - pg_last_xact_replay_timestamp() AS repl_lag;
+
+-- Confirm standby is in recovery
+SELECT pg_is_in_recovery(), pg_is_wal_replay_paused();</div>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+</div><!-- /page-scroll -->
+</div><!-- /page-wal -->
+
+<!-- ░░ TAB: PGBACKREST ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ -->
+<div class="tab-page" id="page-backup">
+<div class="page-scroll">
+
+<div class="kpi-grid mb12">
+  <div class="kpi kpi-green"><div class="label">Last Full Backup</div><div class="val">1d ago</div><div class="sub">20260521-010000F</div></div>
+  <div class="kpi kpi-green"><div class="label">Last Diff Backup</div><div class="val">18h ago</div><div class="sub">20260522-060000D</div></div>
+  <div class="kpi kpi-green"><div class="label">Backup Status</div><div class="val" id="bk-status">OK</div><div class="sub">no active backup</div></div>
+  <div class="kpi kpi-red"><div class="label">Failed WAL</div><div class="val" id="bk-failed-wal">212</div><div class="sub">archive failures</div></div>
+  <div class="kpi"><div class="label">Repo Size</div><div class="val">892 GB</div><div class="sub">compressed</div></div>
+  <div class="kpi kpi-green"><div class="label">PITR Window</div><div class="val">7 days</div><div class="sub">WAL retention</div></div>
+</div>
+
+<div class="grid2 mb12">
+<div class="card">
+  <div class="card-head"><span class="icon">📅</span> Backup Timeline</div>
+  <div class="card-body">
+    <div class="code-block">pgbackrest --stanza=db info</div>
+    <div class="sec-label mt8">Backup inventory</div>
+    <table class="tbl">
+      <thead><tr><th>Label</th><th>Type</th><th>Start</th><th>Duration</th><th>DB Size</th><th>Repo Size</th><th>WAL</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">20260521-010000F</td><td><span class="mb-cyan">Full</span></td><td class="mono">2026-05-21 01:00</td><td class="mono">4h 12m</td><td class="mono">847 GB</td><td class="mono">854 GB</td><td class="mono text-green">OK</td></tr>
+        <tr><td class="mono">20260521-060000D</td><td><span class="mb-purple">Diff</span></td><td class="mono">2026-05-21 06:00</td><td class="mono">18m</td><td class="mono">847 GB</td><td class="mono">8.4 GB</td><td class="mono text-green">OK</td></tr>
+        <tr><td class="mono">20260522-020000F_20260522-060000D</td><td><span class="mb-purple">Diff</span></td><td class="mono">2026-05-22 06:00</td><td class="mono">22m</td><td class="mono">847 GB</td><td class="mono">12.3 GB</td><td class="mono text-green">OK</td></tr>
+        <tr><td class="mono">20260522-060000I</td><td><span class="mb-gray">Incr</span></td><td class="mono">2026-05-22 18:00</td><td class="mono">6m</td><td class="mono">847 GB</td><td class="mono">2.1 GB</td><td class="mono text-green">OK</td></tr>
+      </tbody>
+    </table>
+    <div class="sec-label mt8">pgBackRest stanza info</div>
+    <table class="tbl">
+      <tr><td class="text-muted">Stanza</td><td class="mono">db</td></tr>
+      <tr><td class="text-muted">Repository</td><td class="mono">repo1 (s3)</td></tr>
+      <tr><td class="text-muted">Bucket</td><td class="mono">pgbackrest-uae-prod-609d40f1</td></tr>
+      <tr><td class="text-muted">Cipher</td><td class="mono">aes-256-cbc</td></tr>
+      <tr><td class="text-muted">Compress</td><td class="mono">lz4</td></tr>
+      <tr><td class="text-muted">Process-max</td><td class="mono">4</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><span class="icon">⏪</span> PITR Procedure</div>
+  <div class="card-body">
+    <div class="sec-label">1. Identify target time</div>
+    <div class="code-block">-- Find the transaction/commit
+SELECT xact_start, query_start, left(query,80)
+FROM pg_stat_activity
+WHERE state = 'idle in transaction';
+
+-- Or check audit log for the event time
+SELECT ts, user_name, command_tag, object_name
+FROM pgaudit.log WHERE ts > now() - interval '1 hour'
+ORDER BY ts DESC;</div>
+    <div class="sec-label mt8">2. Stop application / pause PgBouncer</div>
+    <div class="code-block">psql -h 127.0.0.1 -p 5432 -U pgbouncer pgbouncer
+PAUSE hplus_core;</div>
+    <div class="sec-label mt8">3. Restore with pgBackRest</div>
+    <div class="code-block">pgbackrest --stanza=db restore \
+  --target="2026-05-22 14:30:00" \
+  --target-action=promote \
+  --type=time \
+  --delta</div>
+    <div class="sec-label mt8">4. Verify and promote</div>
+    <div class="code-block">-- On restored instance:
+SELECT pg_last_xact_replay_timestamp();
+-- When ready:
+SELECT pg_promote();</div>
+    <div class="sec-label mt8">5. Resume PgBouncer</div>
+    <div class="code-block">RESUME hplus_core;</div>
+    <div class="alert alert-red mt8">
+      <span>🚨</span>
+      <span>PITR requires patronictl pause cluster, stopping WAL apply on all standbys before restore. Reinit all replicas after promote.</span>
+    </div>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+<div class="card">
+  <div class="card-head"><span class="icon">🛠</span> pgBackRest Command Reference</div>
+  <div class="card-body">
+    <div class="grid3">
+      <div>
+        <div class="sec-label">Status & Check</div>
+        <div class="cmd-list">
+          <div class="cmd">pgbackrest --stanza=db info</div>
+          <div class="cmd">pgbackrest --stanza=db check</div>
+          <div class="cmd">pgbackrest --stanza=db info --output=json</div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Take Backup</div>
+        <div class="cmd-list">
+          <div class="cmd">pgbackrest --stanza=db backup --type=full</div>
+          <div class="cmd">pgbackrest --stanza=db backup --type=diff</div>
+          <div class="cmd">pgbackrest --stanza=db backup --type=incr</div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Restore / PITR</div>
+        <div class="cmd-list">
+          <div class="cmd">pgbackrest --stanza=db restore --delta</div>
+          <div class="cmd">pgbackrest --stanza=db restore \</div>
+          <div class="cmd">  --type=time \</div>
+          <div class="cmd">  --target="2026-05-22 14:30:00" \</div>
+          <div class="cmd">  --target-action=promote \</div>
+          <div class="cmd">  --delta</div>
+          <div class="cmd">pgbackrest --stanza=db restore \</div>
+          <div class="cmd">  --type=xid --target="12345678"</div>
+          <div class="cmd">pgbackrest --stanza=db restore \</div>
+          <div class="cmd">  --type=lsn --target="8/3A000000"</div>
+          <div class="cmd"># Restore to specific backup label</div>
+          <div class="cmd">pgbackrest --stanza=db restore \</div>
+          <div class="cmd">  --set=20260521-010000F --delta</div>
+          <div class="cmd"># Expire old backups manually</div>
+          <div class="cmd">pgbackrest --stanza=db expire</div>
+          <div class="cmd"># Verify backup integrity</div>
+          <div class="cmd">pgbackrest --stanza=db verify</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /page-scroll -->
+</div><!-- /page-backup -->
+
+<!-- ░░ TAB: STORAGE & BLOAT ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ -->
+<div class="tab-page" id="page-bloat">
+<div class="page-scroll">
+
+<div class="kpi-grid mb12">
+  <div class="kpi"><div class="label">Total DB Size</div><div class="val" id="bl-total">1.15TB</div><div class="sub">all databases</div></div>
+  <div class="kpi kpi-yellow"><div class="label">Bloat Estimate</div><div class="val" id="bl-bloat">4.2%</div><div class="sub">dead + free space</div></div>
+  <div class="kpi kpi-red"><div class="label">Dead Tuples/min</div><div class="val" id="bl-dead">1,240</div><div class="sub">need vacuum</div></div>
+  <div class="kpi"><div class="label">Unused Indexes</div><div class="val" id="bl-uidx">3</div><div class="sub">idx_scan=0</div></div>
+  <div class="kpi kpi-yellow"><div class="label">Largest Table</div><div class="val">18 GB</div><div class="sub">txn_log</div></div>
+  <div class="kpi kpi-green"><div class="label">Toast Usage</div><div class="val">Normal</div><div class="sub">no large objects</div></div>
+</div>
+
+<div class="grid2 mb12">
+<div class="card">
+  <div class="card-head"><span class="icon">📦</span> Table Sizes & Bloat</div>
+  <div class="card-body-np">
+    <table class="tbl">
+      <thead><tr><th>Table</th><th>Total Size</th><th>Table Size</th><th>Index Size</th><th>Dead Tuples</th><th>Live Tuples</th><th>Bloat %</th></tr></thead>
+      <tbody id="bl-tbl-body">
+        <tr><td>txn_log</td><td class="mono text-yellow">18 GB</td><td class="mono">14 GB</td><td class="mono">4 GB</td><td class="mono text-red" id="bl-txnlog-dead">842,231</td><td class="mono">48,441,203</td><td class="mono text-yellow">1.7%</td></tr>
+        <tr><td>accounts</td><td class="mono">2.1 GB</td><td class="mono">1.8 GB</td><td class="mono">0.3 GB</td><td class="mono text-red" id="bl-acc-dead">12,440</td><td class="mono">5,200,000</td><td class="mono text-green">0.2%</td></tr>
+        <tr><td>audit_log</td><td class="mono">8.4 GB</td><td class="mono">7.1 GB</td><td class="mono">1.3 GB</td><td class="mono" id="bl-aud-dead">44,120</td><td class="mono">22,100,000</td><td class="mono text-green">0.2%</td></tr>
+        <tr><td>gl_entries</td><td class="mono">4.2 GB</td><td class="mono">3.6 GB</td><td class="mono">0.6 GB</td><td class="mono">8,441</td><td class="mono">12,800,000</td><td class="mono text-green">0.1%</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><span class="icon">🔍</span> Bloat SQL Queries</div>
+  <div class="card-body">
+    <div class="sec-label">Table bloat estimate</div>
+    <div class="code-block">SELECT schemaname, relname,
+  n_dead_tup, n_live_tup,
+  round(n_dead_tup::numeric/(n_live_tup+n_dead_tup+1)*100,2) AS dead_pct,
+  pg_size_pretty(pg_total_relation_size(relid)) AS total_size,
+  last_vacuum, last_autovacuum, last_analyze
+FROM pg_stat_user_tables
+ORDER BY n_dead_tup DESC
+LIMIT 20;</div>
+    <div class="sec-label mt8">Unused indexes (drop candidates)</div>
+    <div class="code-block">SELECT schemaname, tablename, indexname,
+  pg_size_pretty(pg_relation_size(indexrelid)) AS idx_size,
+  idx_scan
+FROM pg_stat_user_indexes
+WHERE idx_scan = 0
+  AND NOT indisprimary
+  AND NOT indisunique
+ORDER BY pg_relation_size(indexrelid) DESC;</div>
+    <div class="sec-label mt8">Unused indexes found</div>
+    <table class="tbl">
+      <thead><tr><th>Table</th><th>Index</th><th>Size</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>txn_log</td><td class="mono">ix_txnlog_old_status</td><td class="mono text-yellow">380 MB</td><td><span class="cmd">DROP INDEX CONCURRENTLY</span></td></tr>
+        <tr><td>audit_log</td><td class="mono">ix_audit_legacy_ref</td><td class="mono">120 MB</td><td><span class="cmd">DROP INDEX CONCURRENTLY</span></td></tr>
+        <tr><td>gl_entries</td><td class="mono">ix_gl_bak_ref</td><td class="mono">44 MB</td><td><span class="cmd">DROP INDEX CONCURRENTLY</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+</div><!-- /page-scroll -->
+</div><!-- /page-bloat -->
+
+<!-- ░░ TAB: AUTOVACUUM ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ -->
+<div class="tab-page" id="page-vacuum">
+<div class="page-scroll">
+
+<div class="kpi-grid mb12">
+  <div class="kpi"><div class="label">Active Workers</div><div class="val" id="av-workers">1</div><div class="sub">of 3 max</div></div>
+  <div class="kpi kpi-orange"><div class="label">Oldest XID Age</div><div class="val" id="av-oldest-xid">142M</div><div class="sub">⚠ freeze at 200M</div></div>
+  <div class="kpi kpi-red"><div class="label">Dead Tuples</div><div class="val" id="av-dead">858K</div><div class="sub">needs vacuum</div></div>
+  <div class="kpi"><div class="label">Tables Pending</div><div class="val" id="av-pending">4</div><div class="sub">above threshold</div></div>
+  <div class="kpi kpi-green"><div class="label">Last Full Vacuum</div><div class="val">2h ago</div><div class="sub">autovacuum ran</div></div>
+  <div class="kpi"><div class="label">Analyze Pending</div><div class="val" id="av-analyze">2</div><div class="sub">stale stats</div></div>
+</div>
+
+<div class="grid2 mb12">
+<div class="card">
+  <div class="card-head"><span class="icon">🌀</span> Autovacuum Status</div>
+  <div class="card-body-np">
+    <table class="tbl">
+      <thead><tr><th>Table</th><th>Dead Tuples</th><th>Threshold</th><th>% Used</th><th>Last AutoVacuum</th><th>Last AutoAnalyze</th></tr></thead>
+      <tbody id="av-table-body">
+        <tr>
+          <td>txn_log</td>
+          <td class="mono text-red" id="av-tl-dead">842,231</td>
+          <td class="mono">50,000 + 20% live</td>
+          <td>
+            <div class="row">
+              <span class="mono text-red" id="av-tl-pct">98%</span>
+              <div class="pbar-wrap flex1"><div class="pbar pbar-red" id="av-tl-bar" style="width:98%"></div></div>
+            </div>
+          </td>
+          <td class="mono text-yellow">2h ago</td>
+          <td class="mono">1h ago</td>
+        </tr>
+        <tr>
+          <td>accounts</td>
+          <td class="mono" id="av-acc-dead">12,440</td>
+          <td class="mono">50,000 + 20%</td>
+          <td>
+            <div class="row">
+              <span class="mono text-green" id="av-acc-pct">8%</span>
+              <div class="pbar-wrap flex1"><div class="pbar pbar-green" id="av-acc-bar" style="width:8%"></div></div>
+            </div>
+          </td>
+          <td class="mono">30m ago</td>
+          <td class="mono">30m ago</td>
+        </tr>
+        <tr>
+          <td>audit_log</td>
+          <td class="mono" id="av-aud-dead">44,120</td>
+          <td class="mono">50,000 + 20%</td>
+          <td>
+            <div class="row">
+              <span class="mono text-yellow" id="av-aud-pct">62%</span>
+              <div class="pbar-wrap flex1"><div class="pbar pbar-yellow" id="av-aud-bar" style="width:62%"></div></div>
+            </div>
+          </td>
+          <td class="mono">4h ago</td>
+          <td class="mono">4h ago</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><span class="icon">⚙</span> Autovacuum Configuration & Tuning</div>
+  <div class="card-body">
+    <table class="tbl mb8">
+      <tr><td class="text-muted">autovacuum</td><td class="mono text-green">on</td></tr>
+      <tr><td class="text-muted">autovacuum_max_workers</td><td class="mono">3</td></tr>
+      <tr><td class="text-muted">autovacuum_naptime</td><td class="mono">1min</td></tr>
+      <tr><td class="text-muted">autovacuum_vacuum_threshold</td><td class="mono">50</td></tr>
+      <tr><td class="text-muted">autovacuum_vacuum_scale_factor</td><td class="mono">0.2 (20%)</td></tr>
+      <tr><td class="text-muted">autovacuum_analyze_threshold</td><td class="mono">50</td></tr>
+      <tr><td class="text-muted">autovacuum_analyze_scale_factor</td><td class="mono">0.1 (10%)</td></tr>
+      <tr><td class="text-muted">autovacuum_vacuum_cost_limit</td><td class="mono">200</td></tr>
+      <tr><td class="text-muted">autovacuum_freeze_max_age</td><td class="mono">200,000,000</td></tr>
+    </table>
+    <div class="sec-label">Per-table tuning for txn_log</div>
+    <div class="code-block">-- High-churn table: reduce scale factor
+ALTER TABLE txn_log SET (
+  autovacuum_vacuum_scale_factor = 0.05,
+  autovacuum_analyze_scale_factor = 0.02,
+  autovacuum_vacuum_cost_limit = 800
+);</div>
+    <div class="sec-label mt8">Manual vacuum commands</div>
+    <div class="code-block">-- Manual vacuum (non-blocking)
+VACUUM (ANALYZE, VERBOSE) txn_log;
+
+-- Forced freeze (use during maintenance window)
+VACUUM FREEZE VERBOSE txn_log;
+
+-- Vacuum with progress monitoring (PG 13+)
+SELECT pid, relid::regclass, phase,
+  heap_blks_scanned, heap_blks_vacuumed,
+  index_vacuum_count, num_dead_tuples
+FROM pg_stat_progress_vacuum;
+
+-- Cancel running autovacuum on specific table
+SELECT pg_cancel_backend(pid)
+FROM pg_stat_activity
+WHERE query LIKE 'autovacuum: VACUUM public.txn_log%';
+
+-- Kill all autovacuum workers (emergency)
+SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE query LIKE 'autovacuum:%';
+
+-- Check when autovacuum last ran per table
+SELECT relname, last_vacuum, last_autovacuum,
+  last_analyze, last_autoanalyze,
+  vacuum_count, autovacuum_count
+FROM pg_stat_user_tables
+ORDER BY last_autovacuum DESC NULLS LAST LIMIT 20;</div>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+</div><!-- /page-scroll -->
+</div><!-- /page-vacuum -->
+
+<!-- ░░ TAB: KUBERNETES / OPENSHIFT ░░░░░░░░░░░░░░░░░░░░░░░░ -->
+<div class="tab-page" id="page-k8s">
+<div class="page-scroll">
+
+<div class="kpi-grid mb12">
+  <div class="kpi kpi-green"><div class="label">PG Pods</div><div class="val">4/4</div><div class="sub">Running</div></div>
+  <div class="kpi"><div class="label">Primary CPU</div><div class="val" id="k8-cpu-pri">42%</div><div class="sub">pg-primary-0</div></div>
+  <div class="kpi"><div class="label">Primary Mem</div><div class="val" id="k8-mem-pri">67%</div><div class="sub">of 128 GB</div></div>
+  <div class="kpi kpi-green"><div class="label">PVC Used</div><div class="val" id="k8-pvc">54%</div><div class="sub">of 2TB NVMe</div></div>
+  <div class="kpi kpi-green"><div class="label">PGO Status</div><div class="val">Healthy</div><div class="sub">PostgresCluster CR</div></div>
+  <div class="kpi"><div class="label">OBC Status</div><div class="val" id="k8-obc">Bound</div><div class="sub">pgbackrest S3</div></div>
+</div>
+
+<div class="grid2 mb12">
+<!-- Pod status -->
+<div class="card">
+  <div class="card-head"><span class="icon">☸</span> Pod Status</div>
+  <div class="card-body-np">
+    <table class="tbl">
+      <thead><tr><th>Pod</th><th>Role</th><th>Status</th><th>CPU</th><th>Memory</th><th>Restarts</th><th>Node</th></tr></thead>
+      <tbody id="k8-pod-body">
+        <tr>
+          <td class="mono">pg-primary-0</td>
+          <td><span class="mb-green">Leader</span></td>
+          <td><span class="mb-green">Running</span></td>
+          <td class="mono" id="k8-pod-cpu1">42%</td>
+          <td class="mono" id="k8-pod-mem1">67%</td>
+          <td class="mono">0</td>
+          <td class="mono">ocp-worker-dc1-01</td>
+        </tr>
+        <tr>
+          <td class="mono">pg-standby-0</td>
+          <td><span class="mb-cyan">Sync Standby</span></td>
+          <td><span class="mb-green">Running</span></td>
+          <td class="mono">18%</td>
+          <td class="mono">61%</td>
+          <td class="mono">0</td>
+          <td class="mono">ocp-worker-dc1-02</td>
+        </tr>
+        <tr>
+          <td class="mono">pg-dr-0</td>
+          <td><span class="mb-purple">Replica</span></td>
+          <td><span class="mb-green">Running</span></td>
+          <td class="mono">8%</td>
+          <td class="mono">58%</td>
+          <td class="mono">0</td>
+          <td class="mono">ocp-worker-dc2-01</td>
+        </tr>
+        <tr>
+          <td class="mono">pg-dr-1</td>
+          <td><span class="mb-purple">Replica</span></td>
+          <td><span class="mb-green">Running</span></td>
+          <td class="mono">7%</td>
+          <td class="mono">57%</td>
+          <td class="mono">0</td>
+          <td class="mono">ocp-worker-dc2-02</td>
+        </tr>
+        <tr>
+          <td class="mono">pgbouncer-0</td>
+          <td><span class="mb-gray">Proxy</span></td>
+          <td><span class="mb-green">Running</span></td>
+          <td class="mono">3%</td>
+          <td class="mono">2%</td>
+          <td class="mono">0</td>
+          <td class="mono">ocp-worker-dc1-01</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- PVC & Storage -->
+<div class="card">
+  <div class="card-head"><span class="icon">💾</span> PVC & Storage</div>
+  <div class="card-body">
+    <table class="tbl mb8">
+      <thead><tr><th>PVC Name</th><th>Pod</th><th>Size</th><th>Used</th><th>%</th><th>SC</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">pg-primary-0-pgdata</td><td class="mono">pg-primary-0</td><td class="mono">2 TB</td><td class="mono" id="k8-pvc1-used">1.09 TB</td><td><span id="k8-pvc1-pct">54%</span></td><td class="mono">ocs-storagecluster-ceph-rbd</td></tr>
+        <tr><td class="mono">pg-primary-0-pgwal</td><td class="mono">pg-primary-0</td><td class="mono">200 GB</td><td class="mono">28 GB</td><td>14%</td><td class="mono">ocs-storagecluster-ceph-rbd</td></tr>
+        <tr><td class="mono">pg-standby-0-pgdata</td><td class="mono">pg-standby-0</td><td class="mono">2 TB</td><td class="mono">1.09 TB</td><td>54%</td><td class="mono">ocs-storagecluster-ceph-rbd</td></tr>
+        <tr><td class="mono">pg-dr-0-pgdata</td><td class="mono">pg-dr-0</td><td class="mono">2 TB</td><td class="mono">1.09 TB</td><td>54%</td><td class="mono">ocs-storagecluster-ceph-rbd</td></tr>
+        <tr><td class="mono">pg-dr-0-pgwal</td><td class="mono">pg-dr-0</td><td class="mono">200 GB</td><td class="mono">26 GB</td><td>13%</td><td class="mono">ocs-storagecluster-ceph-rbd</td></tr>
+        <tr><td class="mono">pg-dr-1-pgdata</td><td class="mono">pg-dr-1</td><td class="mono">2 TB</td><td class="mono">1.09 TB</td><td>54%</td><td class="mono">ocs-storagecluster-ceph-rbd</td></tr>
+        <tr><td class="mono">pg-dr-1-pgwal</td><td class="mono">pg-dr-1</td><td class="mono">200 GB</td><td class="mono">26 GB</td><td>13%</td><td class="mono">ocs-storagecluster-ceph-rbd</td></tr>
+      </tbody>
+    </table>
+    <div class="alert alert-cyan">
+      <span>ℹ</span>
+      <span>OBC <b>pgbackrest-uae-prod-609d40f1</b> bound to ODF Nooba. Credentials in Secret <code>pgbackrest-uae-prod-609d40f1</code></span>
+    </div>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+<!-- OCP Commands -->
+<div class="card mb12">
+  <div class="card-head"><span class="icon">🛠</span> OpenShift / oc CLI Commands</div>
+  <div class="card-body">
+    <div class="grid3">
+      <div>
+        <div class="sec-label">Pod Management</div>
+        <div class="cmd-list">
+          <div class="cmd">oc get pods -n postgres</div>
+          <div class="cmd">oc describe pod pg-primary-0 -n postgres</div>
+          <div class="cmd">oc logs pg-primary-0 -n postgres -c database</div>
+          <div class="cmd">oc exec -it pg-primary-0 -n postgres -- bash</div>
+          <div class="cmd">oc top pods -n postgres</div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">PGO / CR Status</div>
+        <div class="cmd-list">
+          <div class="cmd">oc get postgrescluster -n postgres</div>
+          <div class="cmd">oc describe postgrescluster prod-pgcluster-uae-ha -n postgres</div>
+          <div class="cmd">oc get pvc -n postgres</div>
+          <div class="cmd">oc get obc -n postgres</div>
+          <div class="cmd">oc get secret pgbackrest-uae-prod-609d40f1 -n postgres</div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-label">Connectivity & Debug</div>
+        <div class="cmd-list">
+          <div class="cmd">oc get svc -n postgres</div>
+          <div class="cmd">oc port-forward svc/pg-primary 5432 -n postgres</div>
+          <div class="cmd">oc get events -n postgres --sort-by=.lastTimestamp</div>
+          <div class="cmd">oc get nodes -o wide</div>
+          <div class="cmd">patronictl status</div>
+          <div class="cmd">oc exec -it pg-primary-0 -n postgres \</div>
+          <div class="cmd">  -c database -- patronictl status</div>
+          <div class="cmd">oc exec -it pg-primary-0 -n postgres \</div>
+          <div class="cmd">  -c database -- psql -c "SELECT version();"</div>
+          <div class="cmd">oc rollout status statefulset/prod-pgcluster-uae-ha \</div>
+          <div class="cmd">  -n postgres</div>
+          <div class="cmd">oc get postgrescluster \</div>
+          <div class="cmd">  prod-pgcluster-uae-ha -n postgres -o yaml</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PostgresCluster CR -->
+<div class="card">
+  <div class="card-head"><span class="icon">📄</span> PostgresCluster CR Key Spec</div>
+  <div class="card-body">
+    <div class="code-block">apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: prod-pgcluster-uae-ha
+  namespace: postgres
+spec:
+  postgresVersion: 18
+  instances:
+    - name: primary
+      replicas: 2          # primary + sync standby in DC1
+    - name: dr
+      replicas: 2          # 2 async replicas in DC2
+      dataVolumeClaimSpec:
+        storageClassName: ocs-storagecluster-ceph-rbd
+        resources: {requests: {storage: 2Ti}}
+      walVolumeClaimSpec:
+        storageClassName: ocs-storagecluster-ceph-rbd
+        resources: {requests: {storage: 200Gi}}
+  patroni:
+    dynamicConfiguration:
+      synchronous_mode: true
+      synchronous_node_count: 1
+  pgBouncer:
+    replicas: 1
+    config:
+      global:
+        pool_mode: transaction
+        max_client_conn: "2000"
+        default_pool_size: "50"
+        max_db_connections: "150"
+  backups:
+    pgbackrest:
+      repos:
+        - name: repo1
+          s3:
+            bucket: pgbackrest-uae-prod-609d40f1
+            endpoint: s3.openshift-storage.svc
+            region: us-east-1
+          schedules:
+            full: "0 1 * * *"
+            differential: "0 */6 * * *"</div>
+  </div>
+</div>
+
+</div><!-- /page-scroll -->
+</div><!-- /page-k8s -->
+
+<!-- ░░ TAB: ALERTS & RUNBOOKS ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ -->
+<div class="tab-page" id="page-alerts">
+<div class="page-scroll">
+
+<div class="kpi-grid mb12">
+  <div class="kpi kpi-green"><div class="label">Critical Alerts</div><div class="val" id="al-crit">0</div><div class="sub">firing now</div></div>
+  <div class="kpi kpi-yellow"><div class="label">Warnings</div><div class="val" id="al-warn">3</div><div class="sub">needs attention</div></div>
+  <div class="kpi kpi-green"><div class="label">Info</div><div class="val" id="al-info">5</div><div class="sub">informational</div></div>
+  <div class="kpi kpi-green"><div class="label">Cluster State</div><div class="val">OK</div><div class="sub">all members up</div></div>
+</div>
+
+<!-- Active Alerts panel -->
+<div class="card mb12">
+  <div class="card-head"><span class="icon">🚨</span> Active Alerts</div>
+  <div class="card-body" id="al-active-list">
+    <div class="alert alert-red mb8">
+      <span>🔴</span>
+      <div>
+        <div class="font-bold">WAL Archive Failures — 212 failed files</div>
+        <div class="text-xs mt4">pgbackrest S3/ODF Nooba connectivity issue. <b>Severity: HIGH</b> — PITR window at risk</div>
+        <div class="cmd-list mt4">
+          <div class="cmd">pgbackrest --stanza=db check</div>
+          <div class="cmd">pgbackrest --stanza=db info</div>
+        </div>
+      </div>
+    </div>
+    <div class="alert alert-yellow mb8">
+      <span>🟡</span>
+      <div>
+        <div class="font-bold">Idle-in-Transaction Session — PID 18400 (2m 17s)</div>
+        <div class="text-xs mt4">Session holding locks >2 min. Kill if exceeds 5 min to prevent cascade blocking. <b>Severity: MEDIUM</b></div>
+        <div class="cmd-list mt4">
+          <div class="cmd">SELECT pg_terminate_backend(18400);</div>
+        </div>
+      </div>
+    </div>
+    <div class="alert alert-yellow mb8">
+      <span>🟡</span>
+      <div>
+        <div class="font-bold">bgwriter maxwritten_clean elevated — 12 occurrences</div>
+        <div class="text-xs mt4">bgwriter stopping early — I/O pressure. Raise bgwriter_lru_maxpages. <b>Severity: LOW</b></div>
+        <div class="cmd-list mt4">
+          <div class="cmd">ALTER SYSTEM SET bgwriter_lru_maxpages = 200; SELECT pg_reload_conf();</div>
+        </div>
+      </div>
+    </div>
+    <div class="alert alert-cyan mb8">
+      <span>ℹ</span>
+      <div>
+        <div class="font-bold">txn_log autovacuum threshold at 98%</div>
+        <div class="text-xs mt4">Autovacuum will trigger soon. Monitor for lock conflicts during vacuum. <b>Severity: INFO</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Runbooks grid -->
+<div class="grid2 mb12">
+<!-- Failover runbook -->
+<div class="card">
+  <div class="card-head"><span class="icon">⚠</span> RUNBOOK: Emergency Failover</div>
+  <div class="card-body">
+    <div class="alert alert-red mb8">
+      <span>🚨</span>
+      <span>Use when primary pod is down or unresponsive. Patroni will auto-promote pg-standby-0 if TTL (30s) expires, but manual failover is faster.</span>
+    </div>
+    <div class="sec-label">Step 1 — Verify primary is down</div>
+    <div class="code-block">patronictl status
+oc get pods -n postgres
+oc describe pod pg-primary-0 -n postgres</div>
+    <div class="sec-label mt8">Step 2 — Force failover</div>
+    <div class="code-block">patronictl failover prod-pgcluster-uae-ha \
+  --master pg-primary-0 \
+  --candidate pg-standby-0 \
+  --force</div>
+    <div class="sec-label mt8">Step 3 — Verify new primary</div>
+    <div class="code-block">patronictl status
+-- New leader should be pg-standby-0 TL:9</div>
+    <div class="sec-label mt8">Step 4 — Verify PgBouncer reconnected</div>
+    <div class="code-block">psql -h 127.0.0.1 -p 5432 -U pgbouncer pgbouncer
+SHOW POOLS;</div>
+    <div class="sec-label mt8">Step 5 — Reinit old primary when recovered</div>
+    <div class="code-block">patronictl reinit prod-pgcluster-uae-ha pg-primary-0</div>
+    <div class="sec-label mt8">Step 6 — Confirm DR re-sync</div>
+    <div class="code-block">patronictl status
+-- pg-dr-0 and pg-dr-1 should resume streaming TL:9
+-- Both DC2 nodes reinit if needed:
+patronictl reinit prod-pgcluster-uae-ha pg-dr-1</div>
+    <div class="alert alert-yellow mt8">
+      <span>⚠</span>
+      <span>RTO ~2-5 min. RPO ~0 (sync standby). Notify app team and change manager on call.</span>
+    </div>
+  </div>
+</div>
+
+<!-- Switchover runbook -->
+<div class="card">
+  <div class="card-head"><span class="icon">⇄</span> RUNBOOK: Planned Switchover</div>
+  <div class="card-body">
+    <div class="alert alert-cyan mb8">
+      <span>ℹ</span>
+      <span>For planned maintenance. Zero-data-loss with sync replication. Expected downtime &lt;30s for client reconnect.</span>
+    </div>
+    <div class="sec-label">Step 1 — Pre-check</div>
+    <div class="code-block">patronictl status
+-- Confirm pg-standby-0 sync, lag=0, TL same</div>
+    <div class="sec-label mt8">Step 2 — Pause PgBouncer</div>
+    <div class="code-block">psql -h 127.0.0.1 -p 5432 -U pgbouncer pgbouncer
+PAUSE hplus_core;</div>
+    <div class="sec-label mt8">Step 3 — Execute switchover</div>
+    <div class="code-block">patronictl switchover prod-pgcluster-uae-ha \
+  --master pg-primary-0 \
+  --candidate pg-standby-0 \
+  --scheduled now --force</div>
+    <div class="sec-label mt8">Step 4 — Verify new leader</div>
+    <div class="code-block">patronictl status
+-- pg-standby-0 should show Leader TL:9</div>
+    <div class="sec-label mt8">Step 5 — Resume PgBouncer</div>
+    <div class="code-block">RESUME hplus_core;</div>
+    <div class="sec-label mt8">Step 6 — Monitor 15 min</div>
+    <div class="code-block">patronictl status
+SHOW POOLS;
+SELECT count(*) FROM pg_stat_activity;</div>
+    <div class="alert alert-green mt8">
+      <span>✓</span>
+      <span>Post-switchover: old primary becomes sync standby on TL:9 automatically via Patroni.</span>
+    </div>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+<div class="grid2">
+<!-- PITR summary -->
+<div class="card">
+  <div class="card-head"><span class="icon">◀◀</span> RUNBOOK: Point-in-Time Recovery</div>
+  <div class="card-body">
+    <div class="sec-label">When to use</div>
+    <div class="alert alert-yellow mb8">
+      <span>⚠</span>
+      <span>Accidental DROP TABLE, mass DELETE, corrupted data. PITR requires isolating a separate recovery environment — do not restore over production.</span>
+    </div>
+    <div class="sec-label">Key steps</div>
+    <div class="code-block">-- 1. Identify target time from audit log
+SELECT ts, command_tag, object_name FROM pgaudit.log
+WHERE command_tag IN ('DROP','TRUNCATE','DELETE')
+  AND ts > now() - interval '24h' ORDER BY ts DESC;
+
+-- 2. Pause PgBouncer
+PAUSE hplus_core;
+
+-- 3. pgBackRest restore on separate host
+pgbackrest --stanza=db restore \
+  --target="2026-05-22 14:29:00" \
+  --target-action=promote \
+  --type=time --delta
+
+-- 4. Verify data
+SELECT count(*) FROM dropped_table;
+
+-- 5. Export and re-import to production
+pg_dump -t dropped_table recovered_db > recovered.sql
+psql hplus_core < recovered.sql
+
+-- 6. Resume PgBouncer
+RESUME hplus_core;</div>
+    <div class="alert alert-red mt8">
+      <span>🚨</span>
+      <span>Full PITR SOP: see RUNBOOK-pitr.md in runbooks/ folder for complete step-by-step with rollback procedure.</span>
+    </div>
+  </div>
+</div>
+
+<!-- Single table recovery -->
+<div class="card">
+  <div class="card-head"><span class="icon">⭳</span> RUNBOOK: Single Table Recovery</div>
+  <div class="card-body">
+    <div class="sec-label">Steps overview</div>
+    <div class="code-block">-- 1. Create isolated recovery environment
+pgbackrest --stanza=db restore \
+  --target="2026-05-22 14:29:00" \
+  --type=time --delta \
+  --recovery-option="recovery_target_action=promote" \
+  --pg1-path=/pg/recovery
+
+-- 2. Bring recovery DB up
+pg_ctl start -D /pg/recovery
+
+-- 3. Export the specific table
+pg_dump -t public.accounts \
+  -h /pg/recovery \
+  -f /tmp/accounts_recovered.sql \
+  hplus_core
+
+-- 4. Compare row counts
+psql -c "SELECT count(*) FROM accounts" hplus_core
+psql -h /pg/recovery -c "SELECT count(*) FROM accounts" hplus_core
+
+-- 5. Import to production
+BEGIN;
+TRUNCATE TABLE accounts;
+\i /tmp/accounts_recovered.sql
+-- Verify before committing
+SELECT count(*) FROM accounts;
+COMMIT;
+
+-- 6. Vacuum and analyze
+VACUUM ANALYZE accounts;</div>
+    <div class="alert alert-cyan mt8">
+      <span>ℹ</span>
+      <span>Full procedure: RUNBOOK-single-table-recovery.md. Always test recovery on dev first.</span>
+    </div>
+    <div class="sec-label mt8">Index rebuild commands</div>
+    <div class="code-block">-- Concurrent reindex (no table lock)
+REINDEX INDEX CONCURRENTLY ix_txnlog_branch_date;
+REINDEX TABLE CONCURRENTLY txn_log;
+
+-- Check index bloat
+SELECT indexrelid::regclass AS idx,
+  pg_size_pretty(pg_relation_size(indexrelid)) AS size,
+  round(100*idx_blks_hit::numeric /
+    nullif(idx_blks_hit+idx_blks_read,0),1) AS hit_pct
+FROM pg_statio_user_indexes
+ORDER BY pg_relation_size(indexrelid) DESC LIMIT 10;</div>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+</div><!-- /page-scroll -->
+</div><!-- /page-alerts -->
+
+<!-- ░░ TAB: AUDIT ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ -->
+<div class="tab-page" id="page-audit">
+<div class="page-scroll">
+
+<div class="kpi-grid mb12">
+  <div class="kpi"><div class="label">DDL Events (24h)</div><div class="val" id="au-ddl">4</div><div class="sub">pgaudit DDL</div></div>
+  <div class="kpi kpi-red"><div class="label">DROP Events</div><div class="val" id="au-drops">0</div><div class="sub">last 24h</div></div>
+  <div class="kpi"><div class="label">Grant/Revoke</div><div class="val" id="au-grants">2</div><div class="sub">privilege changes</div></div>
+  <div class="kpi kpi-green"><div class="label">pgaudit Status</div><div class="val">Active</div><div class="sub">log_catalog=on</div></div>
+</div>
+
+<div class="grid2 mb12">
+<div class="card">
+  <div class="card-head"><span class="icon">📋</span> pgaudit Log Viewer</div>
+  <div class="card-body">
+    <div class="sec-label">Filter</div>
+    <div class="row mb8" style="gap:8px;">
+      <select id="au-filter-type" style="background:var(--bg0);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);padding:4px 8px;font-size:11px;">
+        <option value="all">All Events</option>
+        <option value="DDL">DDL Only</option>
+        <option value="DROP">DROP Events</option>
+        <option value="GRANT">GRANT/REVOKE</option>
+        <option value="WRITE">DML Writes</option>
+      </select>
+      <select id="au-filter-user" style="background:var(--bg0);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);padding:4px 8px;font-size:11px;">
+        <option value="all">All Users</option>
+        <option value="postgres">postgres</option>
+        <option value="hplus_app">hplus_app</option>
+        <option value="hplus_dba">hplus_dba</option>
+      </select>
+      <button class="btn btn-cyan" onclick="filterAuditLog()">Apply</button>
+      <button class="btn" onclick="exportAuditCSV()">⬇ Export CSV</button>
+    </div>
+    <div class="log-box" id="au-log-box">
+      <div class="log-line"><span class="log-ts">2026-05-22 23:42:11</span> <span class="log-warn">[DDL]</span> <span class="log-info">hplus_dba</span> CREATE INDEX CONCURRENTLY ix_txnlog_branch_date ON txn_log(branch_id, ts)</div>
+      <div class="log-line"><span class="log-ts">2026-05-22 20:15:03</span> <span class="log-warn">[DDL]</span> <span class="log-info">hplus_dba</span> ALTER TABLE txn_log ADD COLUMN batch_ref VARCHAR(64)</div>
+      <div class="log-line"><span class="log-ts">2026-05-22 18:00:22</span> <span class="log-ok">[GRANT]</span> <span class="log-info">postgres</span> GRANT SELECT ON audit_log TO hplus_ro</div>
+      <div class="log-line"><span class="log-ts">2026-05-22 14:30:00</span> <span class="log-ok">[GRANT]</span> <span class="log-info">postgres</span> GRANT CONNECT ON DATABASE hplus_reporting TO hplus_ro</div>
+      <div class="log-line"><span class="log-ts">2026-05-22 09:12:44</span> <span class="log-warn">[DDL]</span> <span class="log-info">hplus_dba</span> CREATE TABLE txn_log_2026_06 PARTITION OF txn_log FOR VALUES FROM ('2026-06-01') TO ('2026-07-01')</div>
+      <div class="log-line"><span class="log-ts">2026-05-21 22:08:11</span> <span class="log-warn">[DDL]</span> <span class="log-info">hplus_dba</span> VACUUM FREEZE ANALYZE accounts</div>
+      <div class="log-line"><span class="log-ts">2026-05-21 14:00:00</span> <span class="log-ok">[CONNECT]</span> <span class="log-info">hplus_app</span> connection authorized</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><span class="icon">⚙</span> pgaudit Configuration</div>
+  <div class="card-body">
+    <div class="sec-label">Setup (postgresql.conf)</div>
+    <div class="code-block">shared_preload_libraries = 'pgaudit'
+
+# Session-level audit (what classes to log)
+pgaudit.log = 'ddl, role, misc_set'
+
+# Object-level audit (requires pgaudit.log = 'object')
+pgaudit.log_catalog = on
+pgaudit.log_parameter = on
+pgaudit.log_statement_once = off
+pgaudit.log_level = log</div>
+    <div class="sec-label mt8">Query pgaudit logs from PostgreSQL</div>
+    <div class="code-block">-- DDL events last 24h
+SELECT log_time, user_name, command_tag,
+  object_name, statement
+FROM pg_catalog.pg_log_statements
+WHERE log_time > now() - interval '24h'
+  AND command_tag IN ('CREATE','DROP','ALTER','TRUNCATE','GRANT','REVOKE')
+ORDER BY log_time DESC;</div>
+    <div class="sec-label mt8">Log location (OCP pod)</div>
+    <div class="code-block">oc exec -it pg-primary-0 -n postgres -c database -- \
+  tail -f /pgdata/pg18/log/postgresql-*.log | grep AUDIT</div>
+    <div class="sec-label mt8">Per-role audit (granular)</div>
+    <div class="code-block">-- Audit all writes for hplus_app
+ALTER ROLE hplus_app SET pgaudit.log = 'write';
+
+-- Reset to default
+ALTER ROLE hplus_app RESET pgaudit.log;</div>
+  </div>
+</div>
+</div><!-- /grid2 -->
+
+<!-- Role & privilege audit -->
+<div class="card">
+  <div class="card-head"><span class="icon">🔑</span> Role & Privilege Audit SQL</div>
+  <div class="card-body">
+    <div class="grid2">
+      <div>
+        <div class="sec-label">List all roles and attributes</div>
+        <div class="code-block">SELECT rolname, rolsuper, rolcreaterole, rolcreatedb,
+  rolcanlogin, rolreplication, rolconnlimit,
+  rolvaliduntil
+FROM pg_roles
+ORDER BY rolname;</div>
+      </div>
+      <div>
+        <div class="sec-label">Table-level privileges</div>
+        <div class="code-block">SELECT grantee, table_schema, table_name,
+  string_agg(privilege_type,', ') AS privileges
+FROM information_schema.role_table_grants
+WHERE grantee NOT IN ('postgres','PUBLIC')
+GROUP BY 1,2,3
+ORDER BY 1,2,3;
+
+-- Column-level privileges
+SELECT grantee, table_name, column_name, privilege_type
+FROM information_schema.column_privileges
+WHERE grantee NOT IN ('postgres','PUBLIC')
+ORDER BY 1,2,3;
+
+-- Check if role can connect to specific DB
+SELECT has_database_privilege('hplus_app','hplus_core','CONNECT');
+
+-- Role membership tree
+SELECT r.rolname, m.rolname AS member_of
+FROM pg_auth_members am
+JOIN pg_roles r ON r.oid = am.roleid
+JOIN pg_roles m ON m.oid = am.member
+ORDER BY 2,1;
+
+-- Password expiry audit
+SELECT rolname, rolvaliduntil,
+  CASE WHEN rolvaliduntil < now() THEN 'EXPIRED'
+       WHEN rolvaliduntil < now()+interval '30d' THEN 'EXPIRING SOON'
+       ELSE 'OK' END AS status
+FROM pg_roles WHERE rolcanlogin ORDER BY rolvaliduntil;</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /page-scroll -->
+</div><!-- /page-audit -->
+
+</div><!-- /main -->
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   DBA CONSOLE — SHARED SIMULATION ENGINE
+   Scenario-driven metrics with exponential smoothing
+═══════════════════════════════════════════════════════════ */
+
+// ── Simulation state ─────────────────────────────────────
+const SIM = {
+  scenario: 'normal',
+  scenarioLabel: 'Normal Operations',
+  scenarioSeverity: 'ok',
+  speed: 1,
+  paused: false,
+  tick: 0,
+  // Metrics (smoothed values)
+  m: {
+    tps: 120, clientConn: 180, serverConn: 44,
+    pgConn: 95, activeQueries: 62, idleInTxn: 2,
+    waitQueue: 0, walRate: 0.5,
+    syncLag: 0, drLag: 2*1024*1024,
+    archivedCount: 704, failedCount: 212,
+    lastArchivedSecondsAgo: 3, archiveOk: true,
+    backupRunning: false, backupPct: 0,
+    blkHitRate: 99.4, tempFiles: 1, seqScans: 14,
+    checkpointWriteMs: 180, bgwriterClean: 340, maxwrittenClean: 12,
+    bgwriterBackend: 88, checkpointsReq: 12,
+    autovacWorkers: 1, oldestXidAge: 142e6,
+    deadTuplesMin: 1240, bloatPct: 4.2,
+    podCpuPri: 42, podMemPri: 67, pvcUsedPct: 54,
+    lockWaits: 0, longTxnSec: 42
+  }
+};
+
+// ── Scenario target metrics ───────────────────────────────
+const SCENARIOS = {
+  normal:    { tps:120,  clientConn:180,  serverConn:44,  activeQueries:62,  idleInTxn:2,  waitQueue:0,  walRate:0.5,  syncLag:0,    drLag:2e6,   lockWaits:0, blkHitRate:99.4, tempFiles:1,  podCpuPri:42 },
+  highload:  { tps:850,  clientConn:980,  serverConn:140, activeQueries:130, idleInTxn:8,  waitQueue:12, walRate:4.2,  syncLag:5e4,  drLag:8e6,   lockWaits:3, blkHitRate:96.2, tempFiles:8,  podCpuPri:88 },
+  connspike: { tps:200,  clientConn:1800, serverConn:148, activeQueries:95,  idleInTxn:22, waitQueue:44, walRate:1.2,  syncLag:1e3,  drLag:4e6,   lockWaits:2, blkHitRate:98.8, tempFiles:3,  podCpuPri:55 },
+  longtxn:   { tps:100,  clientConn:220,  serverConn:60,  activeQueries:48,  idleInTxn:14, waitQueue:8,  walRate:0.4,  syncLag:0,    drLag:3e6,   lockWaits:4, blkHitRate:99.1, tempFiles:2,  podCpuPri:40 },
+  lockwait:  { tps:80,   clientConn:300,  serverConn:75,  activeQueries:60,  idleInTxn:18, waitQueue:22, walRate:0.3,  syncLag:2e3,  drLag:5e6,   lockWaits:12,blkHitRate:99.0, tempFiles:1,  podCpuPri:45 },
+  bloat:     { tps:90,   clientConn:160,  serverConn:40,  activeQueries:55,  idleInTxn:4,  waitQueue:0,  walRate:2.8,  syncLag:1e3,  drLag:4e6,   lockWaits:1, blkHitRate:94.2, tempFiles:12, podCpuPri:62 },
+  vacuumlate:{ tps:110,  clientConn:170,  serverConn:42,  activeQueries:60,  idleInTxn:5,  waitQueue:2,  walRate:1.8,  syncLag:0,    drLag:3e6,   lockWaits:2, blkHitRate:97.8, tempFiles:4,  podCpuPri:55 },
+  walhigh:   { tps:400,  clientConn:500,  serverConn:120, activeQueries:110, idleInTxn:6,  waitQueue:5,  walRate:18.4, syncLag:2e5,  drLag:50e6,  lockWaits:1, blkHitRate:97.0, tempFiles:6,  podCpuPri:78 },
+  failover:  { tps:0,    clientConn:1800, serverConn:0,   activeQueries:0,   idleInTxn:0,  waitQueue:200,walRate:0,    syncLag:0,    drLag:0,     lockWaits:0, blkHitRate:0,    tempFiles:0,  podCpuPri:10 },
+  switchover:{ tps:0,    clientConn:180,  serverConn:0,   activeQueries:0,   idleInTxn:0,  waitQueue:180,walRate:0,    syncLag:0,    drLag:2e6,   lockWaits:0, blkHitRate:99.4, tempFiles:0,  podCpuPri:22 },
+  pitr:      { tps:0,    clientConn:0,    serverConn:0,   activeQueries:0,   idleInTxn:0,  waitQueue:0,  walRate:0,    syncLag:0,    drLag:0,     lockWaits:0, blkHitRate:0,    tempFiles:0,  podCpuPri:5  },
+  tablerec:  { tps:20,   clientConn:180,  serverConn:44,  activeQueries:10,  idleInTxn:2,  waitQueue:0,  walRate:0.2,  syncLag:0,    drLag:2e6,   lockWaits:0, blkHitRate:99.4, tempFiles:0,  podCpuPri:20 }
+};
+
+// ── Exponential smooth helper ─────────────────────────────
+function smooth(curr, target, alpha) {
+  return curr + (target - curr) * alpha;
+}
+
+function jitter(val, pct) {
+  return val * (1 + (Math.random() - 0.5) * pct);
+}
+
+// ── Tab switching ─────────────────────────────────────────
+const builtTabs = new Set(['overview','arch']);
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const page = document.getElementById('page-' + name);
+  if (page) page.classList.add('active');
+  const tab = document.getElementById('t-' + name);
+  if (tab) tab.classList.add('active');
+}
+
+// ── Scenario setter ───────────────────────────────────────
+function setScenario(sc, label, sev) {
+  SIM.scenario = sc;
+  SIM.scenarioLabel = label;
+  SIM.scenarioSeverity = sev;
+  // Update pill UI
+  document.querySelectorAll('.sc-pill').forEach(p => p.classList.remove('active'));
+  event.target.closest('.sc-pill').classList.add('active');
+  // Update header badge
+  const badge = document.getElementById('hdr-scenario');
+  if (badge) badge.textContent = label;
+  // Update alerts panel
+  updateAlertsForScenario(sc);
+}
+
+// ── Alert messages by scenario ────────────────────────────
+function updateAlertsForScenario(sc) {
+  const el = document.getElementById('ov-alerts');
+  if (!el) return;
+  const msgs = {
+    normal:    '<div class="alert alert-green"><span>✓</span><span>All systems normal. No active alerts.</span></div>',
+    highload:  '<div class="alert alert-yellow"><span>⚠</span><span><b>High Load:</b> TPS spike, serverConn approaching max_db_connections (140/150). Monitor PgBouncer wait queue.</span></div>',
+    connspike: '<div class="alert alert-red"><span>🔴</span><span><b>Connection Spike:</b> 1800 clients, wait queue=44. Consider raising max_client_conn or adding read replica.</span></div>',
+    longtxn:   '<div class="alert alert-yellow"><span>⚠</span><span><b>Long Transactions:</b> 14 idle-in-txn sessions. Identify and terminate sessions holding locks >5min.</span></div>',
+    lockwait:  '<div class="alert alert-red"><span>🔴</span><span><b>Lock Contention:</b> 12 lock waits. Find blocking PID and terminate. Check for long idle-in-txn sessions.</span></div>',
+    bloat:     '<div class="alert alert-yellow"><span>⚠</span><span><b>Table Bloat:</b> High dead tuple rate, buffer hit dropping. Schedule VACUUM FREEZE on txn_log.</span></div>',
+    vacuumlate:'<div class="alert alert-yellow"><span>⚠</span><span><b>Autovacuum Delayed:</b> txn_log at 98% threshold. Manual VACUUM may be needed during low traffic window.</span></div>',
+    walhigh:   '<div class="alert alert-red"><span>🔴</span><span><b>WAL Storm:</b> WAL rate 18.4 MB/s, sync lag 200KB, DR lag 50MB. Check for large bulk operations or missing checkpoints.</span></div>',
+    failover:  '<div class="alert alert-red"><span>🚨</span><span><b>PRIMARY FAILOVER:</b> pg-primary-0 unreachable. Patroni promoting pg-standby-0. TPS=0 during promotion (~30s). See Alerts & Runbooks tab.</span></div>',
+    switchover:'<div class="alert alert-yellow"><span>⚠</span><span><b>Planned Switchover:</b> PgBouncer PAUSED. Waiting for pg-standby-0 to promote. All new connections queuing.</span></div>',
+    pitr:      '<div class="alert alert-red"><span>🚨</span><span><b>PITR Recovery Mode:</b> Cluster isolated. pgBackRest restoring to target time. All application connections blocked.</span></div>',
+    tablerec:  '<div class="alert alert-cyan"><span>ℹ</span><span><b>Table Recovery:</b> Recovery environment active. Production running at reduced capacity while DBA exports recovered data.</span></div>'
+  };
+  el.innerHTML = msgs[sc] || msgs.normal;
+}
+
+// ── Format helpers ────────────────────────────────────────
+function fmtBytes(b) {
+  if (b === 0) return '0 B';
+  if (b < 1024) return b.toFixed(0) + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  if (b < 1073741824) return (b/1048576).toFixed(1) + ' MB';
+  return (b/1073741824).toFixed(2) + ' GB';
+}
+
+function fmtNum(n, dec=0) {
+  return Math.round(n).toLocaleString();
+}
+
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function setBar(id, pct) {
+  const el = document.getElementById(id);
+  if (el) {
+    const p = Math.min(100, Math.max(0, pct));
+    el.style.width = p + '%';
+    el.className = 'pbar ' + (p > 90 ? 'pbar-red' : p > 70 ? 'pbar-yellow' : 'pbar-green');
+  }
+}
+
+// ── Clock ─────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  setText('hdr-clock', h+':'+m+':'+s);
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── Main simulation tick ──────────────────────────────────
+function tick() {
+  if (SIM.paused) return;
+  const tgt = SCENARIOS[SIM.scenario] || SCENARIOS.normal;
+  const alpha = 0.08 * SIM.speed;
+  const m = SIM.m;
+
+  // Smooth all metrics toward scenario targets
+  m.tps         = smooth(m.tps,         jitter(tgt.tps,0.12), alpha);
+  m.clientConn  = smooth(m.clientConn,  jitter(tgt.clientConn,0.05), alpha);
+  m.serverConn  = smooth(m.serverConn,  jitter(tgt.serverConn,0.05), alpha);
+  m.activeQueries= smooth(m.activeQueries, jitter(tgt.activeQueries,0.1), alpha);
+  m.idleInTxn   = smooth(m.idleInTxn,   jitter(tgt.idleInTxn,0.15), alpha);
+  m.waitQueue   = smooth(m.waitQueue,   jitter(tgt.waitQueue,0.2), alpha);
+  m.walRate     = smooth(m.walRate,     jitter(tgt.walRate,0.08), alpha);
+  m.syncLag     = smooth(m.syncLag,     jitter(tgt.syncLag,0.3), alpha);
+  m.drLag       = smooth(m.drLag,       jitter(tgt.drLag,0.15), alpha);
+  m.lockWaits   = smooth(m.lockWaits,   jitter(tgt.lockWaits,0.2), alpha);
+  m.blkHitRate  = smooth(m.blkHitRate,  jitter(tgt.blkHitRate,0.005), alpha);
+  m.tempFiles   = smooth(m.tempFiles,   jitter(tgt.tempFiles,0.2), alpha);
+  m.podCpuPri   = smooth(m.podCpuPri,   jitter(tgt.podCpuPri,0.08), alpha);
+  m.pgConn      = Math.round(m.activeQueries + m.idleInTxn + m.waitQueue + 31);
+  m.longTxnSec  = SIM.tick * 0.5 % 300;
+
+  // Archive: fail occasionally
+  if (Math.random() < 0.005) m.archiveOk = false;
+  else if (Math.random() < 0.01) m.archiveOk = true;
+  m.lastArchivedSecondsAgo = Math.min(60, m.lastArchivedSecondsAgo + 0.5);
+  if (Math.random() < 0.08) { m.lastArchivedSecondsAgo = 2; if(m.archiveOk) m.archivedCount++; }
+
+  SIM.tick++;
+  updateAllDisplays();
+}
+
+// ── Update all display elements ───────────────────────────
+function updateAllDisplays() {
+  const m = SIM.m;
+  const t = Math.max(0, m.tps);
+  const cc = Math.max(0, m.clientConn);
+  const sc = Math.max(0, m.serverConn);
+  const aq = Math.max(0, m.activeQueries);
+  const ii = Math.max(0, m.idleInTxn);
+  const wq = Math.max(0, m.waitQueue);
+  const sl = Math.max(0, m.syncLag);
+  const dl = Math.max(0, m.drLag);
+  const wr = Math.max(0, m.walRate);
+  const hr = Math.min(100, Math.max(0, m.blkHitRate));
+  const cpu = Math.min(100, Math.max(0, m.podCpuPri));
+  const satPct = sc > 0 ? Math.round(sc/150*100) : 0;
+
+  // Header status
+  const statusEl = document.getElementById('hdr-status');
+  if (statusEl) {
+    if (SIM.scenarioSeverity === 'err') {
+      statusEl.textContent = '● CRITICAL'; statusEl.className='badge badge-err';
+    } else if (SIM.scenarioSeverity === 'warn') {
+      statusEl.textContent = '● WARNING'; statusEl.className='badge badge-warn';
+    } else {
+      statusEl.textContent = '● HEALTHY'; statusEl.className='badge badge-ok';
+    }
+  }
+
+  // ── Overview tab ─────────────────────────────────────
+  setText('ov-tps',      t.toFixed(0));
+  setText('ov-conn',     cc.toFixed(0));
+  setText('ov-active',   aq.toFixed(0));
+  setText('ov-idleitxn', ii.toFixed(0));
+  setText('ov-wal',      wr.toFixed(1));
+  setText('ov-sync-lag', sl < 1024 ? sl.toFixed(0)+' B' : fmtBytes(sl));
+  setText('ov-dr-lag',   (dl/1048576).toFixed(1));
+  setText('ov-arch',     m.archiveOk ? '✓' : '✗');
+  setText('ov-arch-ago', m.lastArchivedSecondsAgo.toFixed(0));
+  setText('ov-sync-cell',sl < 1024 ? sl.toFixed(0)+' B' : fmtBytes(sl));
+  setText('ov-dr-cell',  fmtBytes(dl));
+  setText('ov-client-conn', cc.toFixed(0)+' / 2000');
+  setText('ov-server-conn', sc.toFixed(0)+' / 150');
+  setText('ov-wait-q',  wq.toFixed(0));
+  setText('ov-sat',     satPct+'%');
+  setText('ov-hit-rate', hr.toFixed(1)+'%');
+  setText('ov-ckpt-ms', m.checkpointWriteMs.toFixed(0)+' ms');
+  setText('ov-tmpf',    m.tempFiles.toFixed(0));
+  setText('ov-xid-age', (m.oldestXidAge/1e6).toFixed(0)+'M');
+  setBar('ov-pb-client', cc/2000*100);
+  setBar('ov-pb-server', satPct);
+  setBar('ov-pb-hit',    hr);
+
+  // ── Architecture tab ─────────────────────────────────
+  setText('arch-tps-lbl', 'TPS: '+t.toFixed(0));
+  setText('svg-tps-val',  t.toFixed(0));
+  setText('svg-lag-val',  sl < 1024 ? sl.toFixed(0)+' B' : fmtBytes(sl));
+  setText('svg-dr-val',   fmtBytes(dl));
+  setText('svg-conn-val',  cc.toFixed(0)+'/'+sc.toFixed(0));
+  // Update DC2 lag badges in new SVG
+  const dr0Badge = document.getElementById('dr0-lag-badge');
+  const dr1Badge = document.getElementById('dr1-lag-badge');
+  if (dr0Badge) dr0Badge.textContent = 'ASYNC · LAG≈' + fmtBytes(dl);
+  if (dr1Badge) dr1Badge.textContent = 'ASYNC · LAG≈' + fmtBytes(dl*1.05);
+  // WAL DR-1
+  setText('wal-dr1-lag',  fmtBytes(dl*1.05));
+  setText('wal-dr1-wl',   (120+Math.random()*20).toFixed(0)+'ms');
+  setText('wal-dr1-fl',   (135+Math.random()*20).toFixed(0)+'ms');
+  setText('wal-dr1-rl',   (900+Math.random()*50).toFixed(0)+'ms');
+  // Overview DR-1
+  setText('ov-dr1-cell',  fmtBytes(dl*1.05));
+
+  // ── Command Center tab ────────────────────────────────
+  setText('cc-idleitxn', ii.toFixed(0));
+  setText('cc-blocked',  m.lockWaits.toFixed(0));
+  setText('cc-waits',    (m.lockWaits+2).toFixed(0));
+  setText('cc-longtxn',  Math.floor(m.longTxnSec/60)+':'+String(Math.floor(m.longTxnSec%60)).padStart(2,'0'));
+  setText('cc-lock-cnt', m.lockWaits.toFixed(0));
+  const xidPct = (m.oldestXidAge/2e9*100).toFixed(1);
+  setText('cc-xid', (m.oldestXidAge/1e6).toFixed(0)+'M');
+  setText('cc-xid-age1', fmtNum(m.oldestXidAge));
+  setText('cc-xid-pct1', xidPct+'%');
+  setText('cc-xid-age2', (m.oldestXidAge/1e6).toFixed(0)+'M');
+
+  // ── Sessions tab ─────────────────────────────────────
+  setText('sl-total',   (m.pgConn).toFixed(0));
+  setText('sl-active',  aq.toFixed(0));
+  setText('sl-idle',    ii.toFixed(0));
+  setText('sl-blocked', m.lockWaits.toFixed(0));
+  setText('sl-clean-idle', Math.max(0,(m.pgConn - aq - ii - m.lockWaits)).toFixed(0));
+  setText('sl-lockwait',m.lockWaits.toFixed(0));
+
+  // ── PgBouncer tab ─────────────────────────────────────
+  setText('pb-clients', cc.toFixed(0));
+  setText('pb-servers', sc.toFixed(0));
+  setText('pb-waitq',   wq.toFixed(0));
+  setText('pb-sat',     satPct+'%');
+  setText('pb-clact',   sc.toFixed(0));
+  setText('pb-clwait',  wq.toFixed(0));
+  setText('pb-svact',   sc.toFixed(0));
+  setText('pb-svidle',  Math.max(0,50-sc).toFixed(0));
+  setText('pb-maxwait', wq > 0 ? (wq*0.1).toFixed(1) : '0');
+  setText('pb-sat-client-lbl', cc.toFixed(0)+' / 2000');
+  setText('pb-sat-client-pct', (cc/2000*100).toFixed(0)+'%');
+  setText('pb-sat-server-lbl', sc.toFixed(0)+' / 150');
+  setText('pb-sat-server-pct', satPct+'%');
+  setBar('pb-sat-client-bar', cc/2000*100);
+  setBar('pb-sat-server-bar', satPct);
+  const pbAlert = document.getElementById('pb-sat-alert');
+  if (pbAlert) {
+    if (wq > 5) {
+      pbAlert.className='alert alert-red';
+      pbAlert.innerHTML='<span>🔴</span><span><b>CRITICAL:</b> '+wq.toFixed(0)+' clients waiting! Increase pool or add replicas.</span>';
+    } else if (satPct > 70) {
+      pbAlert.className='alert alert-yellow';
+      pbAlert.innerHTML='<span>⚠</span><span><b>WARNING:</b> Server pool at '+satPct+'% — approaching max_db_connections limit.</span>';
+    } else {
+      pbAlert.className='alert alert-green';
+      pbAlert.innerHTML='<span>✓</span><span>Pool operating normally. Wait queue = '+wq.toFixed(0)+'. No saturation risk.</span>';
+    }
+  }
+
+  // ── Performance tab ───────────────────────────────────
+  setText('pf-hit',     hr.toFixed(1)+'%');
+  setText('pf-tmp',     m.tempFiles.toFixed(0));
+  setText('pf-seq',     m.seqScans.toFixed(0));
+  setText('pf-slow',    wq > 5 ? '8' : '2');
+  setText('pf-avgq',    (4.2 + m.serverConn/150*8).toFixed(1)+'ms');
+  setText('pf-idxhit',  (98.7 - m.tempFiles*0.2).toFixed(1)+'%');
+
+  // ── Memory tab ────────────────────────────────────────
+  setText('mem-tmpspills', m.tempFiles.toFixed(0));
+  setText('mem-oshit',     hr.toFixed(1)+'%');
+
+  // ── Checkpoint tab ────────────────────────────────────
+  setText('ck-write', m.checkpointWriteMs.toFixed(0)+'ms');
+  setText('ck-bufs',  ((2100 + t/120*500)).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,','));
+
+  // ── WAL tab ───────────────────────────────────────────
+  setText('wal-rate',     wr.toFixed(1));
+  setText('wal-sync-lag', sl < 1024 ? sl.toFixed(0)+' B' : fmtBytes(sl));
+  setText('wal-dr-lag',   fmtBytes(dl));
+  setText('wal-arch-ok',  m.archiveOk ? 'OK' : '⚠ FAIL');
+  setText('wal-arch-ago', m.lastArchivedSecondsAgo.toFixed(0));
+  setText('wal-fc',       m.failedCount.toFixed(0));
+  setText('wal-lat',      m.lastArchivedSecondsAgo.toFixed(0)+'s ago');
+
+  // ── Autovacuum tab ────────────────────────────────────
+  setText('av-workers',   m.autovacWorkers.toFixed(0));
+  setText('av-oldest-xid',(m.oldestXidAge/1e6).toFixed(0)+'M');
+  const deadTotal = Math.round(m.oldestXidAge/1e6*6000 + 80000);
+  setText('av-dead',      (deadTotal/1000).toFixed(0)+'K');
+  const tlDeadPct = Math.min(100, Math.round(deadTotal/870000*100));
+  setText('av-tl-dead',  fmtNum(deadTotal));
+  setText('av-tl-pct',   tlDeadPct+'%');
+  const tlBar = document.getElementById('av-tl-bar');
+  if (tlBar) {
+    tlBar.style.width = tlDeadPct+'%';
+    tlBar.className = 'pbar '+(tlDeadPct>90?'pbar-red':tlDeadPct>70?'pbar-yellow':'pbar-green');
+  }
+
+  // ── K8s tab ───────────────────────────────────────────
+  setText('k8-cpu-pri',    cpu.toFixed(0)+'%');
+  setText('k8-mem-pri',    m.podMemPri.toFixed(0)+'%');
+  setText('k8-pod-cpu1',   cpu.toFixed(0)+'%');
+  setText('k8-pod-mem1',   m.podMemPri.toFixed(0)+'%');
+  const pvcUsed = (1024*m.pvcUsedPct/100 + (t-120)*0.01).toFixed(2);
+  setText('k8-pvc1-used',  pvcUsed+' GB');
+
+  // ── Alerts tab ────────────────────────────────────────
+  const critCount = (wq > 20 ? 1 : 0) + (!m.archiveOk ? 1 : 0) + (SIM.scenario==='failover'?1:0);
+  const warnCount = (ii > 5 ? 1 : 0) + (m.lockWaits > 3 ? 1 : 0) + (m.failedCount > 100 ? 1 : 0);
+  setText('al-crit', critCount);
+  setText('al-warn', warnCount + (critCount === 0 ? 1 : 0));
+}
+
+// ── Audit filter ──────────────────────────────────────────
+function filterAuditLog() {
+  // Cosmetic — in a real integration this would query pg_log
+  const box = document.getElementById('au-log-box');
+  if (box) {
+    const type = document.getElementById('au-filter-type').value;
+    const entries = box.querySelectorAll('.log-line');
+    entries.forEach(e => {
+      const txt = e.textContent;
+      if (type === 'all') { e.style.display=''; return; }
+      e.style.display = txt.includes('['+type+']') ? '' : 'none';
+    });
+  }
+}
+
+function exportAuditCSV() {
+  const rows = [['Timestamp','Type','User','Statement']];
+  const lines = document.querySelectorAll('#au-log-box .log-line');
+  lines.forEach(l => {
+    const t = l.querySelector('.log-ts')?.textContent || '';
+    const parts = l.textContent.replace(t,'').trim().split(/\s+/);
+    rows.push([t, parts[0]||'', parts[1]||'', parts.slice(2).join(' ')]);
+  });
+  const csv = rows.map(r => r.map(v => '"'+v.replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='pgaudit-export-'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+}
+
+// ── Copy to clipboard for code blocks ────────────────────
+document.querySelectorAll('.code-block').forEach(block => {
+  block.style.cursor = 'pointer';
+  block.title = 'Click to copy';
+  block.addEventListener('click', function() {
+    const text = this.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = this.style.border;
+      this.style.border = '1px solid var(--green)';
+      this.style.boxShadow = '0 0 8px rgba(0,230,118,.3)';
+      setTimeout(() => {
+        this.style.border = orig;
+        this.style.boxShadow = '';
+      }, 600);
+    }).catch(() => {});
+  });
+});
+
+// ── Boot ──────────────────────────────────────────────────
+updateAlertsForScenario('normal');
+updateAllDisplays();
+setInterval(tick, 800);
+</script>
+<!-- Status footer bar -->
+<div id="statusbar" style="height:22px;background:var(--bg1);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:16px;flex-shrink:0;font-size:10px;color:var(--text3);">
+  <span>🐘 PostgreSQL 18 DBA Console</span>
+  <span style="color:var(--border)">|</span>
+  <span>Scope: <b style="color:var(--text2)">prod-pgcluster-uae-ha</b></span>
+  <span style="color:var(--border)">|</span>
+  <span>DC1: <span class="dot dot-green" style="width:6px;height:6px;"></span> pg-primary-0 + pg-standby-0</span>
+  <span style="color:var(--border)">|</span>
+  <span>DC2: <span class="dot dot-purple" style="width:6px;height:6px;"></span> pg-dr-0 + pg-dr-1</span>
+  <span style="color:var(--border)">|</span>
+  <span>pgBackRest: repo1 · S3 ODF Nooba · aes-256-cbc</span>
+  <span style="color:var(--border)">|</span>
+  <span>PgBouncer: transaction mode · max_client=2000</span>
+  <div style="flex:1"></div>
+  <span id="footer-scenario" style="color:var(--cyan)">Normal Operations</span>
+  <span style="color:var(--border)">|</span>
+  <span id="footer-tick" style="font-family:var(--mono)">tick: 0</span>
+</div>
+<script>
+// Update footer
+setInterval(()=>{
+  const el = document.getElementById('footer-scenario');
+  if(el) el.textContent = SIM.scenarioLabel;
+  const t = document.getElementById('footer-tick');
+  if(t) t.textContent = 'tick: '+SIM.tick;
+}, 1000);
+</script>
+</body>
+</html>

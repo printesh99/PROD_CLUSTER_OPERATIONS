@@ -1,0 +1,891 @@
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "annotations": {},
+        "labels": {
+          "app.kubernetes.io/component": "readonly-agent",
+          "app.kubernetes.io/name": "pg-object-monitor-agent"
+        },
+        "name": "pg-object-monitor-agent",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "progressDeadlineSeconds": 600,
+        "replicas": 1,
+        "revisionHistoryLimit": 10,
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/component": "readonly-agent",
+            "app.kubernetes.io/name": "pg-object-monitor-agent"
+          }
+        },
+        "strategy": {
+          "rollingUpdate": {
+            "maxSurge": "25%",
+            "maxUnavailable": "25%"
+          },
+          "type": "RollingUpdate"
+        },
+        "template": {
+          "metadata": {
+            "annotations": {
+              "kubectl.kubernetes.io/restartedAt": "2026-05-20T08:40:10+02:00"
+            },
+            "creationTimestamp": null,
+            "labels": {
+              "app.kubernetes.io/component": "readonly-agent",
+              "app.kubernetes.io/name": "pg-object-monitor-agent"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "env": [
+                  {
+                    "name": "CONSOLE_MODE",
+                    "value": "agent"
+                  },
+                  {
+                    "name": "READ_ONLY",
+                    "value": "true"
+                  },
+                  {
+                    "name": "CLUSTER_ID",
+                    "value": "prod"
+                  },
+                  {
+                    "name": "LOCAL_CLUSTER_ID",
+                    "value": "prod"
+                  },
+                  {
+                    "name": "CLUSTER_NAME",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "K8S_NAMESPACE",
+                    "value": "prod-pgcluster-uae"
+                  },
+                  {
+                    "name": "APP_SCHEMA",
+                    "value": "object_metrics"
+                  },
+                  {
+                    "name": "PGHOST",
+                    "value": "prod-pgcluster-uae-primary.prod-pgcluster-uae.svc"
+                  },
+                  {
+                    "name": "PGPORT",
+                    "value": "5555"
+                  },
+                  {
+                    "name": "PGDATABASE",
+                    "value": "postgres"
+                  },
+                  {
+                    "name": "PGUSER",
+                    "value": "object_monitor_agent"
+                  },
+                  {
+                    "name": "PGPASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "password",
+                        "name": "pg-object-monitor-agent-db"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGSSLMODE",
+                    "value": "require"
+                  },
+                  {
+                    "name": "DB_POOL_SIZE",
+                    "value": "2"
+                  },
+                  {
+                    "name": "PGBACKREST_REPO_NAME",
+                    "value": "repo1"
+                  },
+                  {
+                    "name": "PGBACKREST_STANZA",
+                    "value": "db"
+                  },
+                  {
+                    "name": "PGBACKREST_S3_ENDPOINT",
+                    "value": "s3-openshift-storage.apps.ocp-prod.habibbank.local"
+                  },
+                  {
+                    "name": "PGBACKREST_BUCKET",
+                    "value": "pgbackrest-uae-prod-609d40f1-26e9-4616-9021-3135255d453e"
+                  },
+                  {
+                    "name": "PGBACKREST_FULL_CRON",
+                    "value": "0 1 * * 0"
+                  },
+                  {
+                    "name": "PGBACKREST_DIFF_CRON",
+                    "value": "0 1 * * 1-6"
+                  },
+                  {
+                    "name": "PGBACKREST_INCR_CRON",
+                    "value": "0 */6 * * *"
+                  },
+                  {
+                    "name": "AGENT_TOKEN",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "token",
+                        "name": "pg-object-monitor-agent-token"
+                      }
+                    }
+                  }
+                ],
+                "image": "quay-registry.apps.ocp-dr.habibbank.local/openshift_uat-pgcluster-uae/uat-pg-object-monitor@sha256:97a84d6c30352c454d6b08e0375ae3a9ef23ccbb3d5ea29a53e60009f6e60109",
+                "imagePullPolicy": "IfNotPresent",
+                "livenessProbe": {
+                  "failureThreshold": 3,
+                  "httpGet": {
+                    "path": "/api/v1/healthz",
+                    "port": "http",
+                    "scheme": "HTTP"
+                  },
+                  "initialDelaySeconds": 30,
+                  "periodSeconds": 30,
+                  "successThreshold": 1,
+                  "timeoutSeconds": 5
+                },
+                "name": "web",
+                "ports": [
+                  {
+                    "containerPort": 8080,
+                    "name": "http",
+                    "protocol": "TCP"
+                  }
+                ],
+                "readinessProbe": {
+                  "failureThreshold": 3,
+                  "httpGet": {
+                    "path": "/api/v1/healthz",
+                    "port": "http",
+                    "scheme": "HTTP"
+                  },
+                  "initialDelaySeconds": 10,
+                  "periodSeconds": 10,
+                  "successThreshold": 1,
+                  "timeoutSeconds": 5
+                },
+                "resources": {
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "512Mi"
+                  },
+                  "requests": {
+                    "cpu": "50m",
+                    "memory": "128Mi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File"
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "enableServiceLinks": false,
+            "restartPolicy": "Always",
+            "schedulerName": "default-scheduler",
+            "securityContext": {},
+            "serviceAccount": "pg-object-monitor-agent",
+            "serviceAccountName": "pg-object-monitor-agent",
+            "terminationGracePeriodSeconds": 30
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "annotations": {},
+        "labels": {
+          "app": "pgadmin-modern"
+        },
+        "name": "pgadmin-modern",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "progressDeadlineSeconds": 600,
+        "replicas": 1,
+        "revisionHistoryLimit": 10,
+        "selector": {
+          "matchLabels": {
+            "app": "pgadmin-modern"
+          }
+        },
+        "strategy": {
+          "rollingUpdate": {
+            "maxSurge": "25%",
+            "maxUnavailable": "25%"
+          },
+          "type": "RollingUpdate"
+        },
+        "template": {
+          "metadata": {
+            "annotations": {
+              "kubectl.kubernetes.io/restartedAt": "2026-05-21T15:46:09+02:00"
+            },
+            "creationTimestamp": null,
+            "labels": {
+              "app": "pgadmin-modern"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "command": [
+                  "bash",
+                  "-ceu",
+                  "cd /usr/local/lib/python3.11/site-packages/pgadmin4\nif [ ! -f /var/lib/pgadmin/pgadmin4.db ]; then\n  python3 setup.py setup-db\nfi\npython3 setup.py update-user \"$PGADMIN_DEFAULT_EMAIL\" --password \"$PGADMIN_DEFAULT_PASSWORD\" --admin \\\n  || python3 setup.py add-user \"$PGADMIN_DEFAULT_EMAIL\" \"$PGADMIN_DEFAULT_PASSWORD\" --admin\nexec python3 pgAdmin4.py\n"
+                ],
+                "env": [
+                  {
+                    "name": "PGADMIN_SETUP_EMAIL",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "email",
+                        "name": "pgadmin-modern-login"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGADMIN_SETUP_PASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "password",
+                        "name": "pgadmin-modern-login"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGADMIN_DEFAULT_EMAIL",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "email",
+                        "name": "pgadmin-modern-login"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGADMIN_DEFAULT_PASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "password",
+                        "name": "pgadmin-modern-login"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGADMIN_CONFIG_DEFAULT_SERVER",
+                    "value": "0.0.0.0"
+                  },
+                  {
+                    "name": "SERVER_PORT",
+                    "value": "5050"
+                  },
+                  {
+                    "name": "SERVER_PATH",
+                    "value": "/"
+                  },
+                  {
+                    "name": "ENABLE_TLS",
+                    "value": "false"
+                  }
+                ],
+                "image": "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi9-9.13-2610",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "pgadmin",
+                "ports": [
+                  {
+                    "containerPort": 5050,
+                    "name": "http",
+                    "protocol": "TCP"
+                  }
+                ],
+                "resources": {
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "1Gi"
+                  },
+                  "requests": {
+                    "cpu": "250m",
+                    "memory": "512Mi"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/var/lib/pgadmin",
+                    "name": "data"
+                  },
+                  {
+                    "mountPath": "/var/log/pgadmin",
+                    "name": "log"
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  },
+                  {
+                    "mountPath": "/run/httpd",
+                    "name": "httpd-run"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "restartPolicy": "Always",
+            "schedulerName": "default-scheduler",
+            "securityContext": {},
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "name": "data",
+                "persistentVolumeClaim": {
+                  "claimName": "pgadmin-modern-data"
+                }
+              },
+              {
+                "emptyDir": {},
+                "name": "log"
+              },
+              {
+                "emptyDir": {},
+                "name": "tmp"
+              },
+              {
+                "emptyDir": {},
+                "name": "httpd-run"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "annotations": {},
+        "labels": {
+          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+          "postgres-operator.crunchydata.com/role": "pgbouncer"
+        },
+        "name": "prod-pgcluster-uae-pgbouncer",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "progressDeadlineSeconds": 600,
+        "replicas": 2,
+        "revisionHistoryLimit": 0,
+        "selector": {
+          "matchLabels": {
+            "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+            "postgres-operator.crunchydata.com/role": "pgbouncer"
+          }
+        },
+        "strategy": {
+          "rollingUpdate": {
+            "maxSurge": "25%",
+            "maxUnavailable": 0
+          },
+          "type": "RollingUpdate"
+        },
+        "template": {
+          "metadata": {
+            "annotations": {
+              "kubectl.kubernetes.io/default-container": "pgbouncer"
+            },
+            "creationTimestamp": null,
+            "labels": {
+              "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+              "postgres-operator.crunchydata.com/role": "pgbouncer"
+            }
+          },
+          "spec": {
+            "affinity": {
+              "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                  "nodeSelectorTerms": [
+                    {
+                      "matchExpressions": [
+                        {
+                          "key": "dc",
+                          "operator": "In",
+                          "values": [
+                            "dc1"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "podAntiAffinity": {
+                "preferredDuringSchedulingIgnoredDuringExecution": [
+                  {
+                    "podAffinityTerm": {
+                      "labelSelector": {
+                        "matchLabels": {
+                          "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+                          "postgres-operator.crunchydata.com/role": "pgbouncer"
+                        }
+                      },
+                      "topologyKey": "kubernetes.io/hostname"
+                    },
+                    "weight": 100
+                  }
+                ]
+              }
+            },
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "command": [
+                  "pgbouncer",
+                  "/etc/pgbouncer/~postgres-operator.ini"
+                ],
+                "image": "registry.connect.redhat.com/crunchydata/crunchy-pgbouncer@sha256:57b73f05ab566779f6c64fce671a3953cbde9028daceb613af9dcf74ef00f068",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "pgbouncer",
+                "ports": [
+                  {
+                    "containerPort": 5555,
+                    "name": "pgbouncer",
+                    "protocol": "TCP"
+                  }
+                ],
+                "resources": {
+                  "limits": {
+                    "cpu": "2",
+                    "memory": "1Gi"
+                  },
+                  "requests": {
+                    "cpu": "2",
+                    "memory": "1Gi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/etc/pgbouncer",
+                    "name": "pgbouncer-config",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  }
+                ]
+              },
+              {
+                "command": [
+                  "bash",
+                  "-ceu",
+                  "--",
+                  "monitor() {\nexec {fd}<> <(:||:)\nwhile read -r -t 5 -u \"${fd}\" ||:; do\n  if [[ \"${directory}\" -nt \"/proc/self/fd/${fd}\" ]] && pkill -HUP --exact pgbouncer\n  then\n    exec {fd}>&- && exec {fd}<> <(:||:)\n    stat --format='Loaded configuration dated %y' \"${directory}\"\n  fi\ndone\n}; export directory=\"$1\"; export -f monitor; exec -a \"$0\" bash -ceu monitor",
+                  "pgbouncer-config",
+                  "/etc/pgbouncer"
+                ],
+                "image": "registry.connect.redhat.com/crunchydata/crunchy-pgbouncer@sha256:57b73f05ab566779f6c64fce671a3953cbde9028daceb613af9dcf74ef00f068",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "pgbouncer-config",
+                "resources": {
+                  "limits": {
+                    "cpu": "5m",
+                    "memory": "16Mi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/etc/pgbouncer",
+                    "name": "pgbouncer-config",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "enableServiceLinks": false,
+            "restartPolicy": "Always",
+            "schedulerName": "default-scheduler",
+            "securityContext": {
+              "fsGroupChangePolicy": "OnRootMismatch"
+            },
+            "shareProcessNamespace": true,
+            "terminationGracePeriodSeconds": 30,
+            "topologySpreadConstraints": [
+              {
+                "labelSelector": {
+                  "matchLabels": {
+                    "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+                    "postgres-operator.crunchydata.com/role": "pgbouncer"
+                  }
+                },
+                "maxSkew": 1,
+                "topologyKey": "kubernetes.io/hostname",
+                "whenUnsatisfiable": "ScheduleAnyway"
+              },
+              {
+                "labelSelector": {
+                  "matchLabels": {
+                    "postgres-operator.crunchydata.com/cluster": "prod-pgcluster-uae",
+                    "postgres-operator.crunchydata.com/role": "pgbouncer"
+                  }
+                },
+                "maxSkew": 1,
+                "topologyKey": "topology.kubernetes.io/zone",
+                "whenUnsatisfiable": "ScheduleAnyway"
+              }
+            ],
+            "volumes": [
+              {
+                "name": "pgbouncer-config",
+                "projected": {
+                  "defaultMode": 420,
+                  "sources": [
+                    {
+                      "configMap": {
+                        "items": [
+                          {
+                            "key": "pgbouncer-empty",
+                            "path": "pgbouncer.ini"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbouncer"
+                      }
+                    },
+                    {
+                      "configMap": {
+                        "items": [
+                          {
+                            "key": "pgbouncer.ini",
+                            "path": "~postgres-operator.ini"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbouncer"
+                      }
+                    },
+                    {
+                      "secret": {
+                        "items": [
+                          {
+                            "key": "pgbouncer-users.txt",
+                            "path": "~postgres-operator/users.txt"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbouncer"
+                      }
+                    },
+                    {
+                      "secret": {
+                        "items": [
+                          {
+                            "key": "pgbouncer-frontend.ca-roots",
+                            "path": "~postgres-operator/frontend-ca.crt"
+                          },
+                          {
+                            "key": "pgbouncer-frontend.key",
+                            "path": "~postgres-operator/frontend-tls.key"
+                          },
+                          {
+                            "key": "pgbouncer-frontend.crt",
+                            "path": "~postgres-operator/frontend-tls.crt"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-pgbouncer"
+                      }
+                    },
+                    {
+                      "secret": {
+                        "items": [
+                          {
+                            "key": "ca.crt",
+                            "path": "~postgres-operator/backend-ca.crt"
+                          }
+                        ],
+                        "name": "prod-pgcluster-uae-cluster-cert"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "16Mi"
+                },
+                "name": "tmp"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "annotations": {},
+        "labels": {
+          "app.kubernetes.io/component": "metrics-bridge",
+          "app.kubernetes.io/name": "prod-pgo18-pgbackrest-pushgateway"
+        },
+        "name": "prod-pgo18-pgbackrest-pushgateway",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "progressDeadlineSeconds": 600,
+        "replicas": 1,
+        "revisionHistoryLimit": 10,
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/name": "prod-pgo18-pgbackrest-pushgateway"
+          }
+        },
+        "strategy": {
+          "rollingUpdate": {
+            "maxSurge": "25%",
+            "maxUnavailable": "25%"
+          },
+          "type": "RollingUpdate"
+        },
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "app.kubernetes.io/component": "metrics-bridge",
+              "app.kubernetes.io/name": "prod-pgo18-pgbackrest-pushgateway"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "args": [
+                  "--web.listen-address=:9091"
+                ],
+                "image": "quay.io/prometheus/pushgateway:v1.9.0",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "pushgateway",
+                "ports": [
+                  {
+                    "containerPort": 9091,
+                    "name": "web",
+                    "protocol": "TCP"
+                  }
+                ],
+                "resources": {
+                  "limits": {
+                    "cpu": "100m",
+                    "memory": "128Mi"
+                  },
+                  "requests": {
+                    "cpu": "25m",
+                    "memory": "64Mi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File"
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "restartPolicy": "Always",
+            "schedulerName": "default-scheduler",
+            "securityContext": {},
+            "terminationGracePeriodSeconds": 30
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "annotations": {},
+        "labels": {
+          "app.kubernetes.io/name": "prod-pgo18-prometheus"
+        },
+        "name": "prod-pgo18-prometheus",
+        "namespace": "prod-pgcluster-uae"
+      },
+      "spec": {
+        "progressDeadlineSeconds": 600,
+        "replicas": 1,
+        "revisionHistoryLimit": 10,
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/name": "prod-pgo18-prometheus"
+          }
+        },
+        "strategy": {
+          "rollingUpdate": {
+            "maxSurge": "25%",
+            "maxUnavailable": "25%"
+          },
+          "type": "RollingUpdate"
+        },
+        "template": {
+          "metadata": {
+            "annotations": {
+              "kubectl.kubernetes.io/restartedAt": "2026-05-15T11:47:39+02:00"
+            },
+            "creationTimestamp": null,
+            "labels": {
+              "app.kubernetes.io/name": "prod-pgo18-prometheus"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "args": [
+                  "--config.file=/etc/prometheus/prometheus.yml",
+                  "--storage.tsdb.path=/prometheus",
+                  "--storage.tsdb.retention.time=7d",
+                  "--web.enable-lifecycle"
+                ],
+                "image": "quay.io/prometheus/prometheus:v2.53.1",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "prometheus",
+                "ports": [
+                  {
+                    "containerPort": 9090,
+                    "name": "web",
+                    "protocol": "TCP"
+                  }
+                ],
+                "resources": {
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "1Gi"
+                  },
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "256Mi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "runAsNonRoot": true,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/etc/prometheus",
+                    "name": "config"
+                  },
+                  {
+                    "mountPath": "/prometheus",
+                    "name": "data"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "restartPolicy": "Always",
+            "schedulerName": "default-scheduler",
+            "securityContext": {},
+            "serviceAccount": "prod-pgo18-prometheus",
+            "serviceAccountName": "prod-pgo18-prometheus",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "configMap": {
+                  "defaultMode": 420,
+                  "name": "prod-pgo18-prometheus-config"
+                },
+                "name": "config"
+              },
+              {
+                "emptyDir": {},
+                "name": "data"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "kind": "List",
+  "metadata": {}
+}

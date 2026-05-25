@@ -1,0 +1,3428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habib Bank UAE | PostgreSQL 18 Production | Traffic Simulator</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f172a;--panel:#1e293b;--border:#334155;--header:#0a0f1e;
+  --text:#f1f5f9;--muted:#94a3b8;
+  --green:#22c55e;--amber:#eab308;--red:#ef4444;--blue:#3b82f6;
+  --purple:#a78bfa;--cyan:#22d3ee;
+  --gauge-bg:#0f172a;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;overflow-x:hidden}
+
+/* ── Header ── */
+#header{
+  background:var(--header);padding:10px 18px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;
+}
+#header .title{font-size:14px;font-weight:600;letter-spacing:.3px;color:var(--text)}
+#header .right{display:flex;align-items:center;gap:12px}
+.status-pill{display:flex;align-items:center;gap:6px;background:#0f172a;border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:600}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.dot-green{background:var(--green);box-shadow:0 0 6px var(--green)}
+.dot-amber{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+#clock{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:160px;text-align:right}
+
+/* ── Scenario Bar ── */
+#scenario-bar{
+  background:#1e293b;padding:10px 18px;border-bottom:1px solid var(--border);
+  display:flex;flex-direction:column;gap:8px;
+}
+.scenario-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.scenario-row label{color:var(--muted);font-size:11px;margin-right:2px}
+.sc-btn{
+  background:#0f172a;border:1px solid #475569;color:var(--text);
+  border-radius:6px;padding:5px 11px;font-size:11px;font-weight:500;cursor:pointer;
+  transition:all .2s;white-space:nowrap;
+}
+.sc-btn:hover{border-color:var(--blue);color:var(--blue)}
+.sc-btn.active{
+  background:#1d4ed8;border-color:var(--blue);color:#fff;
+  box-shadow:0 0 10px rgba(59,130,246,.4);
+}
+.controls-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.speed-group{display:flex;gap:4px}
+.spd-btn{
+  background:#0f172a;border:1px solid #475569;color:var(--muted);
+  border-radius:5px;padding:4px 9px;font-size:11px;cursor:pointer;transition:all .2s;
+}
+.spd-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.spd-btn:hover{border-color:var(--blue)}
+#pause-btn{
+  background:#0f172a;border:1px solid #475569;color:var(--text);
+  border-radius:5px;padding:4px 12px;font-size:11px;cursor:pointer;transition:all .2s;
+}
+#pause-btn:hover{border-color:var(--amber);color:var(--amber)}
+#pause-btn.paused{background:#7c2d12;border-color:var(--red);color:#fca5a5}
+.intensity-wrap{display:flex;align-items:center;gap:7px}
+#intensity-slider{
+  width:120px;height:4px;-webkit-appearance:none;appearance:none;
+  background:linear-gradient(to right,var(--blue) 0%,var(--blue) 50%,#334155 50%);
+  border-radius:2px;cursor:pointer;outline:none;
+}
+#intensity-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--blue);cursor:pointer;border:2px solid #fff}
+#intensity-val{color:var(--blue);font-size:11px;font-weight:600;min-width:32px}
+
+
+/* ── Runbook Panel ── */
+#runbook-panel{
+  display:none;background:#0c1a2e;border-bottom:1px solid #1e3a5f;
+  padding:0;overflow:hidden;transition:max-height .35s ease;
+}
+#runbook-panel.show{display:block;}
+#runbook-inner{padding:14px 20px 16px;}
+#runbook-tabs{display:flex;gap:0;border-bottom:1px solid #1e3a5f;margin-bottom:12px;flex-wrap:wrap;}
+.rb-tab{
+  background:none;border:none;border-bottom:2px solid transparent;
+  color:var(--muted);font-size:11px;font-weight:600;padding:7px 14px;
+  cursor:pointer;text-transform:uppercase;letter-spacing:.5px;transition:all .2s;
+}
+.rb-tab:hover{color:var(--text);}
+.rb-tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+.rb-content{display:none;} .rb-content.show{display:block;}
+.rb-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:900px){.rb-grid{grid-template-columns:1fr;}}
+.rb-section{margin-bottom:10px;}
+.rb-section h4{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.6px;margin:0 0 6px;}
+.rb-cmd{
+  background:#0f172a;border:1px solid #1e3a5f;border-radius:6px;
+  padding:8px 10px;font-family:monospace;font-size:11px;color:#93c5fd;
+  white-space:pre-wrap;word-break:break-all;position:relative;margin-bottom:6px;
+}
+.rb-cmd-wrap{position:relative;}
+.rb-copy{
+  position:absolute;top:5px;right:5px;background:#1d4ed8;border:none;
+  color:#fff;border-radius:4px;padding:2px 7px;font-size:10px;cursor:pointer;opacity:.8;
+}
+.rb-copy:hover{opacity:1;}
+.rb-warn{background:#451a03;border:1px solid #7c2d12;border-radius:6px;
+  padding:8px 10px;font-size:11px;color:#fca5a5;margin-bottom:8px;}
+.rb-ok{background:#052e16;border:1px solid #14532d;border-radius:6px;
+  padding:8px 10px;font-size:11px;color:#86efac;margin-bottom:8px;}
+.rb-info{background:#0c2244;border:1px solid #1e40af;border-radius:6px;
+  padding:8px 10px;font-size:11px;color:#93c5fd;margin-bottom:8px;}
+.rb-step{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start;}
+.rb-step-num{
+  background:#1d4ed8;color:#fff;border-radius:50%;width:20px;height:20px;
+  font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:1px;
+}
+.rb-step-body{flex:1;}
+.rb-step-body p{font-size:11px;color:var(--muted);margin:0 0 4px;}
+.rb-timeline{display:flex;gap:6px;align-items:center;font-size:10px;color:var(--muted);
+  margin-bottom:8px;flex-wrap:wrap;}
+.rb-badge{padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;}
+.rb-badge-red{background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;}
+.rb-badge-amber{background:#451a03;color:#fed7aa;border:1px solid #7c2d12;}
+.rb-badge-green{background:#052e16;color:#86efac;border:1px solid #14532d;}
+.rb-badge-blue{background:#0c1a44;color:#93c5fd;border:1px solid #1e3a8a;}
+.rb-close{
+  float:right;background:none;border:1px solid #334155;color:var(--muted);
+  border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;margin-top:-2px;
+}
+.rb-close:hover{border-color:var(--red);color:var(--red);}
+.rb-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;display:flex;align-items:center;gap:8px;}
+
+
+/* ══ Page Tabs ══ */
+#page-tabs{
+  display:flex;background:#111827;border-bottom:1px solid var(--border);
+  padding:0 18px;gap:0;
+}
+.pg-tab{
+  background:none;border:none;border-bottom:3px solid transparent;
+  color:var(--muted);font-size:12px;font-weight:600;padding:10px 20px;
+  cursor:pointer;transition:all .2s;letter-spacing:.3px;white-space:nowrap;
+}
+.pg-tab:hover{color:var(--text);}
+.pg-tab.active{color:#fff;border-bottom-color:var(--blue);}
+.pg-tab-content{display:none;}
+.pg-tab-content.active{display:block;}
+
+/* ══ Patroni Status Panel ══ */
+#patroni-section{padding:0 18px 18px;}
+#patroni-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;}
+@media(max-width:1100px){#patroni-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:700px){#patroni-grid{grid-template-columns:1fr;}}
+.pt-panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.pt-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.6px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+.pt-title span{font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;}
+/* Member table */
+.pt-member-table{width:100%;border-collapse:collapse;font-size:11px;}
+.pt-member-table th{color:var(--muted);font-size:9px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;padding:3px 6px;text-align:left;border-bottom:1px solid var(--border);}
+.pt-member-table td{padding:5px 6px;border-bottom:1px solid #1e293b;font-variant-numeric:tabular-nums;}
+.pt-member-table tr:last-child td{border-bottom:none;}
+.pt-role-leader{color:#22c55e;font-weight:700;}
+.pt-role-sync{color:#3b82f6;font-weight:600;}
+.pt-role-replica{color:#94a3b8;}
+.pt-role-dr{color:#22d3ee;font-weight:600;}
+.pt-state-running{color:#22c55e;}
+.pt-state-stopped{color:#ef4444;}
+.pt-state-starting{color:#eab308;}
+/* KV stats */
+.pt-kv{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.pt-kv-item{background:#0f172a;border:1px solid var(--border);border-radius:6px;padding:7px 9px;}
+.pt-kv-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;}
+.pt-kv-val{font-size:13px;font-weight:700;color:#f1f5f9;font-variant-numeric:tabular-nums;}
+.pt-kv-val.green{color:#22c55e;} .pt-kv-val.amber{color:#eab308;} .pt-kv-val.red{color:#ef4444;}
+/* Command reference */
+.pt-cmd-section{margin-bottom:10px;}
+.pt-cmd-section h5{font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;
+  letter-spacing:.5px;margin:0 0 5px;border-bottom:1px solid #1e293b;padding-bottom:3px;}
+.pt-cmd-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:4px;cursor:pointer;}
+.pt-cmd-row:hover .pt-cmd-code{border-color:#3b82f6;}
+.pt-cmd-code{
+  background:#0f172a;border:1px solid var(--border);border-radius:5px;
+  padding:4px 8px;font-family:monospace;font-size:11px;color:#93c5fd;flex:1;
+  transition:border-color .15s;position:relative;
+}
+.pt-cmd-desc{font-size:10px;color:var(--muted);min-width:130px;padding-top:5px;}
+.pt-cmd-copy{
+  background:none;border:1px solid #334155;color:var(--muted);border-radius:4px;
+  padding:2px 7px;font-size:9px;cursor:pointer;margin-top:2px;transition:all .15s;white-space:nowrap;
+}
+.pt-cmd-copy:hover{background:#1d4ed8;border-color:#1d4ed8;color:#fff;}
+/* Timeline bar */
+.tl-bar{display:flex;gap:4px;align-items:center;margin-top:8px;flex-wrap:wrap;}
+.tl-evt{background:#0f172a;border:1px solid var(--border);border-radius:5px;
+  padding:4px 8px;font-size:9px;color:var(--muted);white-space:nowrap;}
+.tl-evt.current{border-color:#22c55e;color:#22c55e;}
+.tl-sep{color:#334155;font-size:10px;}
+/* Tag badges */
+.pt-badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;}
+.pt-badge-green{background:#052e16;color:#86efac;border:1px solid #14532d;}
+.pt-badge-amber{background:#451a03;color:#fed7aa;border:1px solid #7c2d12;}
+.pt-badge-red{background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;}
+.pt-badge-blue{background:#0c1a44;color:#93c5fd;border:1px solid #1e3a8a;}
+.pt-badge-purple{background:#2e1065;color:#d8b4fe;border:1px solid #6d28d9;}
+
+/* ── Main grid ── */
+#main{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:12px 18px;align-items:start}
+@media(max-width:1400px){#main{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){#main{grid-template-columns:1fr}}
+
+/* ── Panel ── */
+.panel{
+  background:var(--panel);border:1px solid var(--border);border-radius:10px;
+  padding:14px;display:flex;flex-direction:column;gap:10px;
+}
+.panel-title{
+  font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.8px;border-bottom:1px solid var(--border);padding-bottom:8px;
+  line-height:1.5;
+}
+.panel-title span{color:var(--text);font-weight:500;text-transform:none;letter-spacing:0}
+
+/* ── TPS Big Number ── */
+.tps-big{display:flex;align-items:baseline;gap:6px;margin-bottom:2px}
+.tps-num{font-size:32px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;line-height:1}
+.tps-unit{font-size:12px;color:var(--muted)}
+.tps-trend{font-size:16px;transition:all .3s}
+
+/* ── Gauge ── */
+.gauge-wrap{display:flex;flex-direction:column;gap:3px}
+.gauge-header{display:flex;justify-content:space-between;align-items:baseline}
+.gauge-label{font-size:11px;color:var(--muted)}
+.gauge-val{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;transition:color .3s}
+.gauge-track{height:8px;background:var(--gauge-bg);border-radius:4px;overflow:hidden;border:1px solid #1e3a5f}
+.gauge-fill{height:100%;border-radius:4px;transition:width .4s ease,background .4s ease}
+.gauge-sub{font-size:10px;color:var(--muted)}
+
+/* ── Sparkline canvas ── */
+.spark-wrap{position:relative;margin-top:4px}
+.spark-legend{display:flex;gap:12px;margin-top:4px;font-size:10px;color:var(--muted)}
+.spark-legend-item{display:flex;align-items:center;gap:4px}
+.spark-dot{width:10px;height:2px;border-radius:1px;display:inline-block}
+canvas{display:block;width:100%;border-radius:4px}
+
+/* ── Stat row ── */
+.stat-row{display:flex;gap:8px;flex-wrap:wrap;padding-top:4px;border-top:1px solid var(--border)}
+.stat-item{font-size:10px;color:var(--muted);background:#0f172a;border-radius:4px;padding:3px 6px}
+.stat-item span{color:var(--text);font-weight:500}
+
+/* ── WAL archive sub-panel ── */
+.wal-box{
+  background:#0f172a;border:1px solid var(--border);border-radius:7px;
+  padding:9px;display:grid;grid-template-columns:1fr 1fr;gap:6px;
+}
+.wal-box-title{grid-column:1/-1;font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:.5px;margin-bottom:2px}
+.wal-kv{display:flex;flex-direction:column;gap:1px}
+.wal-k{font-size:10px;color:var(--muted)}
+.wal-v{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ── Backup banner ── */
+#backup-banner{
+  display:none;background:linear-gradient(90deg,#1e3a5f,#0f2942);
+  border:1px solid var(--blue);border-radius:6px;padding:8px 10px;
+}
+#backup-banner.show{display:block}
+.backup-title{font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:6px}
+.backup-bar-track{height:6px;background:#0f172a;border-radius:3px;overflow:hidden}
+.backup-bar-fill{height:100%;background:linear-gradient(90deg,#2563eb,#22d3ee);border-radius:3px;transition:width .8s linear}
+.backup-pct{font-size:10px;color:var(--muted);margin-top:3px}
+
+/* ── Alerts panel ── */
+#alerts-panel .alerts-list{display:flex;flex-direction:column;gap:6px;max-height:500px;overflow-y:auto}
+.alert-card{
+  border-left:3px solid;border-radius:0 6px 6px 0;
+  background:#0f172a;padding:8px 10px;cursor:pointer;transition:all .2s;
+}
+.alert-card:hover{background:#162032;transform:translateX(2px)}
+.alert-card.crit{border-color:var(--red)}
+.alert-card.warn{border-color:var(--amber)}
+.alert-card.ok{border-color:var(--green)}
+.alert-name{font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px}
+.alert-val{font-size:11px;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
+.alert-meta{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
+.alert-dur{font-size:10px;color:var(--muted)}
+.sop-tag{font-size:10px;background:#1e3a5f;color:var(--blue);border-radius:4px;padding:2px 6px;border:1px solid #1d4ed8}
+.all-ok{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:6px}
+.all-ok-icon{font-size:36px}
+.all-ok-text{font-size:13px;color:var(--green);font-weight:600}
+
+/* ── Modal ── */
+#modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+  z-index:999;align-items:center;justify-content:center;
+}
+#modal-overlay.show{display:flex}
+#modal-box{
+  background:#1e293b;border:1px solid var(--border);border-radius:12px;
+  max-width:680px;width:90%;max-height:85vh;overflow-y:auto;padding:22px;
+  box-shadow:0 25px 60px rgba(0,0,0,.6);
+}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.modal-section{margin-bottom:14px}
+.modal-section h4{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.modal-section p{font-size:12px;color:var(--muted);line-height:1.6}
+.modal-val-box{display:flex;gap:16px;background:#0f172a;border-radius:7px;padding:10px;margin-bottom:14px;flex-wrap:wrap}
+.modal-val-item label{font-size:10px;color:var(--muted)}
+.modal-val-item span{display:block;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.cmd-block-wrap{position:relative}
+.cmd-block{
+  background:#0a0f1e;border:1px solid var(--border);border-radius:7px;
+  padding:12px;font-family:'SF Mono','Fira Code',monospace;font-size:11px;
+  color:#93c5fd;white-space:pre;overflow-x:auto;line-height:1.6;
+}
+.copy-btn{
+  position:absolute;top:8px;right:8px;background:#1d4ed8;border:none;
+  color:#fff;border-radius:5px;padding:4px 9px;font-size:10px;cursor:pointer;
+  transition:all .2s;
+}
+.copy-btn:hover{background:#2563eb}
+.copy-btn.copied{background:var(--green);color:#000}
+.sop-ref{background:#1a2e1a;border:1px solid var(--green);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--green);margin-top:10px}
+.warn-note{background:#3b1515;border:1px solid var(--red);border-radius:6px;padding:8px 12px;font-size:11px;color:#fca5a5;margin-top:8px}
+.modal-footer{display:flex;justify-content:flex-end;margin-top:16px;border-top:1px solid var(--border);padding-top:14px}
+.close-btn{background:#475569;border:none;color:var(--text);border-radius:6px;padding:7px 18px;font-size:12px;cursor:pointer;transition:all .2s}
+.close-btn:hover{background:#64748b}
+
+/* ── Tick counter ── */
+#tick-counter{font-size:10px;color:var(--muted);margin-left:8px}
+/* ── Scenario info bar ── */
+.sc-info{font-size:10px;color:var(--muted);font-style:italic;padding-top:2px}
+/* ── Panel header badge ── */
+.panel-badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;text-transform:uppercase;margin-left:6px;vertical-align:middle}
+.badge-ok{background:#14532d;color:var(--green)}
+.badge-warn{background:#78350f;color:var(--amber)}
+.badge-crit{background:#7f1d1d;color:var(--red)}
+.badge-info{background:#1e3a5f;color:var(--blue)}
+/* ── Replication status ── */
+.rep-status-bar{background:#0f172a;border-radius:5px;padding:6px 8px;font-size:10px;display:flex;gap:10px;flex-wrap:wrap;border:1px solid var(--border)}
+.rep-status-item{display:flex;flex-direction:column;gap:1px}
+.rep-status-label{color:var(--muted);font-size:9px}
+.rep-status-val{font-weight:600;font-variant-numeric:tabular-nums}
+/* ── Scrollbar styling ── */
+.alerts-list::-webkit-scrollbar{width:4px}
+.alerts-list::-webkit-scrollbar-track{background:#0f172a}
+.alerts-list::-webkit-scrollbar-thumb{background:#334155;border-radius:2px}
+/* ── Highlight pulse ── */
+@keyframes pulse-red{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}50%{box-shadow:0 0 0 6px rgba(239,68,68,0)}}
+.alert-card.crit{animation:pulse-red 3s infinite}
+/* ── Value change flash ── */
+@keyframes flash-green{0%,100%{color:inherit}50%{color:#22c55e}}
+/* ── Footer ── */
+#footer{background:var(--header);border-top:1px solid var(--border);padding:6px 18px;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--muted)}
+/* ── Status indicator dot blink ── */
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.dot-green{animation:blink 2s infinite}
+
+
+/* ══ Architecture Panel ══ */
+#arch-section{padding:0 18px 16px;margin-top:0}
+#arch-panel{
+  background:var(--panel);border:1px solid var(--border);border-radius:10px;
+  padding:14px;
+}
+#arch-panel .panel-title{
+  font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.8px;border-bottom:1px solid var(--border);padding-bottom:8px;
+  margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;
+}
+#arch-panel .panel-title .legend{display:flex;gap:14px;font-size:10px;text-transform:none;letter-spacing:0;color:var(--muted)}
+#arch-panel .legend-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
+#arch-svg-wrap{width:100%}
+#arch-svg{width:100%;display:block;border-radius:6px}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div id="header">
+  <div class="title">Habib Bank UAE &nbsp;|&nbsp; PostgreSQL 18 Production &nbsp;|&nbsp; Traffic Simulator</div>
+  <div class="right">
+    <div class="status-pill">
+      <span class="dot dot-green"></span>PROD: HEALTHY
+      <span style="color:var(--border)">|</span>
+      <span class="dot dot-amber"></span>DR: STANDBY
+    </div>
+    <div id="clock">--</div>
+  </div>
+</div>
+
+<!-- Scenario Bar -->
+<div id="scenario-bar">
+  <div class="scenario-row">
+    <span style="color:var(--muted);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-right:4px;">OPS:</span>
+    <button class="sc-btn active" data-sc="normal">&#9654; Normal Ops</button>
+    <button class="sc-btn" data-sc="morning_peak">Morning Peak</button>
+    <button class="sc-btn" data-sc="bulk_load">Bulk Load</button>
+    <button class="sc-btn" data-sc="conn_storm">Connection Storm</button>
+    <button class="sc-btn" data-sc="long_txn">Long-Txn Storm</button>
+    <button class="sc-btn" data-sc="wal_fail">WAL Archive Failure</button>
+    <button class="sc-btn" data-sc="backup_window">Backup Window</button>
+    <span style="color:var(--border);margin:0 4px;">|</span>
+    <span style="color:var(--muted);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-right:4px;">RECOVERY:</span>
+    <button class="sc-btn" data-sc="failover" style="border-color:#7f1d1d;color:#fca5a5;">&#9888; Failover</button>
+    <button class="sc-btn" data-sc="switchover" style="border-color:#713f12;color:#fed7aa;">&#8644; Switchover</button>
+    <button class="sc-btn" data-sc="pitr" style="border-color:#1e3a8a;color:#93c5fd;">&#9664;&#9664; PITR</button>
+    <button class="sc-btn" data-sc="single_table" style="border-color:#134e4a;color:#99f6e4;">&#11123; Table Recovery</button>
+  </div>
+  <div class="controls-row">
+    <div class="intensity-wrap">
+      <label>Intensity:</label>
+      <input type="range" id="intensity-slider" min="0" max="100" value="50">
+      <span id="intensity-val">50%</span>
+    </div>
+    <label>Speed:</label>
+    <div class="speed-group">
+      <button class="spd-btn active" data-spd="1">1x</button>
+      <button class="spd-btn" data-spd="2">2x</button>
+      <button class="spd-btn" data-spd="5">5x</button>
+    </div>
+    <button id="pause-btn">&#9646;&#9646; Pause</button>
+    <div class="sc-info" id="sc-info-text">Normal Ops — Baseline traffic, all systems healthy</div>
+  </div>
+</div>
+
+
+<!-- ══ Page Tab Bar ══ -->
+<div id="page-tabs">
+  <button class="pg-tab active" onclick="switchPage('arch')" id="pgtab-arch">
+    🏛&nbsp; Live Architecture &amp; Patroni
+  </button>
+  <button class="pg-tab" onclick="switchPage('metrics')" id="pgtab-metrics">
+    📊&nbsp; Live Metrics
+  </button>
+</div>
+
+<div id="pg-arch" class="pg-tab-content active">
+<!-- ══ Architecture Panel ══ -->
+<div id="arch-section">
+  <div id="arch-panel">
+    <div class="panel-title">
+      <span>&#128202; Live Architecture &nbsp;&mdash;&nbsp; Traffic Flow Diagram</span>
+      <div class="legend">
+        <span><span class="legend-dot" style="background:#22c55e"></span>Healthy</span>
+        <span><span class="legend-dot" style="background:#eab308"></span>Warning</span>
+        <span><span class="legend-dot" style="background:#ef4444"></span>Critical</span>
+        <span><span class="legend-dot" style="background:#a78bfa"></span>WAL / Archive</span>
+        <span><span class="legend-dot" style="background:#22d3ee"></span>DR Streaming</span>
+        <span><span class="legend-dot" style="background:#f97316"></span>OCP Service</span>
+      </div>
+    </div>
+    <div id="arch-svg-wrap">
+      <svg id="arch-svg" viewBox="0 0 1150 430" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+           style="width:100%;display:block;border-radius:6px;background:#080f1e">
+        <defs>
+          <marker id="arr-blue"   markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#3b82f6"/></marker>
+          <marker id="arr-orange" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#f97316"/></marker>
+          <marker id="arr-green"  markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#22c55e"/></marker>
+          <marker id="arr-purple" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#a78bfa"/></marker>
+          <marker id="arr-cyan"   markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#22d3ee"/></marker>
+          <marker id="arr-amber"  markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#eab308"/></marker>
+          <marker id="arr-muted"  markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#475569"/></marker>
+          <marker id="arr-red"    markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#ef4444"/></marker>
+        </defs>
+
+        <!-- ═══ ZONE BACKGROUNDS (drawn first) ═══ -->
+        <!-- OCP / Kubernetes header band -->
+        <rect x="0" y="0" width="1150" height="24" rx="0" fill="#1a0c00" opacity="0.9"/>
+        <text x="10"   y="16" font-size="9.5" font-weight="700" fill="#f97316" font-family="system-ui" letter-spacing=".4px">OPENSHIFT CONTAINER PLATFORM</text>
+        <text x="220"  y="16" font-size="9.5" fill="#475569" font-family="system-ui">|</text>
+        <text x="228"  y="16" font-size="9.5" fill="#94a3b8" font-family="system-ui">Kubernetes</text>
+        <text x="305"  y="16" font-size="9.5" fill="#475569" font-family="system-ui">|</text>
+        <text x="313"  y="16" font-size="9.5" fill="#94a3b8" font-family="system-ui">Namespace: prod-pgcluster-uae</text>
+        <text x="540"  y="16" font-size="9.5" fill="#475569" font-family="system-ui">|</text>
+        <text x="548"  y="16" font-size="9.5" fill="#94a3b8" font-family="system-ui">Crunchy Data PGO v5</text>
+        <text x="1140" y="16" text-anchor="end" font-size="9" fill="#334155" font-family="system-ui">PostgreSQL 18</text>
+
+        <!-- DC1 zone -->
+        <rect x="160" y="26" width="495" height="310" rx="10" fill="#05102a" stroke="#1d4ed8" stroke-width="1.2" stroke-dasharray="8,4" opacity="0.7"/>
+        <text x="403" y="42" text-anchor="middle" font-size="9" font-weight="700" fill="#3b82f6" font-family="system-ui" letter-spacing=".5px">DC1 — PRIMARY DATACENTER</text>
+
+        <!-- DC2 zone -->
+        <rect x="680" y="26" width="245" height="310" rx="10" fill="#011827" stroke="#0e7490" stroke-width="1.2" stroke-dasharray="8,4" opacity="0.7"/>
+        <text x="802" y="42" text-anchor="middle" font-size="9" font-weight="700" fill="#22d3ee" font-family="system-ui" letter-spacing=".5px">DC2 — DR DATACENTER</text>
+
+        <!-- S3 / ODF zone -->
+        <rect x="160" y="355" width="760" height="68" rx="8" fill="#11051f" stroke="#7c3aed" stroke-width="1" stroke-dasharray="5,3" opacity="0.7"/>
+        <text x="540" y="371" text-anchor="middle" font-size="9" font-weight="700" fill="#a78bfa" font-family="system-ui" letter-spacing=".5px">pgBackRest | S3 / ODF — NOOBA OBJECT STORAGE (pgbackrest-uae-prod-609d40f1)</text>
+        <text x="540" y="383" text-anchor="middle" font-size="8.5" fill="#475569" font-family="system-ui">stanza: db  |  repo1  |  aes-256-cbc  |  lz4  |  archive + full/diff/incr backups  |  DC1→DC2 fallback path</text>
+
+        <!-- ═══ CONNECTION PATHS ═══ -->
+        <!-- 1: H+CB App → OCP Service -->
+        <path id="p-app-ocp"  d="M 135,80 L 168,80" stroke="#f97316" stroke-width="1.5" fill="none" opacity="0.7" marker-end="url(#arr-orange)"/>
+        <!-- 2: OCP Service → PgBouncer -->
+        <path id="p-ocp-pgb"  d="M 278,80 L 300,78" stroke="#3b82f6" stroke-width="1.5" fill="none" opacity="0.6" marker-end="url(#arr-blue)"/>
+        <!-- 3: PgBouncer → Primary (elbow) -->
+        <path id="p-pgb-pri"  d="M 448,80 C 468,80 473,100 473,105" stroke="#6366f1" stroke-width="1.5" fill="none" opacity="0.6" marker-end="url(#arr-blue)"/>
+        <!-- 4: Primary → Sync Standby (within DC1, downward sync stream) -->
+        <path id="p-pri-std"  d="M 548,185 L 548,215" stroke="#22c55e" stroke-width="1.5" fill="none" opacity="0.6" marker-end="url(#arr-green)"/>
+        <!-- 5: Primary → DR Standby (streaming via LB across DC) -->
+        <path id="p-pri-dc2"  d="M 625,130 C 665,130 678,155 688,155" stroke="#22d3ee" stroke-width="1.8" fill="none" opacity="0.6" marker-end="url(#arr-cyan)"/>
+        <!-- 6: Primary → S3 (archive-push WAL) -->
+        <path id="p-pri-s3"   d="M 548,195 C 548,340 490,355 490,363" stroke="#a78bfa" stroke-width="1.5" fill="none" opacity="0.5" marker-end="url(#arr-purple)"/>
+        <!-- 7: S3 → DR Standby (archive-get fallback, dashed) -->
+        <path id="p-s3-dc2"   d="M 700,363 C 760,363 760,280 760,248" stroke="#22d3ee" stroke-width="1.2" fill="none" opacity="0.5" stroke-dasharray="5,4" marker-end="url(#arr-cyan)"/>
+        <!-- 8: DR Standby → S3 (DR also does archive-get for WAL via LB, dashed) -->
+        <path id="p-dc2-s3lbl" d="M 688,248 C 688,320 620,355 620,363" stroke="#0e7490" stroke-width="1" fill="none" opacity="0.3" stroke-dasharray="3,4" marker-end="url(#arr-muted)"/>
+        <!-- 9: PGO manages Primary (dashed admin) -->
+        <path id="p-pgo-pri"  d="M 143,155 C 360,155 455,115 473,110" stroke="#6366f1" stroke-width="1" fill="none" opacity="0.4" stroke-dasharray="4,3" marker-end="url(#arr-muted)"/>
+        <!-- 10: PGO manages Standby (dashed admin) -->
+        <path id="p-pgo-std"  d="M 143,170 C 260,240 420,250 473,242" stroke="#6366f1" stroke-width="1" fill="none" opacity="0.3" stroke-dasharray="4,3" marker-end="url(#arr-muted)"/>
+        <!-- 11: Prometheus scrape (dashed) -->
+        <path id="p-prom"     d="M 105,285 C 200,285 280,175 300,165" stroke="#f59e0b" stroke-width="1" fill="none" opacity="0.3" stroke-dasharray="3,4" marker-end="url(#arr-muted)"/>
+
+        <!-- ═══ TRAFFIC PARTICLES ═══ -->
+        <!-- App → OCP Service (orange) -->
+        <g id="g-app-ocp">
+          <circle r="3" fill="#f97316" opacity="0.9"><animateMotion dur="0.9s" begin="0s"    repeatCount="indefinite"><mpath xlink:href="#p-app-ocp" href="#p-app-ocp"/></animateMotion></circle>
+          <circle r="3" fill="#f97316" opacity="0.9"><animateMotion dur="0.9s" begin="0.3s"  repeatCount="indefinite"><mpath xlink:href="#p-app-ocp" href="#p-app-ocp"/></animateMotion></circle>
+          <circle r="3" fill="#f97316" opacity="0.9"><animateMotion dur="0.9s" begin="0.6s"  repeatCount="indefinite"><mpath xlink:href="#p-app-ocp" href="#p-app-ocp"/></animateMotion></circle>
+        </g>
+        <!-- OCP Service → PgBouncer (blue) -->
+        <g id="g-app-pgb">
+          <circle r="3" fill="#3b82f6" opacity="0.9"><animateMotion dur="1.8s" begin="0s"    repeatCount="indefinite"><mpath xlink:href="#p-ocp-pgb" href="#p-ocp-pgb"/></animateMotion></circle>
+          <circle r="3" fill="#3b82f6" opacity="0.9"><animateMotion dur="1.8s" begin="0.36s" repeatCount="indefinite"><mpath xlink:href="#p-ocp-pgb" href="#p-ocp-pgb"/></animateMotion></circle>
+          <circle r="3" fill="#3b82f6" opacity="0.9"><animateMotion dur="1.8s" begin="0.72s" repeatCount="indefinite"><mpath xlink:href="#p-ocp-pgb" href="#p-ocp-pgb"/></animateMotion></circle>
+          <circle r="3" fill="#3b82f6" opacity="0.9"><animateMotion dur="1.8s" begin="1.08s" repeatCount="indefinite"><mpath xlink:href="#p-ocp-pgb" href="#p-ocp-pgb"/></animateMotion></circle>
+          <circle r="3" fill="#3b82f6" opacity="0.9"><animateMotion dur="1.8s" begin="1.44s" repeatCount="indefinite"><mpath xlink:href="#p-ocp-pgb" href="#p-ocp-pgb"/></animateMotion></circle>
+        </g>
+        <!-- PgBouncer → Primary (indigo) -->
+        <g id="g-pgb-pri">
+          <circle r="3" fill="#818cf8" opacity="0.9"><animateMotion dur="2.2s" begin="0s"    repeatCount="indefinite"><mpath xlink:href="#p-pgb-pri" href="#p-pgb-pri"/></animateMotion></circle>
+          <circle r="3" fill="#818cf8" opacity="0.9"><animateMotion dur="2.2s" begin="0.44s" repeatCount="indefinite"><mpath xlink:href="#p-pgb-pri" href="#p-pgb-pri"/></animateMotion></circle>
+          <circle r="3" fill="#818cf8" opacity="0.9"><animateMotion dur="2.2s" begin="0.88s" repeatCount="indefinite"><mpath xlink:href="#p-pgb-pri" href="#p-pgb-pri"/></animateMotion></circle>
+          <circle r="3" fill="#818cf8" opacity="0.9"><animateMotion dur="2.2s" begin="1.32s" repeatCount="indefinite"><mpath xlink:href="#p-pgb-pri" href="#p-pgb-pri"/></animateMotion></circle>
+          <circle r="3" fill="#818cf8" opacity="0.9"><animateMotion dur="2.2s" begin="1.76s" repeatCount="indefinite"><mpath xlink:href="#p-pgb-pri" href="#p-pgb-pri"/></animateMotion></circle>
+        </g>
+        <!-- Primary → Sync Standby (green sync WAL) -->
+        <g id="g-pri-std">
+          <circle r="2.5" fill="#22c55e" opacity="0.9"><animateMotion dur="1.5s" begin="0s"   repeatCount="indefinite"><mpath xlink:href="#p-pri-std" href="#p-pri-std"/></animateMotion></circle>
+          <circle r="2.5" fill="#22c55e" opacity="0.9"><animateMotion dur="1.5s" begin="0.3s" repeatCount="indefinite"><mpath xlink:href="#p-pri-std" href="#p-pri-std"/></animateMotion></circle>
+          <circle r="2.5" fill="#22c55e" opacity="0.9"><animateMotion dur="1.5s" begin="0.6s" repeatCount="indefinite"><mpath xlink:href="#p-pri-std" href="#p-pri-std"/></animateMotion></circle>
+          <circle r="2.5" fill="#22c55e" opacity="0.9"><animateMotion dur="1.5s" begin="0.9s" repeatCount="indefinite"><mpath xlink:href="#p-pri-std" href="#p-pri-std"/></animateMotion></circle>
+          <circle r="2.5" fill="#22c55e" opacity="0.9"><animateMotion dur="1.5s" begin="1.2s" repeatCount="indefinite"><mpath xlink:href="#p-pri-std" href="#p-pri-std"/></animateMotion></circle>
+        </g>
+        <!-- Primary → DR Standby (cyan, streaming via LB) -->
+        <g id="g-pri-dc2">
+          <circle r="2.5" fill="#22d3ee" opacity="0.9"><animateMotion dur="2.8s" begin="0s"   repeatCount="indefinite"><mpath xlink:href="#p-pri-dc2" href="#p-pri-dc2"/></animateMotion></circle>
+          <circle r="2.5" fill="#22d3ee" opacity="0.9"><animateMotion dur="2.8s" begin="0.56s" repeatCount="indefinite"><mpath xlink:href="#p-pri-dc2" href="#p-pri-dc2"/></animateMotion></circle>
+          <circle r="2.5" fill="#22d3ee" opacity="0.9"><animateMotion dur="2.8s" begin="1.12s" repeatCount="indefinite"><mpath xlink:href="#p-pri-dc2" href="#p-pri-dc2"/></animateMotion></circle>
+          <circle r="2.5" fill="#22d3ee" opacity="0.9"><animateMotion dur="2.8s" begin="1.68s" repeatCount="indefinite"><mpath xlink:href="#p-pri-dc2" href="#p-pri-dc2"/></animateMotion></circle>
+        </g>
+        <!-- Primary → S3 (purple WAL archive) -->
+        <g id="g-pri-s3">
+          <circle r="2.5" fill="#a78bfa" opacity="0.9"><animateMotion dur="3.0s" begin="0s"   repeatCount="indefinite"><mpath xlink:href="#p-pri-s3" href="#p-pri-s3"/></animateMotion></circle>
+          <circle r="2.5" fill="#a78bfa" opacity="0.9"><animateMotion dur="3.0s" begin="0.6s" repeatCount="indefinite"><mpath xlink:href="#p-pri-s3" href="#p-pri-s3"/></animateMotion></circle>
+          <circle r="2.5" fill="#a78bfa" opacity="0.9"><animateMotion dur="3.0s" begin="1.2s" repeatCount="indefinite"><mpath xlink:href="#p-pri-s3" href="#p-pri-s3"/></animateMotion></circle>
+          <circle r="2.5" fill="#a78bfa" opacity="0.9"><animateMotion dur="3.0s" begin="1.8s" repeatCount="indefinite"><mpath xlink:href="#p-pri-s3" href="#p-pri-s3"/></animateMotion></circle>
+          <circle r="2.5" fill="#a78bfa" opacity="0.9"><animateMotion dur="3.0s" begin="2.4s" repeatCount="indefinite"><mpath xlink:href="#p-pri-s3" href="#p-pri-s3"/></animateMotion></circle>
+        </g>
+        <!-- S3 → DR (archive-get fallback) -->
+        <g id="g-s3-dr">
+          <circle r="2" fill="#22d3ee" opacity="0.7"><animateMotion dur="4.5s" begin="0s"   repeatCount="indefinite"><mpath xlink:href="#p-s3-dc2" href="#p-s3-dc2"/></animateMotion></circle>
+          <circle r="2" fill="#22d3ee" opacity="0.7"><animateMotion dur="4.5s" begin="1.5s" repeatCount="indefinite"><mpath xlink:href="#p-s3-dc2" href="#p-s3-dc2"/></animateMotion></circle>
+          <circle r="2" fill="#22d3ee" opacity="0.7"><animateMotion dur="4.5s" begin="3.0s" repeatCount="indefinite"><mpath xlink:href="#p-s3-dc2" href="#p-s3-dc2"/></animateMotion></circle>
+        </g>
+
+        <!-- ═══ NODE BOXES ═══ -->
+
+        <!-- H+ Core Banking App -->
+        <g id="nd-apps">
+          <rect x="5" y="44" width="130" height="72" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+          <circle cx="129" cy="54" r="4" fill="#3b82f6"/>
+          <text x="70" y="65"  text-anchor="middle" font-size="10" font-weight="bold" fill="#f1f5f9" font-family="system-ui">H+ Core Banking</text>
+          <text x="70" y="77"  text-anchor="middle" font-size="8"  fill="#94a3b8" font-family="system-ui">HBL UAE Application</text>
+          <text id="nd-apps-sub" x="70" y="91"  text-anchor="middle" font-size="9" fill="#94a3b8" font-family="system-ui">180 clients</text>
+          <text id="nd-apps-m"   x="70" y="105" text-anchor="middle" font-size="9" font-weight="bold" fill="#3b82f6" font-family="system-ui">&#8593; connecting</text>
+        </g>
+
+        <!-- PGO Operator -->
+        <g id="nd-pgo">
+          <rect x="5" y="132" width="138" height="75" rx="8" fill="#1e293b" stroke="#6366f1" stroke-width="1.8"/>
+          <circle cx="137" cy="142" r="4" fill="#6366f1"/>
+          <text x="74" y="153" text-anchor="middle" font-size="10" font-weight="bold" fill="#f1f5f9" font-family="system-ui">PGO Operator</text>
+          <text x="74" y="165" text-anchor="middle" font-size="8"  fill="#94a3b8" font-family="system-ui">Crunchy Data v5</text>
+          <text x="74" y="177" text-anchor="middle" font-size="8"  fill="#818cf8" font-family="system-ui">PostgresCluster CR</text>
+          <text x="74" y="188" text-anchor="middle" font-size="7.5" fill="#475569" font-family="system-ui">manages DC1 + DC2 CRs</text>
+          <text x="74" y="199" text-anchor="middle" font-size="7.5" fill="#475569" font-family="system-ui">Patroni · pgBackRest · PgBouncer</text>
+        </g>
+
+        <!-- Prometheus -->
+        <g id="nd-prom">
+          <rect x="5" y="250" width="110" height="60" rx="8" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5" opacity="0.8"/>
+          <circle cx="109" cy="260" r="3.5" fill="#f59e0b"/>
+          <text x="57" y="271" text-anchor="middle" font-size="10" font-weight="bold" fill="#f1f5f9" font-family="system-ui">Prometheus</text>
+          <text x="57" y="283" text-anchor="middle" font-size="8"  fill="#94a3b8" font-family="system-ui">pg_inspector</text>
+          <text x="57" y="295" text-anchor="middle" font-size="8"  fill="#f59e0b" font-family="system-ui">scraping...</text>
+        </g>
+
+        <!-- OCP Service -->
+        <g id="nd-ocp">
+          <rect x="168" y="54" width="112" height="52" rx="8" fill="#1e293b" stroke="#f97316" stroke-width="1.8"/>
+          <circle id="nd-ocp-dot" cx="274" cy="64" r="4" fill="#f97316"/>
+          <text x="224" y="74"  text-anchor="middle" font-size="10" font-weight="bold" fill="#f1f5f9" font-family="system-ui">OCP Service</text>
+          <text x="224" y="86"  text-anchor="middle" font-size="8"  fill="#94a3b8" font-family="system-ui">OpenShift Route/LB</text>
+          <text id="nd-ocp-m1" x="224" y="98" text-anchor="middle" font-size="8.5" font-weight="bold" fill="#f97316" font-family="system-ui">10.171.1.205:5555</text>
+        </g>
+
+        <!-- PgBouncer (DC1) -->
+        <g id="nd-pgb">
+          <rect x="300" y="44" width="148" height="82" rx="8" fill="#1e293b" id="nd-pgb-rect" stroke="#22c55e" stroke-width="2"/>
+          <circle id="nd-pgb-dot" cx="441" cy="54" r="4" fill="#22c55e"/>
+          <text x="374" y="65"  text-anchor="middle" font-size="11" font-weight="bold" fill="#f1f5f9" font-family="system-ui">PgBouncer</text>
+          <text x="374" y="78"  text-anchor="middle" font-size="8"  fill="#94a3b8" font-family="system-ui">prod-pgcluster-uae-pgbouncer</text>
+          <text id="nd-pgb-m1" x="374" y="92"  text-anchor="middle" font-size="9" font-weight="bold" fill="#22c55e" font-family="system-ui">180/2000 clients</text>
+          <text id="nd-pgb-m2" x="374" y="105" text-anchor="middle" font-size="9" fill="#94a3b8" font-family="system-ui">44/150 srv &#183; wait:0</text>
+          <text x="374" y="118" text-anchor="middle" font-size="7.5" fill="#475569" font-family="system-ui">txn mode &#183; pool:50 &#183; max_db:150</text>
+        </g>
+
+        <!-- Patroni badge (inside DC1) -->
+        <g opacity="0.75">
+          <rect x="168" y="140" width="260" height="22" rx="5" fill="#0c1a44" stroke="#1e3a8a" stroke-width="1"/>
+          <text x="298" y="155" text-anchor="middle" font-size="8.5" fill="#818cf8" font-family="system-ui">Patroni HA &#183; scope: prod-pgcluster-uae-ha &#183; TL:8 &#183; sync_mode:on</text>
+        </g>
+
+        <!-- Primary (DC1) -->
+        <g id="nd-primary">
+          <rect x="468" y="52" width="158" height="133" rx="8" fill="#1e293b" id="nd-pri-rect" stroke="#22c55e" stroke-width="2"/>
+          <circle id="nd-pri-dot" cx="620" cy="63" r="4" fill="#22c55e"/>
+          <text x="547" y="75"  text-anchor="middle" font-size="11" font-weight="bold" fill="#f1f5f9" font-family="system-ui">Primary</text>
+          <text x="547" y="88"  text-anchor="middle" font-size="8"  fill="#94a3b8" font-family="system-ui">dc1-9c5j-0 &#183; TL:8 &#183; Leader</text>
+          <text id="nd-pri-m1" x="547" y="103" text-anchor="middle" font-size="9" font-weight="bold" fill="#22c55e" font-family="system-ui">TPS:120  conn:95</text>
+          <text id="nd-pri-m2" x="547" y="116" text-anchor="middle" font-size="9" fill="#94a3b8" font-family="system-ui">idleTxn:2  WAL:0.5MB/s</text>
+          <text x="547" y="129" text-anchor="middle" font-size="8"  fill="#475569" font-family="system-ui">max_conn:800 &#183; shm:24GB</text>
+          <text x="547" y="141" text-anchor="middle" font-size="8"  fill="#475569" font-family="system-ui">sync_commit:ON &#183; max_wal:64GB</text>
+          <text x="547" y="153" text-anchor="middle" font-size="8"  fill="#475569" font-family="system-ui">slot_keep:300GB &#183; PG 18</text>
+          <text x="547" y="175" text-anchor="middle" font-size="9"  fill="#22c55e" font-family="system-ui">&#x25bc; archive-push</text>
+        </g>
+
+        <!-- Sync Standby (DC1) -->
+        <g id="nd-standby">
+          <rect x="468" y="215" width="158" height="112" rx="8" fill="#1e293b" id="nd-std-rect" stroke="#22c55e" stroke-width="2"/>
+          <circle id="nd-std-dot" cx="620" cy="226" r="4" fill="#22c55e"/>
+          <text x="547" y="238" text-anchor="middle" font-size="11" font-weight="bold" fill="#f1f5f9" font-family="system-ui">Sync Standby</text>
+          <text x="547" y="251" text-anchor="middle" font-size="8"  fill="#94a3b8" font-family="system-ui">dc1-5c2q-0 &#183; TL:8 &#183; Sync</text>
+          <text id="nd-std-m1" x="547" y="266" text-anchor="middle" font-size="9" font-weight="bold" fill="#22c55e" font-family="system-ui">lag: 0 B</text>
+          <text id="nd-std-m2" x="547" y="279" text-anchor="middle" font-size="9" fill="#94a3b8" font-family="system-ui">sync &#183; streaming</text>
+          <text x="547" y="292" text-anchor="middle" font-size="8"  fill="#475569" font-family="system-ui">hot_standby:ON &#183; sync_node_cnt:1</text>
+          <text x="547" y="319" text-anchor="middle" font-size="8"  fill="#475569" font-family="system-ui">failover candidate &#183; TL:8</text>
+        </g>
+
+        <!-- DR Standby (DC2) -->
+        <g id="nd-dr">
+          <rect x="690" y="100" width="145" height="148" rx="8" fill="#1e293b" id="nd-dr-rect" stroke="#22d3ee" stroke-width="2"/>
+          <circle id="nd-dr-dot" cx="829" cy="111" r="4" fill="#22d3ee"/>
+          <text x="762" y="123" text-anchor="middle" font-size="11" font-weight="bold" fill="#f1f5f9" font-family="system-ui">DR Standby</text>
+          <text x="762" y="136" text-anchor="middle" font-size="8"  fill="#94a3b8" font-family="system-ui">dr-pgcluster-uae &#183; DC2</text>
+          <text x="762" y="149" text-anchor="middle" font-size="8"  fill="#475569" font-family="system-ui">spec.standby.enabled: true</text>
+          <text id="nd-dr-m1" x="762" y="165" text-anchor="middle" font-size="9" font-weight="bold" fill="#22d3ee" font-family="system-ui">lag: 2.0 MB</text>
+          <text id="nd-dr-m2" x="762" y="178" text-anchor="middle" font-size="9" fill="#94a3b8" font-family="system-ui">streaming via LB</text>
+          <text x="762" y="191" text-anchor="middle" font-size="8"  fill="#475569" font-family="system-ui">primaryEndpoint: 10.171.1.229:5555</text>
+          <text x="762" y="204" text-anchor="middle" font-size="8"  fill="#475569" font-family="system-ui">archive-get via LB (primary)</text>
+          <text x="762" y="217" text-anchor="middle" font-size="7.5" fill="#334155" font-family="system-ui">fallback: repo S3/ODF Nooba</text>
+          <text x="762" y="236" text-anchor="middle" font-size="8.5" fill="#22d3ee" font-family="system-ui">&#x25bc; archive-get</text>
+        </g>
+
+        <!-- S3 / ODF Nooba node -->
+        <g id="nd-s3">
+          <rect x="270" y="365" width="440" height="50" rx="7" fill="#1e1030" id="nd-s3-rect" stroke="#7c3aed" stroke-width="1.8"/>
+          <circle id="nd-s3-dot" cx="704" cy="375" r="4" fill="#a78bfa"/>
+          <text x="490" y="383" text-anchor="middle" font-size="10" font-weight="bold" fill="#f1f5f9" font-family="system-ui">pgBackRest S3 / ODF Nooba</text>
+          <text id="nd-s3-m1" x="490" y="400" text-anchor="middle" font-size="9" font-weight="bold" fill="#a78bfa" font-family="system-ui">&#10003; archiving &#183; spool:12</text>
+        </g>
+
+        <!-- Connection labels -->
+        <text id="lbl-app-ocp" x="152" y="73"  text-anchor="middle" font-size="7.5" fill="#f97316" font-family="system-ui" opacity="0.9">OCP Route</text>
+        <text id="lbl-ocp-pgb" x="289" y="73"  text-anchor="middle" font-size="7.5" fill="#3b82f6" font-family="system-ui" opacity="0.9">pool</text>
+        <text id="lbl-app-pgb" x="374" y="37"  text-anchor="middle" font-size="7.5" fill="#818cf8" font-family="system-ui" opacity="0.85">180 conns</text>
+        <text id="lbl-pgb-pri" x="455" y="97"  text-anchor="middle" font-size="7.5" fill="#818cf8" font-family="system-ui" opacity="0.85">120 TPS</text>
+        <text id="lbl-pri-std" x="548" y="208" text-anchor="middle" font-size="7.5" fill="#22c55e" font-family="system-ui" opacity="0.85">sync WAL</text>
+        <text id="lbl-pri-dc2" x="654" y="128" text-anchor="middle" font-size="7.5" fill="#22d3ee" font-family="system-ui" opacity="0.85">stream·LB</text>
+        <text id="lbl-pri-s3"  x="465" y="290" text-anchor="middle" font-size="7.5" fill="#a78bfa" font-family="system-ui" opacity="0.85">archive-push</text>
+        <text id="lbl-s3-dc2"  x="740" y="335" text-anchor="middle" font-size="7.5" fill="#22d3ee" font-family="system-ui" opacity="0.85">fallback</text>
+
+        <!-- Scenario watermark -->
+        <text id="arch-scenario" x="1140" y="424" text-anchor="end" font-size="8" fill="#1e293b" font-family="system-ui">Scenario: Normal Ops</text>
+
+        <!-- Failover overlay (hidden by default) -->
+        <g id="fo-overlay" opacity="0" pointer-events="none">
+          <rect x="468" y="52" width="158" height="133" rx="8" fill="#7f1d1d" opacity="0.35"/>
+          <text x="547" y="130" text-anchor="middle" font-size="28" fill="#ef4444" font-family="system-ui" opacity="0.8">✖</text>
+          <text x="547" y="155" text-anchor="middle" font-size="11" font-weight="bold" fill="#ef4444" font-family="system-ui">PRIMARY DOWN</text>
+        </g>
+        <!-- PITR overlay (hidden by default) -->
+        <g id="pitr-overlay" opacity="0" pointer-events="none">
+          <rect x="160" y="26" width="495" height="310" rx="10" fill="#0c2244" opacity="0.55"/>
+          <text x="403" y="165" text-anchor="middle" font-size="16" font-weight="bold" fill="#93c5fd" font-family="system-ui">⏮  PITR RESTORE IN PROGRESS</text>
+          <text x="403" y="190" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="system-ui">Applying WAL segments... cluster offline</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Patroni Cluster Status ══ -->
+<div id="patroni-section">
+
+  <div id="patroni-grid">
+
+    <!-- Member Status Table -->
+    <div class="pt-panel" style="grid-column:span 1;">
+      <div class="pt-title">
+        Patroni Cluster Members
+        <span id="pt-scope-badge">scope: prod-pgcluster-uae-ha</span>
+      </div>
+      <table class="pt-member-table">
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Role</th>
+            <th>State</th>
+            <th>TL</th>
+            <th>Lag</th>
+          </tr>
+        </thead>
+        <tbody id="pt-member-tbody">
+          <tr>
+            <td style="font-family:monospace;font-size:10px;">dc1-9c5j-0</td>
+            <td><span class="pt-role-leader">Leader</span></td>
+            <td id="pt-pri-state"><span class="pt-state-running">running</span></td>
+            <td id="pt-pri-tl">8</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td style="font-family:monospace;font-size:10px;">dc1-5c2q-0</td>
+            <td><span class="pt-role-sync">Sync Standby</span></td>
+            <td id="pt-std-state"><span class="pt-state-running">running</span></td>
+            <td id="pt-std-tl">8</td>
+            <td id="pt-std-lag">0 B</td>
+          </tr>
+          <tr>
+            <td style="font-family:monospace;font-size:10px;">dr-node-0</td>
+            <td><span class="pt-role-dr">DR Standby</span></td>
+            <td id="pt-dr-state"><span class="pt-state-running">running</span></td>
+            <td id="pt-dr-tl">8</td>
+            <td id="pt-dr-lag">2.0 MB</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="tl-bar">
+        <div class="tl-evt">TL:6</div><div class="tl-sep">›</div>
+        <div class="tl-evt">TL:7</div><div class="tl-sep">›</div>
+        <div class="tl-evt current" id="pt-tl-current">TL:8 ← current</div>
+      </div>
+    </div>
+
+    <!-- Cluster Health KVs -->
+    <div class="pt-panel">
+      <div class="pt-title">Cluster Health <span id="pt-health-badge"></span></div>
+      <div class="pt-kv">
+        <div class="pt-kv-item">
+          <div class="pt-kv-label">sync_mode</div>
+          <div class="pt-kv-val green">on</div>
+        </div>
+        <div class="pt-kv-item">
+          <div class="pt-kv-label">sync_node_count</div>
+          <div class="pt-kv-val">1</div>
+        </div>
+        <div class="pt-kv-item">
+          <div class="pt-kv-label">Timeline</div>
+          <div class="pt-kv-val" id="pt-tl-val">TL:8</div>
+        </div>
+        <div class="pt-kv-item">
+          <div class="pt-kv-label">Leader TTL</div>
+          <div class="pt-kv-val green">30s</div>
+        </div>
+        <div class="pt-kv-item">
+          <div class="pt-kv-label">Sync Lag</div>
+          <div class="pt-kv-val" id="pt-sync-lag-kv">0 B</div>
+        </div>
+        <div class="pt-kv-item">
+          <div class="pt-kv-label">DR Lag</div>
+          <div class="pt-kv-val" id="pt-dr-lag-kv">2.0 MB</div>
+        </div>
+        <div class="pt-kv-item">
+          <div class="pt-kv-label">PgBouncer</div>
+          <div class="pt-kv-val green" id="pt-pgb-status">OK</div>
+        </div>
+        <div class="pt-kv-item">
+          <div class="pt-kv-label">Archive</div>
+          <div class="pt-kv-val green" id="pt-archive-status">OK</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">
+        <span class="pt-badge pt-badge-blue">PGO v5</span>
+        <span class="pt-badge pt-badge-purple">Patroni</span>
+        <span class="pt-badge pt-badge-green" id="pt-overall-badge">HEALTHY</span>
+        <span class="pt-badge" style="background:#0f172a;border:1px solid #334155;color:#94a3b8;">PG 18</span>
+        <span class="pt-badge" style="background:#0f172a;border:1px solid #334155;color:#94a3b8;">max_conn:800</span>
+        <span class="pt-badge" style="background:#0f172a;border:1px solid #334155;color:#94a3b8;">shm:24GB</span>
+      </div>
+    </div>
+
+    <!-- patronictl Command Reference -->
+    <div class="pt-panel">
+      <div class="pt-title">patronictl Quick Reference <span style="color:#22c55e;">alias configured ✓</span></div>
+
+      <div class="pt-cmd-section">
+        <h5>Status &amp; Inspection</h5>
+        <div class="pt-cmd-row">
+          <div class="pt-cmd-code">patronictl status</div>
+          <div class="pt-cmd-desc">Cluster overview + member states</div>
+          <button class="pt-cmd-copy" onclick="ptCopy(this,'patronictl status')">copy</button>
+        </div>
+        <div class="pt-cmd-row">
+          <div class="pt-cmd-code">patronictl list</div>
+          <div class="pt-cmd-desc">Member table with lag + TL</div>
+          <button class="pt-cmd-copy" onclick="ptCopy(this,'patronictl list')">copy</button>
+        </div>
+        <div class="pt-cmd-row">
+          <div class="pt-cmd-code">patronictl history</div>
+          <div class="pt-cmd-desc">Failover/switchover history</div>
+          <button class="pt-cmd-copy" onclick="ptCopy(this,'patronictl history')">copy</button>
+        </div>
+        <div class="pt-cmd-row">
+          <div class="pt-cmd-code">patronictl show-config</div>
+          <div class="pt-cmd-desc">Active patroni configuration</div>
+          <button class="pt-cmd-copy" onclick="ptCopy(this,'patronictl show-config')">copy</button>
+        </div>
+        <div class="pt-cmd-row">
+          <div class="pt-cmd-code">patronictl version</div>
+          <div class="pt-cmd-desc">Patroni version on each member</div>
+          <button class="pt-cmd-copy" onclick="ptCopy(this,'patronictl version')">copy</button>
+        </div>
+      </div>
+
+      <div class="pt-cmd-section">
+        <h5>Cluster Control</h5>
+        <div class="pt-cmd-row">
+          <div class="pt-cmd-code">patronictl pause</div>
+          <div class="pt-cmd-desc">Disable auto-failover</div>
+          <button class="pt-cmd-copy" onclick="ptCopy(this,'patronictl pause')">copy</button>
+        </div>
+        <div class="pt-cmd-row">
+          <div class="pt-cmd-code">patronictl resume</div>
+          <div class="pt-cmd-desc">Re-enable auto-failover</div>
+          <button class="pt-cmd-copy" onclick="ptCopy(this,'patronictl resume')">copy</button>
+        </div>
+        <div class="pt-cmd-row">
+          <div class="pt-cmd-code">patronictl reload prod-pgcluster-uae-ha</div>
+          <div class="pt-cmd-desc">Reload config on all members</div>
+          <button class="pt-cmd-copy" onclick="ptCopy(this,'patronictl reload prod-pgcluster-uae-ha')">copy</button>
+        </div>
+        <div class="pt-cmd-row">
+          <div class="pt-cmd-code">patronictl restart prod-pgcluster-uae-ha</div>
+          <div class="pt-cmd-desc">Rolling restart all members</div>
+          <button class="pt-cmd-copy" onclick="ptCopy(this,'patronictl restart prod-pgcluster-uae-ha')">copy</button>
+        </div>
+      </div>
+
+      <div class="pt-cmd-section">
+        <h5>Failover / Switchover</h5>
+        <div class="pt-cmd-row">
+          <div class="pt-cmd-code">patronictl switchover prod-pgcluster-uae-ha --master dc1-9c5j-0 --candidate dc1-5c2q-0 --scheduled now --force</div>
+          <div class="pt-cmd-desc">Planned switchover to sync standby</div>
+          <button class="pt-cmd-copy" onclick="ptCopy(this,'patronictl switchover prod-pgcluster-uae-ha --master dc1-9c5j-0 --candidate dc1-5c2q-0 --scheduled now --force')">copy</button>
+        </div>
+        <div class="pt-cmd-row">
+          <div class="pt-cmd-code">patronictl failover prod-pgcluster-uae-ha --master dc1-9c5j-0 --candidate dc1-5c2q-0 --force</div>
+          <div class="pt-cmd-desc">Unplanned failover (emergency)</div>
+          <button class="pt-cmd-copy" onclick="ptCopy(this,'patronictl failover prod-pgcluster-uae-ha --master dc1-9c5j-0 --candidate dc1-5c2q-0 --force')">copy</button>
+        </div>
+      </div>
+
+      <div class="pt-cmd-section">
+        <h5>Replica Management</h5>
+        <div class="pt-cmd-row">
+          <div class="pt-cmd-code">patronictl reinit prod-pgcluster-uae-ha dc1-9c5j-0 --force</div>
+          <div class="pt-cmd-desc">Rebuild replica from primary</div>
+          <button class="pt-cmd-copy" onclick="ptCopy(this,'patronictl reinit prod-pgcluster-uae-ha dc1-9c5j-0 --force')">copy</button>
+        </div>
+        <div class="pt-cmd-row">
+          <div class="pt-cmd-code">patronictl reinit prod-pgcluster-uae-ha dc1-5c2q-0 --force</div>
+          <div class="pt-cmd-desc">Rebuild sync standby</div>
+          <button class="pt-cmd-copy" onclick="ptCopy(this,'patronictl reinit prod-pgcluster-uae-ha dc1-5c2q-0 --force')">copy</button>
+        </div>
+      </div>
+
+      <div class="pt-cmd-section">
+        <h5>PGO — oc exec wrapper (alias target)</h5>
+        <div class="pt-cmd-row">
+          <div class="pt-cmd-code">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- patronictl status</div>
+          <div class="pt-cmd-desc">Full path if alias not available</div>
+          <button class="pt-cmd-copy" onclick="ptCopy(this,'oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- patronictl status')">copy</button>
+        </div>
+        <div class="pt-cmd-row">
+          <div class="pt-cmd-code">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- patronictl list</div>
+          <div class="pt-cmd-desc">Member list via oc exec</div>
+          <button class="pt-cmd-copy" onclick="ptCopy(this,'oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- patronictl list')">copy</button>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /patroni-grid -->
+
+  <!-- PITR progress bar (shown during PITR scenario) -->
+  <div id="pitr-bar" style="display:none;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+      <span style="font-size:11px;font-weight:700;color:#93c5fd;">⏮ PITR Restore — Applying WAL Segments</span>
+      <span style="font-size:11px;color:#93c5fd;font-variant-numeric:tabular-nums;" id="pitr-pct-text">0%</span>
+    </div>
+    <div style="background:#0f172a;border-radius:4px;height:8px;overflow:hidden;">
+      <div id="pitr-progress" style="height:8px;background:linear-gradient(90deg,#1d4ed8,#3b82f6);border-radius:4px;width:0%;transition:width .4s;"></div>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-top:5px;">Cluster offline during restore · Replay target: time-based · action=pause</div>
+  </div>
+
+  <!-- Single table restore progress bar (shown during single_table scenario) -->
+  <div id="tbl-restore-bar" style="display:none;background:var(--panel);border:1px solid #14532d;border-radius:8px;padding:12px 16px;margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+      <span style="font-size:11px;font-weight:700;color:#86efac;">🔧 Table Restore — Logical Restore Job Running</span>
+      <span style="font-size:11px;color:#86efac;font-variant-numeric:tabular-nums;" id="tbl-restore-pct">0%</span>
+    </div>
+    <div style="background:#0f172a;border-radius:4px;height:8px;overflow:hidden;">
+      <div id="tbl-restore-fill" style="height:8px;background:linear-gradient(90deg,#14532d,#22c55e);border-radius:4px;width:0%;transition:width .4s;"></div>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-top:5px;">Main cluster running normally · Temp restore pod active · Table offline: ~15 min</div>
+  </div>
+
+</div><!-- /patroni-section -->
+
+<!-- ══ Recovery Runbook Panel ══ -->
+<div id="runbook-panel">
+  <div id="runbook-inner">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div class="rb-title" id="rb-main-title">⚡ Recovery Runbook</div>
+      <button class="rb-close" onclick="hideRunbook()">✕ Close</button>
+    </div>
+    <div id="runbook-tabs"></div>
+    <div id="runbook-body"></div>
+  </div>
+</div>
+
+</div><!-- /pg-arch -->
+
+<div id="pg-metrics" class="pg-tab-content">
+<!-- Main grid -->
+<div id="main">
+
+  <!-- Panel 1: PgBouncer -->
+  <div class="panel" id="panel-pgb">
+    <div class="panel-title">PgBouncer Pool &nbsp;|&nbsp; <span>LB: 10.171.1.205:5555</span></div>
+
+    <div class="gauge-wrap">
+      <div class="gauge-header">
+        <span class="gauge-label">Client Connections</span>
+        <span class="gauge-val" id="g-clientconn">180 / 2,000</span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="gf-clientconn" style="width:9%"></div></div>
+    </div>
+
+    <div class="gauge-wrap">
+      <div class="gauge-header">
+        <span class="gauge-label">Server Connections</span>
+        <span class="gauge-val" id="g-serverconn">44 / 150</span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="gf-serverconn" style="width:29%"></div></div>
+    </div>
+
+    <div class="gauge-wrap">
+      <div class="gauge-header">
+        <span class="gauge-label">Pool Slots Used</span>
+        <span class="gauge-val" id="g-poolslots">35 / 50</span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="gf-poolslots" style="width:70%"></div></div>
+    </div>
+
+    <div class="gauge-wrap">
+      <div class="gauge-header">
+        <span class="gauge-label">Wait Queue</span>
+        <span class="gauge-val" id="g-waitqueue">0</span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="gf-waitqueue" style="width:0%"></div></div>
+      <div class="gauge-sub">query_wait_timeout: 120s</div>
+    </div>
+
+    <div class="spark-wrap">
+      <canvas id="spark-pgb" height="70"></canvas>
+      <div class="spark-legend">
+        <div class="spark-legend-item"><div class="spark-dot" style="background:var(--blue)"></div>Client Connections (60s)</div>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-item">Pool mode: <span>transaction</span></div>
+      <div class="stat-item">Auth: <span>pgbouncer.get_auth()</span></div>
+      <div class="stat-item">TLS: <span>verify-full</span></div>
+      <div class="stat-item">max_client_conn: <span>2,000</span></div>
+      <div class="stat-item">default_pool_size: <span>50</span></div>
+    </div>
+  </div>
+
+  <!-- Panel 2: Sessions & TPS -->
+  <div class="panel" id="panel-pg">
+    <div class="panel-title">Sessions & TPS &nbsp;|&nbsp; <span>Leader: prod-pgcluster-uae-dc1-9c5j-0</span></div>
+
+    <div class="tps-big">
+      <div class="tps-num" id="tps-big">120</div>
+      <div class="tps-unit">TPS</div>
+      <div class="tps-trend" id="tps-trend">&#8594;</div>
+    </div>
+
+    <div class="gauge-wrap">
+      <div class="gauge-header">
+        <span class="gauge-label">Total Connections</span>
+        <span class="gauge-val" id="g-pgconn">95 / 800</span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="gf-pgconn" style="width:12%"></div></div>
+    </div>
+
+    <div class="gauge-wrap">
+      <div class="gauge-header">
+        <span class="gauge-label">Active Queries</span>
+        <span class="gauge-val" id="g-active" style="color:var(--blue)">62</span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="gf-active" style="width:8%;background:var(--blue)"></div></div>
+    </div>
+
+    <div class="gauge-wrap">
+      <div class="gauge-header">
+        <span class="gauge-label">Idle-in-Transaction</span>
+        <span class="gauge-val" id="g-idleintxn">2</span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="gf-idleintxn" style="width:4%"></div></div>
+      <div class="gauge-sub">idle_in_txn_timeout: 120s (auto-kill)</div>
+    </div>
+
+    <div class="gauge-wrap">
+      <div class="gauge-header">
+        <span class="gauge-label">TPS Gauge</span>
+        <span class="gauge-val" id="g-tps" style="color:var(--blue)">120 tx/s</span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="gf-tps" style="width:14%;background:var(--blue)"></div></div>
+    </div>
+
+    <div class="spark-wrap">
+      <canvas id="spark-pg" height="80"></canvas>
+      <div class="spark-legend">
+        <div class="spark-legend-item"><div class="spark-dot" style="background:var(--blue)"></div>TPS</div>
+        <div class="spark-legend-item"><div class="spark-dot" style="background:var(--amber)"></div>Idle-in-Txn</div>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-item">statement_timeout: <span>300s</span></div>
+      <div class="stat-item">idle_in_txn_timeout: <span>120s</span></div>
+      <div class="stat-item">sync_commit: <span>ON</span></div>
+      <div class="stat-item">max_connections: <span>800</span></div>
+      <div class="stat-item">reserved: <span>5</span></div>
+    </div>
+  </div>
+
+  <!-- Panel 3: Replication & WAL -->
+  <div class="panel" id="panel-rep">
+    <div class="panel-title">Replication & WAL &nbsp;|&nbsp; <span>Sync standby: dc1-5c2q-0 &nbsp;|&nbsp; DR: dr-pgcluster-uae</span></div>
+
+    <div class="gauge-wrap">
+      <div class="gauge-header">
+        <span class="gauge-label">Sync Standby Lag</span>
+        <span class="gauge-val" id="g-synclag">0 B</span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="gf-synclag" style="width:0%"></div></div>
+    </div>
+
+    <div class="gauge-wrap">
+      <div class="gauge-header">
+        <span class="gauge-label">DR Cluster Lag</span>
+        <span class="gauge-val" id="g-drlag">2.0 MB</span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="gf-drlag" style="width:2%"></div></div>
+    </div>
+
+    <div class="gauge-wrap">
+      <div class="gauge-header">
+        <span class="gauge-label">WAL Gen Rate</span>
+        <span class="gauge-val" id="g-walrate">0.5 MB/s</span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="gf-walrate" style="width:2%"></div></div>
+      <div class="gauge-sub">max_wal_size: 64GB &nbsp;|&nbsp; wal_keep_size: 2048MB</div>
+    </div>
+
+    <div class="gauge-wrap">
+      <div class="gauge-header">
+        <span class="gauge-label">Archive Spool Files</span>
+        <span class="gauge-val" id="g-spool">12</span>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="gf-spool" style="width:1%"></div></div>
+      <div class="gauge-sub">max_slot_wal_keep_size: 300GB &nbsp;|&nbsp; archive_timeout: 60s</div>
+    </div>
+
+    <div class="spark-wrap">
+      <canvas id="spark-rep" height="80"></canvas>
+      <div class="spark-legend">
+        <div class="spark-legend-item"><div class="spark-dot" style="background:var(--purple)"></div>Sync Lag</div>
+        <div class="spark-legend-item"><div class="spark-dot" style="background:var(--cyan)"></div>DR Lag</div>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-item">Patroni TL: <span>8</span></div>
+      <div class="stat-item">synchronous_mode: <span>true</span></div>
+      <div class="stat-item">sync_node_count: <span>1</span></div>
+      <div class="stat-item">max_wal_senders: <span>20</span></div>
+      <div class="stat-item">max_replication_slots: <span>50</span></div>
+    </div>
+
+    <!-- WAL Archiver box -->
+    <div class="wal-box">
+      <div class="wal-box-title">&#128190; WAL Archiver &nbsp;&mdash;&nbsp; pgBackRest stanza: db &nbsp;|&nbsp; repo1 &nbsp;|&nbsp; S3: pgbackrest-uae-prod-609d40f1</div>
+      <div class="wal-kv">
+        <div class="wal-k">archived_count</div>
+        <div class="wal-v" id="wal-archived">704</div>
+      </div>
+      <div class="wal-kv">
+        <div class="wal-k">failed_count</div>
+        <div class="wal-v" id="wal-failed" style="color:var(--green)">212</div>
+      </div>
+      <div class="wal-kv">
+        <div class="wal-k">last_archived</div>
+        <div class="wal-v" id="wal-lastarch">3s ago</div>
+      </div>
+      <div class="wal-kv">
+        <div class="wal-k">archive_timeout</div>
+        <div class="wal-v" style="color:var(--muted)">60s</div>
+      </div>
+    </div>
+
+    <!-- Backup banner -->
+    <div id="backup-banner">
+      <div class="backup-title">&#128190; pgBackRest FULL BACKUP RUNNING &nbsp;&mdash;&nbsp; stanza: db &nbsp;|&nbsp; repo1 &nbsp;|&nbsp; S3</div>
+      <div class="backup-bar-track"><div class="backup-bar-fill" id="backup-bar-fill" style="width:0%"></div></div>
+      <div class="backup-pct" id="backup-pct">0% complete</div>
+    </div>
+  </div>
+
+  <!-- Panel 4: Alerts -->
+  <div class="panel" id="alerts-panel">
+    <div class="panel-title">Active Alerts</div>
+    <div class="alerts-list" id="alerts-list">
+      <div class="all-ok">
+        <div class="all-ok-icon">&#9989;</div>
+        <div class="all-ok-text">All Systems Normal</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+</div><!-- /pg-metrics -->
+
+<!-- Footer -->
+<div id="footer">
+  <span>Habib Bank UAE &nbsp;|&nbsp; PostgreSQL 18 Production Cluster &nbsp;|&nbsp; Namespace: prod-pgcluster-uae &nbsp;|&nbsp; Primary LB: 10.171.1.229:5555 &nbsp;|&nbsp; PgBouncer LB: 10.171.1.205:5555</span>
+  <span>Tick: <span id="tick-display">0</span> &nbsp;|&nbsp; shared_buffers: 24GB &nbsp;|&nbsp; max_wal_size: 64GB &nbsp;|&nbsp; synchronous_commit: ON &nbsp;|&nbsp; Patroni TL: 8 &nbsp;|&nbsp; Stanza: db &nbsp;|&nbsp; S3: pgbackrest-uae-prod-609d40f1</span>
+</div>
+
+<!-- Modal -->
+
+
+<div id="modal-overlay">
+  <div id="modal-box">
+    <div class="modal-title" id="modal-title">Alert</div>
+    <div class="modal-val-box" id="modal-vals"></div>
+    <div class="modal-section">
+      <h4>What this means</h4>
+      <p id="modal-desc"></p>
+    </div>
+    <div class="modal-section">
+      <h4>Immediate commands to run</h4>
+      <div class="cmd-block-wrap">
+        <pre class="cmd-block" id="modal-cmds"></pre>
+        <button class="copy-btn" id="copy-btn" onclick="copyCommands()">Copy</button>
+      </div>
+    </div>
+    <div class="sop-ref" id="modal-sop"></div>
+    <div class="warn-note" id="modal-warn" style="display:none"></div>
+    <div class="modal-footer">
+      <button class="close-btn" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════
+const state = {
+  scenario: 'normal',
+  intensity: 1.0,
+  speed: 1,
+  paused: false,
+  tick: 0,
+  prevTps: 120,
+  alertStartTimes: {},
+  metrics: {
+    tps: 120, clientConn: 180, serverConn: 44,
+    pgConn: 95, activeQueries: 62, idleInTxn: 2,
+    waitQueue: 0, walRate: 0.5,
+    syncLag: 0, drLag: 2*1024*1024,
+    spoolFiles: 12, archivedCount: 704, failedCount: 212,
+    lastArchivedSecondsAgo: 3, archiveOk: true,
+    backupRunning: false, backupPct: 0
+  },
+  history: {
+    clientConn: new Array(60).fill(180),
+    tps: new Array(60).fill(120),
+    idleInTxn: new Array(60).fill(2),
+    syncLag: new Array(60).fill(0),
+    drLag: new Array(60).fill(2*1024*1024),
+    spoolFiles: new Array(60).fill(12)
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// SCENARIO DEFINITIONS
+// ═══════════════════════════════════════════════════════════════════
+const SCENARIOS = {
+  normal: {
+    tps:120, clientConn:180, serverConn:44, pgConn:95, idleInTxn:2,
+    activeQueries:62, walRate:0.5, syncLag:0, drLag:2*1024*1024,
+    spool:12, archiveOk:true, backupRunning:false, waitQueueMax:0,
+    maxTps:200, lerpFactor:0.08
+  },
+  morning_peak: {
+    tps:850, clientConn:1200, serverConn:128, pgConn:520, idleInTxn:15,
+    activeQueries:480, walRate:3.2, syncLag:8*1024*1024, drLag:45*1024*1024,
+    spool:85, archiveOk:true, backupRunning:false, waitQueueMax:0,
+    maxTps:1000, lerpFactor:0.1
+  },
+  bulk_load: {
+    tps:200, clientConn:350, serverConn:82, pgConn:210, idleInTxn:5,
+    activeQueries:190, walRate:28, syncLag:250*1024*1024, drLag:800*1024*1024,
+    spool:420, archiveOk:true, backupRunning:false, waitQueueMax:0,
+    maxTps:400, lerpFactor:0.06, lagGrows:true
+  },
+  conn_storm: {
+    tps:50, clientConn:1900, serverConn:148, pgConn:720, idleInTxn:45,
+    activeQueries:48, walRate:1.2, syncLag:5*1024*1024, drLag:30*1024*1024,
+    spool:25, archiveOk:true, backupRunning:false, waitQueueMax:80,
+    maxTps:200, lerpFactor:0.12
+  },
+  long_txn: {
+    tps:80, clientConn:600, serverConn:95, pgConn:420, idleInTxn:38,
+    activeQueries:75, walRate:0.8, syncLag:12*1024*1024, drLag:60*1024*1024,
+    spool:40, archiveOk:true, backupRunning:false, waitQueueMax:0,
+    maxTps:200, lerpFactor:0.07, idleOscillates:true
+  },
+  wal_fail: {
+    tps:180, clientConn:220, serverConn:55, pgConn:105, idleInTxn:3,
+    activeQueries:90, walRate:2.5, syncLag:15*1024*1024, drLag:150*1024*1024,
+    spool:0, archiveOk:false, backupRunning:false, waitQueueMax:0,
+    maxTps:300, lerpFactor:0.08, spoolGrows:true
+  },
+  backup_window: {
+    tps:150, clientConn:200, serverConn:50, pgConn:100, idleInTxn:2,
+    activeQueries:80, walRate:1.8, syncLag:3*1024*1024, drLag:20*1024*1024,
+    spool:30, archiveOk:true, backupRunning:true, waitQueueMax:0,
+    maxTps:300, lerpFactor:0.08
+  },
+  // ── Recovery Scenarios ──
+  failover: {
+    // Primary has crashed — Patroni detects and promotes standby
+    tps:0, clientConn:0, serverConn:0, pgConn:0, idleInTxn:0,
+    activeQueries:0, walRate:0, syncLag:0, drLag:5*1024*1024*1024,
+    spool:0, archiveOk:false, backupRunning:false, waitQueueMax:0,
+    maxTps:0, lerpFactor:0.25,
+    primaryDown:true, promotionInProgress:true
+  },
+  switchover: {
+    // Planned Patroni switchover — brief interruption, new leader elected
+    tps:20, clientConn:40, serverConn:5, pgConn:10, idleInTxn:0,
+    activeQueries:5, walRate:0.1, syncLag:0, drLag:10*1024*1024,
+    spool:5, archiveOk:true, backupRunning:false, waitQueueMax:0,
+    maxTps:100, lerpFactor:0.15,
+    switchoverInProgress:true
+  },
+  pitr: {
+    // Point-in-time recovery: cluster offline, WAL being applied
+    tps:0, clientConn:0, serverConn:0, pgConn:0, idleInTxn:0,
+    activeQueries:0, walRate:0, syncLag:0, drLag:0,
+    spool:0, archiveOk:true, backupRunning:false, waitQueueMax:0,
+    maxTps:0, lerpFactor:0.05,
+    pitrInProgress:true
+  },
+  single_table: {
+    // Single-table restore: cluster running, restore job active on side
+    tps:80, clientConn:120, serverConn:30, pgConn:50, idleInTxn:3,
+    activeQueries:40, walRate:0.4, syncLag:0, drLag:5*1024*1024,
+    spool:10, archiveOk:true, backupRunning:false, waitQueueMax:0,
+    maxTps:200, lerpFactor:0.08,
+    tableRestoreInProgress:true
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════════
+function lerp(a, b, f) { return a + (b - a) * f; }
+function noise(v, pct) {
+  return v * (1 + (Math.random() - 0.5) * pct);
+}
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function fmtBytes(b) {
+  if (b < 1024) return b.toFixed(0) + ' B';
+  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+  if (b < 1024*1024*1024) return (b/1024/1024).toFixed(1) + ' MB';
+  return (b/1024/1024/1024).toFixed(2) + ' GB';
+}
+function fmtNum(n) { return Math.round(n).toLocaleString(); }
+function colorGauge(v, lo, hi) {
+  if (v >= hi) return '#ef4444';
+  if (v >= lo) return '#eab308';
+  return '#22c55e';
+}
+function colorWaitQueue(v) {
+  if (v > 5) return '#ef4444';
+  if (v >= 1) return '#eab308';
+  return '#22c55e';
+}
+function colorWalRate(v) {
+  if (v > 20) return '#ef4444';
+  if (v >= 5) return '#eab308';
+  return '#22c55e';
+}
+function colorSpool(v) {
+  if (v > 2000) return '#ef4444';
+  if (v >= 500) return '#eab308';
+  return '#22c55e';
+}
+function colorSyncLag(b) {
+  if (b > 100*1024*1024) return '#ef4444';
+  if (b >= 10*1024*1024) return '#eab308';
+  return '#22c55e';
+}
+function colorDrLag(b) {
+  if (b > 1024*1024*1024) return '#ef4444';
+  if (b >= 100*1024*1024) return '#eab308';
+  return '#22c55e';
+}
+function pct(v, max) { return clamp((v/max)*100, 0, 100); }
+function setGauge(fillId, valId, widthPct, color, label) {
+  const f = document.getElementById(fillId);
+  const v = document.getElementById(valId);
+  if (f) { f.style.width = widthPct + '%'; f.style.background = color; }
+  if (v) { v.textContent = label; v.style.color = color; }
+}
+function el(id) { return document.getElementById(id); }
+
+// ═══════════════════════════════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  el('clock').textContent = now.toLocaleString('en-GB', {
+    weekday:'short', year:'numeric', month:'short', day:'2-digit',
+    hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
+  }) + ' GST';
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ═══════════════════════════════════════════════════════════════════
+// SPARKLINE RENDERER
+// ═══════════════════════════════════════════════════════════════════
+function drawSparkline(canvasId, datasets, options) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.offsetWidth;
+  const h = canvas.offsetHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  ctx.scale(dpr, dpr);
+
+  const pad = options.padding || 6;
+  const innerW = w - pad * 2;
+  const innerH = h - pad * 2;
+  const mn = options.min || 0;
+  const mx = options.max || 1;
+  const range = mx - mn || 1;
+
+  // Grid lines
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 0.5;
+  [0.25, 0.5, 0.75].forEach(f => {
+    const y = pad + innerH * (1 - f);
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w - pad, y); ctx.stroke();
+  });
+
+  datasets.forEach(ds => {
+    if (!ds.data || ds.data.length < 2) return;
+    const pts = ds.data.map((v, i) => ({
+      x: pad + (i / (ds.data.length - 1)) * innerW,
+      y: pad + innerH * (1 - clamp((v - mn) / range, 0, 1))
+    }));
+
+    // Fill
+    if (ds.fill !== false) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length - 2; i++) {
+        const cx = (pts[i].x + pts[i+1].x) / 2;
+        const cy = (pts[i].y + pts[i+1].y) / 2;
+        ctx.quadraticCurveTo(pts[i].x, pts[i].y, cx, cy);
+      }
+      ctx.quadraticCurveTo(pts[pts.length-2].x, pts[pts.length-2].y, pts[pts.length-1].x, pts[pts.length-1].y);
+      ctx.lineTo(pts[pts.length-1].x, pad + innerH);
+      ctx.lineTo(pts[0].x, pad + innerH);
+      ctx.closePath();
+      const col = ds.color || '#3b82f6';
+      const alpha = 0.18;
+      ctx.fillStyle = col.replace('#','') !== col
+        ? hexToRgba(col, alpha)
+        : 'rgba(59,130,246,0.18)';
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Line
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length - 2; i++) {
+      const cx = (pts[i].x + pts[i+1].x) / 2;
+      const cy = (pts[i].y + pts[i+1].y) / 2;
+      ctx.quadraticCurveTo(pts[i].x, pts[i].y, cx, cy);
+    }
+    ctx.quadraticCurveTo(pts[pts.length-2].x, pts[pts.length-2].y, pts[pts.length-1].x, pts[pts.length-1].y);
+    ctx.strokeStyle = ds.color || '#3b82f6';
+    ctx.lineWidth = 1.8;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    ctx.restore();
+
+    // Current value label
+    if (ds.label) {
+      const last = pts[pts.length - 1];
+      ctx.save();
+      ctx.font = '9px system-ui';
+      ctx.fillStyle = ds.color || '#3b82f6';
+      ctx.textAlign = 'right';
+      ctx.fillText(ds.label, w - 2, clamp(last.y + 3, 10, h - 2));
+      ctx.restore();
+    }
+  });
+}
+
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ALERT DEFINITIONS
+// ═══════════════════════════════════════════════════════════════════
+const ALERT_DEFS = [
+  {
+    id:'pool_saturated', name:'Pool Saturated', sev:'crit',
+    icon:'🔴', sop:'SOP-06 Category E',
+    check: m => m.clientConn > 1900,
+    valLabel: m => `${fmtNum(m.clientConn)} / 2,000 clients`,
+    threshold: '> 1,900 connections',
+    desc: 'PgBouncer is within reach of its max_client_conn=2000 limit. New connection attempts will be rejected with "too many clients" after this threshold. The wait queue (query_wait_timeout=120s) is filling — clients will start receiving timeouts imminently.',
+    cmds: `# Check session breakdown
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -A -F '|' -c \\
+  "SELECT count(*) total, count(*) FILTER (WHERE state='active') active,
+   count(*) FILTER (WHERE state='idle in transaction') idle_in_txn
+   FROM pg_stat_activity WHERE datname IS NOT NULL;"
+
+# Check idle-in-transaction sessions
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -c \\
+  "SELECT pid,usename,datname,client_addr,now()-state_change AS idle_for,
+   left(query,80) FROM pg_stat_activity
+   WHERE state='idle in transaction' ORDER BY state_change;"
+
+# PgBouncer pod logs
+oc logs -n prod-pgcluster-uae -l app=pgbouncer \\
+  -c pgbouncer --tail=50
+
+# PgBouncer stats
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -p 5555 pgbouncer -c "SHOW POOLS;"`,
+    sopFull: 'SOP-06 Category E — Session/Connection Pressure',
+    warn: 'Do NOT terminate sessions without approval from incident commander'
+  },
+  {
+    id:'max_conn_crit', name:'Max Connections Critical', sev:'crit',
+    icon:'🔴', sop:'SOP-06 Category E',
+    check: m => m.pgConn > 760,
+    valLabel: m => `${fmtNum(m.pgConn)} / 800 connections`,
+    threshold: '> 760 connections (95% of 800)',
+    desc: 'PostgreSQL total connections have exceeded 760, within 40 connections of max_connections=800 (5 slots reserved for superusers). New connection attempts will be rejected. This may be caused by PgBouncer misconfiguration or application connection leak.',
+    cmds: `# Check pg_stat_activity by state
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -c \\
+  "SELECT state, count(*) FROM pg_stat_activity GROUP BY state ORDER BY 2 DESC;"
+
+# Top waiting queries
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -c \\
+  "SELECT pid, now()-query_start AS dur, wait_event_type, wait_event,
+   left(query,100) FROM pg_stat_activity
+   WHERE state='active' ORDER BY dur DESC NULLS LAST LIMIT 20;"
+
+# Connection count from superuser
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -c "SELECT count(*) FROM pg_stat_activity;"`,
+    sopFull: 'SOP-06 Category E — Session/Connection Pressure',
+    warn: 'superuser_reserved_connections=5 — only superusers can connect now'
+  },
+  {
+    id:'sync_lag_crit', name:'Sync Standby Lag Critical', sev:'crit',
+    icon:'🔴', sop:'SOP-06 Category B',
+    check: m => m.syncLag > 100*1024*1024,
+    valLabel: m => `${fmtBytes(m.syncLag)} sync lag`,
+    threshold: '> 100 MB',
+    desc: 'The synchronous standby (dc1-5c2q-0) is lagging more than 100MB behind the primary. With synchronous_commit=on and sync_node_count=1, write commits on the primary are blocked until the standby acknowledges. Severe lag may indicate network issues, I/O saturation, or standby pod failure.',
+    cmds: `# Check pg_stat_replication
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -x -c "SELECT * FROM pg_stat_replication;"
+
+# Measure lag in bytes
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -c \\
+  "SELECT application_name, sent_lsn, write_lsn, flush_lsn, replay_lsn,
+   (sent_lsn - replay_lsn) AS lag_bytes,
+   pg_size_pretty(sent_lsn - replay_lsn) AS lag_pretty
+   FROM pg_stat_replication;"
+
+# Check standby pod status
+oc get pods -n prod-pgcluster-uae
+
+# Patroni status
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  patronictl -c /etc/patroni/patroni.yaml list`,
+    sopFull: 'SOP-06 Category B — Replication / Standby Issues',
+    warn: 'STOP operations if split-brain is suspected. Check Patroni leader status first.'
+  },
+  {
+    id:'dr_lag_crit', name:'DR Lag Critical', sev:'crit',
+    icon:'🔴', sop:'SOP-04 §3',
+    check: m => m.drLag > 1024*1024*1024,
+    valLabel: m => `${fmtBytes(m.drLag)} DR lag`,
+    threshold: '> 1 GB',
+    desc: 'The DR cluster (dr-pgcluster-uae) lag has exceeded 1GB. In a failover scenario, RTO and RPO targets will be breached. This may indicate network partition between DC1 and DR, or that the DR standby is struggling to apply WAL fast enough.',
+    cmds: `# Check DR replication lag from primary
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -c \\
+  "SELECT application_name, client_addr,
+   pg_size_pretty(sent_lsn - replay_lsn) AS lag_pretty,
+   (sent_lsn - replay_lsn) AS lag_bytes,
+   sync_state FROM pg_stat_replication ORDER BY lag_bytes DESC;"
+
+# Connect to DR primary and check receive lag
+oc exec -n dr-pgcluster-uae \\
+  $(oc get pods -n dr-pgcluster-uae -l role=master -o name | head -1 | sed 's|pod/||') \\
+  -c database -- psql -U postgres -c \\
+  "SELECT now() - pg_last_xact_replay_timestamp() AS replication_lag;"
+
+# Check DR-to-PROD network connectivity
+oc exec -n dr-pgcluster-uae \\
+  $(oc get pods -n dr-pgcluster-uae -l role=master -o name | head -1 | sed 's|pod/||') \\
+  -c database -- nc -zv 10.171.1.229 5555`,
+    sopFull: 'SOP-04 §3 — PROD-to-DR Lag Measurement',
+    warn: null
+  },
+  {
+    id:'wal_arch_fail', name:'WAL Archive Failing', sev:'crit',
+    icon:'🔴', sop:'SOP-06 Category D',
+    check: m => !m.archiveOk && m.failedCount > 0,
+    valLabel: m => `${Math.round(m.failedCount)} failures, ${Math.round(m.spoolFiles)} files spooled`,
+    threshold: 'archiver error — failed_count rising',
+    desc: 'The WAL archiver (pgBackRest) is failing to upload WAL segments to S3. WAL files are accumulating in the pg_wal spool. If the spool fills the disk or exceeds max_slot_wal_keep_size=300GB, the replica will fall off the replication slot and require a full re-sync.',
+    cmds: `# Check archive status (run TWICE, 60s apart to confirm ongoing failures)
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -c "SELECT * FROM pg_stat_archiver;"
+
+# Check S3 connectivity
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  pgbackrest --stanza=db --log-level-console=info info
+
+# Check pgBackRest logs
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  tail -100 /var/log/pgbackrest/db-archive-push-async.log
+
+# Check spool disk usage
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  du -sh /var/lib/postgresql/data/pg_wal/
+
+# Verify S3 endpoint
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  curl -I https://s3.amazonaws.com/pgbackrest-uae-prod-609d40f1-26e9-4616-9021-3135255d453e`,
+    sopFull: 'SOP-06 Category D — WAL Archiver Failure',
+    warn: 'If spool > 300GB, replication slot will be invalidated. Monitor urgently.'
+  },
+  {
+    id:'spool_overflow', name:'Spool Overflow', sev:'crit',
+    icon:'🔴', sop:'SOP-02 §8',
+    check: m => m.spoolFiles > 2000,
+    valLabel: m => `${fmtNum(m.spoolFiles)} spool files`,
+    threshold: '> 2,000 WAL files',
+    desc: 'More than 2,000 WAL segment files are accumulating in the archive spool. This indicates the WAL archiver (pgBackRest) has been failing for an extended period. Disk exhaustion is a risk, and replication slots may become invalid if max_slot_wal_keep_size=300GB is reached.',
+    cmds: `# Emergency: count WAL spool files
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  find /var/lib/postgresql/data/pg_wal -maxdepth 1 -type f | wc -l
+
+# Check disk space on WAL volume
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  df -h /var/lib/postgresql/data/
+
+# Check pgBackRest backup status
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  pgbackrest --stanza=db info
+
+# S3 bucket listing to check archive
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  pgbackrest --stanza=db --log-level-console=detail archive-push-check`,
+    sopFull: 'SOP-02 §8 — Backup Failure Triage',
+    warn: 'Escalate to senior DBA immediately. Do not restart archiver without verifying disk space.'
+  },
+  {
+    id:'pool_elevated', name:'Pool Elevated', sev:'warn',
+    icon:'🟡', sop:'SOP-06 Category E',
+    check: m => m.clientConn >= 1600 && m.clientConn <= 1900,
+    valLabel: m => `${fmtNum(m.clientConn)} / 2,000 clients`,
+    threshold: '1,600 – 1,900 connections',
+    desc: 'PgBouncer client connections are elevated (80–95% of max_client_conn=2000). This is a warning state — no action required yet, but prepare to investigate if the trend continues upward.',
+    cmds: `# Monitor PgBouncer pool status
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -p 5555 pgbouncer -c "SHOW POOLS;"
+
+# Watch connection trend (run every 30s)
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -p 5555 pgbouncer -c "SHOW STATS;"
+
+# Check PgBouncer logs
+oc logs -n prod-pgcluster-uae -l app=pgbouncer --tail=30`,
+    sopFull: 'SOP-06 Category E — Session/Connection Pressure (Monitor Mode)',
+    warn: null
+  },
+  {
+    id:'idle_in_txn_elev', name:'Idle-in-Txn Elevated', sev:'warn',
+    icon:'🟡', sop:'SOP-06 Category E',
+    check: m => m.idleInTxn >= 10 && m.idleInTxn <= 30,
+    valLabel: m => `${Math.round(m.idleInTxn)} idle-in-txn sessions`,
+    threshold: '10 – 30 sessions',
+    desc: 'Multiple sessions are sitting in an open transaction without executing queries. idle_in_transaction_session_timeout=120s will auto-terminate these after 2 minutes. Monitor to ensure auto-kill is working and that application-level transaction management is functioning correctly.',
+    cmds: `# List idle-in-transaction sessions
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -c \\
+  "SELECT pid, usename, datname, client_addr,
+   now()-state_change AS idle_for, left(query,100) AS last_query
+   FROM pg_stat_activity
+   WHERE state='idle in transaction'
+   ORDER BY state_change LIMIT 30;"
+
+# Check for blocked queries
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -c \\
+  "SELECT pid, usename, pg_blocking_pids(pid) AS blocked_by,
+   wait_event_type, wait_event, left(query,80)
+   FROM pg_stat_activity WHERE cardinality(pg_blocking_pids(pid)) > 0;"`,
+    sopFull: 'SOP-06 Category E — idle_in_transaction_session_timeout=120s auto-kill active',
+    warn: null
+  },
+  {
+    id:'sync_lag_warn', name:'Sync Lag Warning', sev:'warn',
+    icon:'🟡', sop:'SOP-07 §4',
+    check: m => m.syncLag >= 10*1024*1024 && m.syncLag <= 100*1024*1024,
+    valLabel: m => `${fmtBytes(m.syncLag)} sync lag`,
+    threshold: '10 MB – 100 MB',
+    desc: 'The synchronous standby is lagging 10–100MB behind the primary. This is within warning thresholds but should be monitored. Typically caused by burst write activity or transient network congestion between primary and standby.',
+    cmds: `# Check replication lag
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -c \\
+  "SELECT application_name, sync_state,
+   pg_size_pretty(sent_lsn - replay_lsn) AS lag
+   FROM pg_stat_replication;"
+
+# Check if lag is growing (run twice)
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -c \\
+  "SELECT sent_lsn - replay_lsn AS lag_bytes FROM pg_stat_replication
+   WHERE application_name LIKE '%dc1-5c2q%';"`,
+    sopFull: 'SOP-07 §4 — Lag Thresholds and Replication Monitoring',
+    warn: null
+  },
+  {
+    id:'dr_lag_warn', name:'DR Lag Warning', sev:'warn',
+    icon:'🟡', sop:'SOP-04 §3',
+    check: m => m.drLag >= 100*1024*1024 && m.drLag <= 1024*1024*1024,
+    valLabel: m => `${fmtBytes(m.drLag)} DR lag`,
+    threshold: '100 MB – 1 GB',
+    desc: 'DR cluster lag is in the warning zone (100MB–1GB). Recovery point objective (RPO) impact is moderate. Monitor for growth. This may be caused by bulk load on PROD, network congestion, or DR cluster I/O saturation.',
+    cmds: `# Check DR replication status
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -c \\
+  "SELECT application_name, client_addr, sync_state,
+   pg_size_pretty(sent_lsn - replay_lsn) AS lag_pretty
+   FROM pg_stat_replication;"
+
+# Upstream config check in DR
+oc exec -n dr-pgcluster-uae \\
+  $(oc get pods -n dr-pgcluster-uae -l role=replica -o name | head -1 | sed 's|pod/||') \\
+  -c database -- psql -U postgres -c "SELECT * FROM pg_stat_wal_receiver;"`,
+    sopFull: 'SOP-04 §3 — PROD-to-DR Lag Measurement',
+    warn: null
+  },
+  {
+    id:'wait_queue', name:'Wait Queue Non-Zero', sev:'warn',
+    icon:'🟡', sop:'SOP-06 Category E',
+    check: m => m.waitQueue > 5,
+    valLabel: m => `${Math.round(m.waitQueue)} queries waiting`,
+    threshold: '> 5 in wait queue',
+    desc: 'PgBouncer\'s wait queue has more than 5 queries waiting for a server connection. query_wait_timeout=120s means these clients will receive errors after 2 minutes if no pool slot opens. This usually indicates pool exhaustion.',
+    cmds: `# Check PgBouncer wait queue
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -p 5555 pgbouncer -c "SHOW POOLS;"
+
+# Check pool utilization
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -p 5555 pgbouncer -c \\
+  "SELECT database, cl_active, cl_waiting, sv_active, sv_idle,
+   maxwait FROM SHOW POOLS;"`,
+    sopFull: 'SOP-06 Category E — PgBouncer Queue Building',
+    warn: null
+  },
+  {
+    id:'wal_rate_high', name:'WAL Gen Rate High', sev:'warn',
+    icon:'🟡', sop:'SOP-07 §8',
+    check: m => m.walRate > 20,
+    valLabel: m => `${m.walRate.toFixed(1)} MB/s WAL`,
+    threshold: '> 20 MB/s',
+    desc: 'WAL generation rate is above 20 MB/s. At this rate, max_wal_size=64GB could fill in under 1 hour. DR cluster may struggle to apply WAL fast enough. Check for bulk loads, large index rebuilds, or VACUUM on large tables.',
+    cmds: `# Monitor WAL generation rate
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -c \\
+  "SELECT pg_size_pretty(pg_wal_lsn_diff(pg_current_wal_lsn(), '0/0')) AS total_wal;"
+
+# Check large WAL-generating queries
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -c \\
+  "SELECT pid, usename, datname, now()-query_start AS dur,
+   wait_event_type, left(query,100) FROM pg_stat_activity
+   WHERE state='active' ORDER BY query_start NULLS LAST LIMIT 20;"
+
+# Check pg_stat_bgwriter for checkpoint pressure
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \\
+  psql -U postgres -c "SELECT * FROM pg_stat_bgwriter;"`,
+    sopFull: 'SOP-07 §8 — WAL Size Settings and DR Replication Capacity',
+    warn: null
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════════════════
+let currentAlert = null;
+let alertActiveSince = {};
+
+function openModal(alertDef) {
+  currentAlert = alertDef;
+  const m = state.metrics;
+  el('modal-title').innerHTML = `<span>${alertDef.icon}</span> ${alertDef.sev === 'crit' ? 'CRITICAL' : 'WARNING'}: ${alertDef.name}`;
+  
+  const dur = alertActiveSince[alertDef.id]
+    ? formatDuration(Date.now() - alertActiveSince[alertDef.id])
+    : '00:00';
+  
+  el('modal-vals').innerHTML = `
+    <div class="modal-val-item">
+      <label>Current Value</label>
+      <span style="color:${alertDef.sev==='crit'?'#ef4444':'#eab308'}">${alertDef.valLabel(m)}</span>
+    </div>
+    <div class="modal-val-item">
+      <label>Threshold</label>
+      <span>${alertDef.threshold}</span>
+    </div>
+    <div class="modal-val-item">
+      <label>Duration</label>
+      <span>Active for ${dur}</span>
+    </div>`;
+  
+  el('modal-desc').textContent = alertDef.desc;
+  el('modal-cmds').textContent = alertDef.cmds;
+  el('modal-sop').textContent = '📋 SOP Reference: ' + alertDef.sopFull;
+  
+  const warnEl = el('modal-warn');
+  if (alertDef.warn) {
+    warnEl.style.display = 'block';
+    warnEl.textContent = '⚠ ' + alertDef.warn;
+  } else {
+    warnEl.style.display = 'none';
+  }
+  
+  const copyBtn = el('copy-btn');
+  copyBtn.textContent = 'Copy';
+  copyBtn.classList.remove('copied');
+  
+  el('modal-overlay').classList.add('show');
+}
+
+function closeModal() {
+  el('modal-overlay').classList.remove('show');
+  currentAlert = null;
+}
+
+function copyCommands() {
+  const text = el('modal-cmds').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = el('copy-btn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+el('modal-overlay').addEventListener('click', e => {
+  if (e.target === el('modal-overlay')) closeModal();
+});
+
+function formatDuration(ms) {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TICK ENGINE
+// ═══════════════════════════════════════════════════════════════════
+let tickInterval = null;
+
+function getTargets() {
+  const sc = SCENARIOS[state.scenario];
+  const intensity = state.intensity;
+  // Intensity 0=0.5x, 1=1x, 2=2x mapped from slider 0-100 -> 0-2
+  const iMult = 0.5 + intensity * 1.5; // range 0.5 to 2.0
+  return {
+    tps: sc.tps * iMult,
+    clientConn: Math.min(sc.clientConn * iMult, 2000),
+    serverConn: Math.min(sc.serverConn * iMult, 150),
+    pgConn: Math.min(sc.pgConn * iMult, 800),
+    idleInTxn: sc.idleInTxn * iMult,
+    activeQueries: sc.activeQueries * iMult,
+    walRate: sc.walRate * iMult,
+    syncLag: sc.syncLag * iMult,
+    drLag: sc.drLag * iMult,
+    spool: sc.spool,
+    archiveOk: sc.archiveOk,
+    backupRunning: sc.backupRunning,
+    waitQueueMax: sc.waitQueueMax,
+    maxTps: sc.maxTps,
+    lerpFactor: sc.lerpFactor,
+    lagGrows: sc.lagGrows || false,
+    spoolGrows: sc.spoolGrows || false,
+    idleOscillates: sc.idleOscillates || false
+  };
+}
+
+function tick() {
+  if (state.paused) return;
+  state.tick++;
+  const t = getTargets();
+  const m = state.metrics;
+  const lf = t.lerpFactor;
+
+  // Lerp + noise
+  m.tps = noise(clamp(lerp(m.tps, t.tps, lf), 0, 5000), 0.12);
+  m.clientConn = noise(clamp(lerp(m.clientConn, t.clientConn, lf), 0, 2000), 0.08);
+  m.serverConn = noise(clamp(lerp(m.serverConn, t.serverConn, lf), 0, 150), 0.07);
+  m.pgConn = noise(clamp(lerp(m.pgConn, t.pgConn, lf), 0, 800), 0.07);
+  m.activeQueries = noise(clamp(lerp(m.activeQueries, t.activeQueries, lf), 0, 800), 0.10);
+  m.walRate = noise(clamp(lerp(m.walRate, t.walRate, lf), 0, 200), 0.10);
+  m.archiveOk = t.archiveOk;
+  m.backupRunning = t.backupRunning;
+
+  // Pool slots (derived from serverConn / default_pool_size)
+  m.poolSlots = noise(clamp(lerp(m.poolSlots || 35, Math.min(m.serverConn * 0.65, 50), lf), 0, 50), 0.08);
+
+  // Idle in txn
+  if (t.idleOscillates) {
+    // Oscillates: every ~120 ticks auto-kill resets, then climbs again
+    const phase = (state.tick % 120) / 120;
+    const base = t.idleInTxn * Math.sin(phase * Math.PI);
+    m.idleInTxn = noise(clamp(lerp(m.idleInTxn, base, 0.05), 0, 100), 0.15);
+  } else {
+    m.idleInTxn = noise(clamp(lerp(m.idleInTxn, t.idleInTxn, lf), 0, 100), 0.12);
+  }
+
+  // Wait queue
+  if (t.waitQueueMax > 0) {
+    const targetQ = t.waitQueueMax;
+    m.waitQueue = noise(clamp(lerp(m.waitQueue, targetQ, 0.04), 0, 200), 0.20);
+  } else {
+    m.waitQueue = noise(clamp(lerp(m.waitQueue, 0, 0.1), 0, 200), 0.15);
+  }
+
+  // Replication lag
+  if (t.lagGrows) {
+    // Bulk load: lag grows each tick
+    m.syncLag += (5 + Math.random()*10) * 1024 * 1024;
+    m.drLag += (20 + Math.random()*30) * 1024 * 1024;
+    m.syncLag = clamp(m.syncLag, 0, 10*1024*1024*1024);
+    m.drLag = clamp(m.drLag, 0, 50*1024*1024*1024);
+  } else {
+    m.syncLag = noise(clamp(lerp(m.syncLag, t.syncLag, lf*0.6), 0, 10*1024*1024*1024), 0.15);
+    m.drLag = noise(clamp(lerp(m.drLag, t.drLag, lf*0.5), 0, 50*1024*1024*1024), 0.12);
+  }
+
+  // Spool files
+  if (t.spoolGrows) {
+    // WAL archive failure: spool grows
+    m.spoolFiles += 0.3 + Math.random() * 0.8;
+    m.spoolFiles = clamp(m.spoolFiles, 0, 10000);
+  } else {
+    m.spoolFiles = noise(clamp(lerp(m.spoolFiles, t.spool, lf*0.5), 0, 10000), 0.10);
+  }
+
+  // Archive stats
+  if (t.archiveOk) {
+    m.archivedCount += 2 + Math.random() * 2;
+    m.lastArchivedSecondsAgo = Math.floor(Math.random() * 8) + 1;
+  } else {
+    // Archive failing
+    if (state.tick % 10 === 0) {
+      m.failedCount += 0.4 + Math.random() * 0.3;
+    }
+    m.lastArchivedSecondsAgo += 1;
+  }
+
+  // Backup
+  if (t.backupRunning) {
+    m.backupRunning = true;
+    m.backupPct = clamp((m.backupPct || 0) + (100/180), 0, 100);
+    if (m.backupPct >= 100) m.backupPct = 0; // reset
+  } else {
+    m.backupRunning = false;
+    m.backupPct = 0;
+  }
+
+  // ── Recovery scenario progressions ──
+  if (state.scenario === 'failover') {
+    state._failoverTick = (state._failoverTick||0) + 1;
+    var ft = state._failoverTick;
+    if (ft < 8) {
+      m.clientConn = clamp(m.clientConn * 0.65, 0, 2000);
+      m.tps        = clamp(m.tps * 0.5, 0, 5000);
+      m.pgConn     = clamp(m.pgConn * 0.4, 0, 800);
+      m.walRate    = 0; m.archiveOk = false;
+      m.syncLag    = 999*1024*1024*1024;
+    } else if (ft < 20) {
+      m.syncLag = lerp(m.syncLag, 0, 0.25);
+      m.tps     = lerp(m.tps, 8, 0.1);
+      m.archiveOk = (ft > 15);
+    } else {
+      m.tps       = lerp(m.tps,       SCENARIOS.normal.tps,       0.04);
+      m.clientConn= lerp(m.clientConn,SCENARIOS.normal.clientConn,0.04);
+      m.pgConn    = lerp(m.pgConn,    SCENARIOS.normal.pgConn,    0.04);
+      m.walRate   = lerp(m.walRate,   SCENARIOS.normal.walRate,   0.04);
+      m.syncLag   = lerp(m.syncLag,   0, 0.1);
+      m.archiveOk = true;
+      if (ft > 70) state._failoverTick = 0;
+    }
+    m.drLag = clamp(m.drLag + 80*1024*1024, 0, 15*1024*1024*1024);
+  }
+
+  if (state.scenario === 'switchover') {
+    state._switchoverTick = (state._switchoverTick||0) + 1;
+    var swt = state._switchoverTick;
+    if (swt < 5) {
+      m.clientConn = lerp(m.clientConn, 900, 0.4);
+      m.tps        = lerp(m.tps,        0,   0.6);
+    } else if (swt < 14) {
+      m.tps        = lerp(m.tps,        60,  0.2);
+      m.clientConn = lerp(m.clientConn, 350, 0.2);
+    } else {
+      m.tps        = lerp(m.tps,        SCENARIOS.normal.tps,       0.05);
+      m.clientConn = lerp(m.clientConn, SCENARIOS.normal.clientConn,0.05);
+      m.syncLag    = 0;
+      if (swt > 55) state._switchoverTick = 0;
+    }
+  }
+
+  if (state.scenario === 'pitr') {
+    state._pitrPct = clamp((state._pitrPct||0) + (0.35 + Math.random()*0.25), 0, 100);
+    if (state._pitrPct >= 100) state._pitrPct = 0;
+    var ppEl = el('pitr-progress'); if (ppEl) ppEl.style.width = state._pitrPct.toFixed(1)+'%';
+    var ptEl = el('pitr-pct-text'); if (ptEl) ptEl.textContent = state._pitrPct.toFixed(0)+'%';
+    m.tps = 0; m.clientConn = 0; m.pgConn = 0; m.walRate = 0;
+  }
+
+  if (state.scenario === 'single_table') {
+    state._tableRestorePct = clamp((state._tableRestorePct||0) + (0.18 + Math.random()*0.15), 0, 100);
+    if (state._tableRestorePct >= 100) state._tableRestorePct = 0;
+    var trEl = el('tbl-restore-pct'); if (trEl) trEl.textContent = state._tableRestorePct.toFixed(0)+'%';
+  }
+
+  // History
+  function pushHistory(key, val) {
+    state.history[key].push(val);
+    if (state.history[key].length > 60) state.history[key].shift();
+  }
+  pushHistory('clientConn', m.clientConn);
+  pushHistory('tps', m.tps);
+  pushHistory('idleInTxn', m.idleInTxn);
+  pushHistory('syncLag', m.syncLag);
+  pushHistory('drLag', m.drLag);
+  pushHistory('spoolFiles', m.spoolFiles);
+
+  renderAll(t.maxTps);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════════
+function renderAll(maxTps) {
+  const m = state.metrics;
+  maxTps = maxTps || 1000;
+
+  // Panel 1: PgBouncer
+  const ccPct = pct(m.clientConn, 2000);
+  const ccColor = colorGauge(m.clientConn, 1600, 1900);
+  setGauge('gf-clientconn','g-clientconn', ccPct, ccColor, `${fmtNum(m.clientConn)} / 2,000`);
+
+  const scPct = pct(m.serverConn, 150);
+  const scColor = colorGauge(m.serverConn, 120, 143);
+  setGauge('gf-serverconn','g-serverconn', scPct, scColor, `${fmtNum(m.serverConn)} / 150`);
+
+  const psPct = pct(m.poolSlots, 50);
+  const psColor = colorGauge(m.poolSlots, 40, 48);
+  setGauge('gf-poolslots','g-poolslots', psPct, psColor, `${Math.round(m.poolSlots)} / 50`);
+
+  const wqColor = colorWaitQueue(m.waitQueue);
+  const wqPct = pct(m.waitQueue, 100);
+  setGauge('gf-waitqueue','g-waitqueue', wqPct, wqColor, `${Math.round(m.waitQueue)}`);
+
+  // Panel 2: Sessions & TPS
+  const tpsRnd = Math.round(m.tps);
+  el('tps-big').textContent = fmtNum(tpsRnd);
+  const trend = m.tps > state.prevTps * 1.02 ? '↑' : m.tps < state.prevTps * 0.98 ? '↓' : '→';
+  const trendColor = m.tps > state.prevTps * 1.02 ? '#22c55e' : m.tps < state.prevTps * 0.98 ? '#ef4444' : '#94a3b8';
+  el('tps-trend').textContent = trend;
+  el('tps-trend').style.color = trendColor;
+  state.prevTps = m.tps;
+
+  const pgcPct = pct(m.pgConn, 800);
+  const pgcColor = colorGauge(m.pgConn, 640, 760);
+  setGauge('gf-pgconn','g-pgconn', pgcPct, pgcColor, `${fmtNum(m.pgConn)} / 800`);
+
+  const aqPct = pct(m.activeQueries, 800);
+  setGauge('gf-active','g-active', aqPct, '#3b82f6', `${Math.round(m.activeQueries)}`);
+
+  const iitColor = colorGauge(m.idleInTxn, 10, 30);
+  const iitPct = pct(m.idleInTxn, 50);
+  setGauge('gf-idleintxn','g-idleintxn', iitPct, iitColor, `${Math.round(m.idleInTxn)}`);
+
+  const tpsPct = pct(m.tps, maxTps);
+  setGauge('gf-tps','g-tps', tpsPct, '#3b82f6', `${fmtNum(tpsRnd)} tx/s`);
+
+  // Panel 3: Replication
+  const slColor = colorSyncLag(m.syncLag);
+  const slPct = pct(Math.log10(Math.max(m.syncLag,1)), Math.log10(500*1024*1024));
+  setGauge('gf-synclag','g-synclag', Math.min(slPct,100), slColor, fmtBytes(m.syncLag));
+
+  const drColor = colorDrLag(m.drLag);
+  const drPct = pct(Math.log10(Math.max(m.drLag,1)), Math.log10(5*1024*1024*1024));
+  setGauge('gf-drlag','g-drlag', Math.min(drPct,100), drColor, fmtBytes(m.drLag));
+
+  const wrColor = colorWalRate(m.walRate);
+  const wrPct = pct(m.walRate, 50);
+  setGauge('gf-walrate','g-walrate', wrPct, wrColor, `${m.walRate.toFixed(1)} MB/s`);
+
+  const spColor = colorSpool(m.spoolFiles);
+  const spPct = pct(m.spoolFiles, 3000);
+  setGauge('gf-spool','g-spool', spPct, spColor, `${fmtNum(m.spoolFiles)}`);
+
+  // WAL archiver box
+  el('wal-archived').textContent = fmtNum(Math.round(m.archivedCount));
+  const failEl = el('wal-failed');
+  failEl.textContent = fmtNum(Math.round(m.failedCount));
+  failEl.style.color = m.failedCount > 212 ? '#ef4444' : '#22c55e';
+  el('wal-lastarch').textContent = m.archiveOk
+    ? `${m.lastArchivedSecondsAgo}s ago`
+    : `${Math.round(m.lastArchivedSecondsAgo)}s ago (STALLED)`;
+  el('wal-lastarch').style.color = m.archiveOk ? '#f1f5f9' : '#ef4444';
+
+  // Backup banner
+  const banner = el('backup-banner');
+  if (m.backupRunning) {
+    banner.classList.add('show');
+    el('backup-bar-fill').style.width = m.backupPct.toFixed(1) + '%';
+    el('backup-pct').textContent = m.backupPct.toFixed(0) + '% complete';
+  } else {
+    banner.classList.remove('show');
+  }
+
+  // Sparklines
+  const maxLag = Math.max(500*1024*1024, ...state.history.syncLag, ...state.history.drLag);
+  drawSparkline('spark-pgb', [
+    { data: state.history.clientConn, color: '#3b82f6', label: fmtNum(Math.round(m.clientConn)), fill: true }
+  ], { min: 0, max: 2000, padding: 6 });
+
+  drawSparkline('spark-pg', [
+    { data: state.history.tps, color: '#3b82f6', label: fmtNum(Math.round(m.tps)), fill: true },
+    { data: state.history.idleInTxn.map(v => v * (maxTps/50)), color: '#eab308', label: Math.round(m.idleInTxn)+'i', fill: false }
+  ], { min: 0, max: maxTps, padding: 6 });
+
+  drawSparkline('spark-rep', [
+    { data: state.history.syncLag, color: '#a78bfa', label: fmtBytes(m.syncLag), fill: false },
+    { data: state.history.drLag, color: '#22d3ee', label: fmtBytes(m.drLag), fill: false }
+  ], { min: 0, max: maxLag, padding: 6 });
+
+  // Scenario info
+  const scNames = {
+    normal:'Normal Ops — Baseline traffic, all systems healthy',
+    morning_peak:'Morning Peak — High TPS, elevated connections, WAL rate rising',
+    bulk_load:'Bulk Load — High WAL rate, growing replication lag',
+    conn_storm:'Connection Storm — Near max connections, wait queue building',
+    long_txn:'Long-Txn Storm — Idle-in-txn oscillating, statement_timeout killing sessions',
+    wal_fail:'WAL Archive Failure — Archiver broken, spool growing toward overflow',
+    backup_window:'Backup Window — pgBackRest full backup in progress, stable ops',
+    failover:'⚡ FAILOVER — Primary crashed, Patroni promoting Sync Standby → click Runbook for commands',
+    switchover:'🔄 SWITCHOVER — Planned handoff, ~5–30s interruption → click Runbook for steps',
+    pitr:'⏮ PITR — Point-in-time recovery, cluster offline, WAL segments applying → click Runbook',
+    single_table:'🔧 TABLE RECOVERY — Single table restore, cluster running → click Runbook for commands'
+  };
+  const scInfoEl = document.getElementById('sc-info-text');
+  if (scInfoEl) scInfoEl.textContent = scNames[state.scenario] || '';
+
+  // Alerts
+  renderAlerts();
+  updateArch();
+  updatePatroniPanel();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ALERTS
+// ═══════════════════════════════════════════════════════════════════
+function renderAlerts() {
+  const m = state.metrics;
+  const now = Date.now();
+  const activeAlerts = [];
+
+  ALERT_DEFS.forEach(def => {
+    if (def.check(m)) {
+      if (!alertActiveSince[def.id]) alertActiveSince[def.id] = now;
+      activeAlerts.push(def);
+    } else {
+      delete alertActiveSince[def.id];
+    }
+  });
+
+  const list = el('alerts-list');
+
+  if (activeAlerts.length === 0) {
+    list.innerHTML = `<div class="all-ok">
+      <div class="all-ok-icon">&#9989;</div>
+      <div class="all-ok-text">All Systems Normal</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">All metrics within thresholds</div>
+    </div>`;
+    return;
+  }
+
+  // Sort: crit first
+  activeAlerts.sort((a,b) => {
+    if (a.sev === b.sev) return 0;
+    return a.sev === 'crit' ? -1 : 1;
+  });
+
+  list.innerHTML = activeAlerts.map(def => {
+    const dur = alertActiveSince[def.id]
+      ? formatDuration(now - alertActiveSince[def.id])
+      : '00:00';
+    return `<div class="alert-card ${def.sev === 'crit' ? 'crit' : 'warn'}"
+      onclick="openModal(ALERT_DEFS.find(d=>d.id==='${def.id}'))">
+      <div class="alert-name">${def.icon} ${def.name}</div>
+      <div class="alert-val">${def.valLabel(m)}</div>
+      <div class="alert-meta">
+        <span class="alert-dur">Active for ${dur}</span>
+        <span class="sop-tag">${def.sop}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CONTROLS
+// ═══════════════════════════════════════════════════════════════════
+document.querySelectorAll('.sc-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sc-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.scenario = btn.dataset.sc;
+    // Reset scenario-specific state on switch
+    if (state.scenario === 'bulk_load') {
+      state.metrics.syncLag = SCENARIOS.bulk_load.syncLag;
+      state.metrics.drLag = SCENARIOS.bulk_load.drLag;
+    }
+    if (state.scenario === 'wal_fail') {
+      state.metrics.spoolFiles = 0;
+    }
+    if (state.scenario === 'backup_window') {
+      state.metrics.backupPct = 0;
+    }
+    if (state.scenario === 'failover') {
+      state.metrics.clientConn = 800;
+      state.metrics.tps = 200;
+      state._failoverTick = 0;
+    }
+    if (state.scenario === 'switchover') {
+      state._switchoverTick = 0;
+    }
+    if (state.scenario === 'pitr') {
+      state._pitrPct = 0;
+    }
+    if (state.scenario === 'single_table') {
+      state._tableRestorePct = 0;
+    }
+    alertActiveSince = {};
+    // Show/hide runbook panel
+    var rb = ['failover','switchover','pitr','single_table'];
+    if (rb.indexOf(state.scenario) !== -1) {
+      showRunbook(state.scenario);
+    } else {
+      hideRunbook();
+    }
+    // Show/hide arch overlays
+    setArchOverlay(state.scenario);
+  });
+});
+
+document.querySelectorAll('.spd-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.spd-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.speed = parseInt(btn.dataset.spd);
+    restartInterval();
+  });
+});
+
+el('pause-btn').addEventListener('click', () => {
+  state.paused = !state.paused;
+  const pb = el('pause-btn');
+  if (state.paused) {
+    pb.innerHTML = '&#9654; Resume';
+    pb.classList.add('paused');
+  } else {
+    pb.innerHTML = '&#9646;&#9646; Pause';
+    pb.classList.remove('paused');
+  }
+});
+
+el('intensity-slider').addEventListener('input', function() {
+  const v = parseInt(this.value);
+  el('intensity-val').textContent = v + '%';
+  state.intensity = v / 100;
+  // Update slider fill
+  this.style.background = `linear-gradient(to right, var(--blue) 0%, var(--blue) ${v}%, #334155 ${v}%)`;
+});
+
+function restartInterval() {
+  if (tickInterval) clearInterval(tickInterval);
+  const ms = Math.round(1000 / state.speed);
+  tickInterval = setInterval(tick, ms);
+}
+
+// Resize canvases on window resize
+window.addEventListener('resize', () => {
+  // Force re-render on next tick
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════
+// Fix poolSlots initial value
+state.metrics.poolSlots = 35;
+
+restartInterval();
+tick(); // immediate first render
+
+// Update tick display
+setInterval(() => {
+  const td = el('tick-display');
+  if (td) td.textContent = state.tick;
+}, 200);
+
+
+
+
+// ═══════════════════════════════════════════════════════════════
+// ARCHITECTURE SVG — DOM label updater (runs on tick via updateArch)
+// ═══════════════════════════════════════════════════════════════
+function updateArch() {
+  var m = state.metrics;
+  function pb(b) {
+    if (!b || b < 1024) return '0 B';
+    if (b < 1048576) return (b/1024).toFixed(0)+' KB';
+    if (b < 1073741824) return (b/1048576).toFixed(1)+' MB';
+    return (b/1073741824).toFixed(2)+' GB';
+  }
+  function nc(crit, warn, ok) { return crit ? '#ef4444' : warn ? '#eab308' : (ok||'#22c55e'); }
+  function sa(id, attr, val) { var el=document.getElementById(id); if(el) el.setAttribute(attr,val); }
+  function st(id, val)       { var el=document.getElementById(id); if(el) el.textContent=val; }
+
+  var pgbCol = nc(m.clientConn>1900||m.waitQueue>50, m.clientConn>1600||m.waitQueue>5);
+  var priCol = nc(m.pgConn>760||m.idleInTxn>30, m.pgConn>640||m.idleInTxn>10);
+  var stdCol = nc(m.syncLag>100e6, m.syncLag>10e6);
+  var s3Col  = nc(m.spoolFiles>2000||!m.archiveOk, m.spoolFiles>500, '#a78bfa');
+  var drCol  = nc(m.drLag>1e9, m.drLag>100e6, '#22d3ee');
+  var ocpCol = pgbCol;
+
+  // Node borders & dots
+  sa('nd-pgb-rect','stroke',pgbCol); sa('nd-pgb-dot','fill',pgbCol);
+  sa('nd-pri-rect','stroke',priCol); sa('nd-pri-dot','fill',priCol);
+  sa('nd-std-rect','stroke',stdCol); sa('nd-std-dot','fill',stdCol);
+  sa('nd-s3-rect', 'stroke',s3Col);  sa('nd-s3-dot', 'fill',s3Col);
+  sa('nd-dr-rect', 'stroke',drCol);  sa('nd-dr-dot', 'fill',drCol);
+  sa('nd-ocp-dot', 'fill', ocpCol);
+
+  // Node text
+  st('nd-apps-sub', m.clientConn.toFixed(0)+' clients');
+  st('nd-apps-m',   m.tps.toFixed(0)+' TPS');
+  st('nd-ocp-m1',   '10.171.1.205:5555');
+  st('nd-pgb-m1',   m.clientConn.toFixed(0)+'/2000 clients');
+  st('nd-pgb-m2',   m.serverConn.toFixed(0)+'/150 srv · wait:'+m.waitQueue.toFixed(0));
+  sa('nd-pgb-m1','fill',pgbCol);
+  st('nd-pri-m1',   'TPS:'+m.tps.toFixed(0)+'  conn:'+m.pgConn.toFixed(0));
+  st('nd-pri-m2',   'idleTxn:'+m.idleInTxn.toFixed(0)+'  WAL:'+m.walRate.toFixed(1)+'MB/s');
+  sa('nd-pri-m1','fill',priCol);
+  st('nd-std-m1',   'lag: '+pb(m.syncLag));
+  sa('nd-std-m1','fill',stdCol);
+  st('nd-s3-m1',    (m.archiveOk?'✓ archiving':'✗ STALLED')+' · spool:'+m.spoolFiles.toFixed(0));
+  sa('nd-s3-m1','fill',s3Col);
+  st('nd-dr-m1',    'lag: '+pb(m.drLag));
+  sa('nd-dr-m1','fill',drCol);
+
+  // Link labels
+  st('lbl-app-pgb', m.clientConn.toFixed(0)+' conns');
+  st('lbl-pgb-pri', m.tps.toFixed(0)+' TPS');
+  st('lbl-pri-std', 'sync WAL · '+pb(m.syncLag));
+  st('lbl-pri-dc2', 'stream·LB · '+pb(m.drLag));
+  st('lbl-pri-s3',  m.archiveOk ? 'archive-push' : '✗ FAILING');
+
+  // Link colours
+  sa('p-pri-std','stroke', stdCol);
+  sa('p-pri-s3', 'stroke', m.archiveOk ? '#a78bfa' : '#ef4444');
+  sa('p-s3-dc2', 'stroke', drCol);
+  sa('p-pri-dc2','stroke', drCol);
+
+  // Particle colours
+  function setGroupColor(gid, col) {
+    var g = document.getElementById(gid);
+    if (!g) return;
+    [].forEach.call(g.querySelectorAll('circle'), function(c){ c.setAttribute('fill', col); });
+  }
+  setGroupColor('g-pgb-pri', pgbCol === '#22c55e' ? '#818cf8' : pgbCol);
+  setGroupColor('g-pri-std', stdCol);
+  setGroupColor('g-pri-dc2', drCol);
+  setGroupColor('g-pri-s3',  m.archiveOk ? '#a78bfa' : '#ef4444');
+  setGroupColor('g-s3-dr',   drCol);
+  setGroupColor('g-app-pgb', pgbCol === '#22c55e' ? '#3b82f6' : pgbCol);
+
+  // Particle speed
+  function setGroupDur(gid, dur) {
+    var g = document.getElementById(gid);
+    if (!g) return;
+    [].forEach.call(g.querySelectorAll('animateMotion'), function(am, i) {
+      am.setAttribute('dur', dur+'s');
+      am.setAttribute('begin', ((i/5)*parseFloat(dur)).toFixed(2)+'s');
+    });
+  }
+  var connFrac = m.clientConn / 2000;
+  var tpsFrac  = Math.min(1, m.tps / 1000);
+  var walFrac  = Math.min(1, m.walRate / 30);
+  var drFrac   = Math.min(1, m.drLag / (500*1024*1024));
+
+  setGroupDur('g-app-ocp', (1.2 - connFrac*0.8).toFixed(1));
+  setGroupDur('g-app-pgb', (3.5 - connFrac*2.5).toFixed(1));
+  setGroupDur('g-pgb-pri', (4.0 - tpsFrac*3.0).toFixed(1));
+  setGroupDur('g-pri-std', (3.0 - walFrac*1.5).toFixed(1));
+  setGroupDur('g-pri-dc2', (5.0 - drFrac*3.0).toFixed(1));
+  setGroupDur('g-pri-s3',  m.archiveOk ? (4.0 - walFrac*1.5).toFixed(1) : '25');
+  setGroupDur('g-s3-dr',   (m.drLag>1e9 ? '15' : m.drLag>100e6 ? '8' : '5'));
+
+  // Scenario label
+  var btn = document.querySelector('.sc-btn.active');
+  st('arch-scenario', 'Scenario: '+(btn ? btn.textContent.trim() : ''));
+}
+
+// ══ Arch overlay logic ══
+function setArchOverlay(sc) {
+  var fo   = document.getElementById('fo-overlay');
+  var pitr = document.getElementById('pitr-overlay');
+  if (fo)   { fo.setAttribute('opacity',   sc==='failover'  ? '1' : '0'); }
+  if (pitr) { pitr.setAttribute('opacity', sc==='pitr'      ? '1' : '0'); }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RUNBOOK PANEL
+// ═══════════════════════════════════════════════════════════════════
+var NS = 'prod-pgcluster-uae';
+var PRI = NS+'-dc1-9c5j-0';
+var STD = NS+'-dc1-5c2q-0';
+var PGB = NS+'-pgbouncer';
+var SCOPE = NS+'-ha';
+
+var RUNBOOKS = {
+  failover: {
+    title: '⚡ Failover Runbook — Unplanned Primary Failure',
+    badge: 'CRITICAL',
+    badgeClass: 'rb-badge-red',
+    rto: 'RTO: 5–15 min',
+    rpo: 'RPO: 0 (sync_commit=on)',
+    tabs: ['1 · Detect', '2 · Confirm Promotion', '3 · Manual Failover', '4 · Verify', '5 · Rebuild Replica', '6 · Post-Failover'],
+    content: [
+      // Tab 1: Detect
+      `<div class="rb-warn">⚠ Primary appears down. Do NOT immediately failover — confirm first.</div>
+      <div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Step 1 — Pod Status</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc get pods -n prod-pgcluster-uae -l postgres-operator.crunchydata.com/cluster=prod-pgcluster-uae</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Step 2 — Patroni Cluster State</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  patronictl -c /etc/patroni/postgres.yml list</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Step 3 — pg_isready check</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  pg_isready -h 10.171.1.229 -p 5555 -U postgres</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Step 4 — Check Patroni leader key in DCS</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  patronictl -c /etc/patroni/postgres.yml history</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Step 5 — Check primary pod logs</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc logs -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 \
+  -c database --tail=50</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Decision</h4>
+            <div class="rb-info">If pod is CrashLoopBackOff or NotReady for >30s → proceed to Tab 2<br>
+            If pod is restarting → wait 60s for Patroni self-heal first</div>
+          </div>
+        </div>
+      </div>`,
+
+      // Tab 2: Confirm Auto-Promotion
+      `<div class="rb-info">Patroni auto-promotes the sync standby within 10–30s of leader TTL expiry. Verify this happened before taking manual action.</div>
+      <div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Check new leader</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  patronictl -c /etc/patroni/postgres.yml list prod-pgcluster-uae-ha</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+            <div class="rb-ok">✓ If dc1-5c2q-0 shows "Leader" → promotion succeeded, skip to Tab 4</div>
+          </div>
+          <div class="rb-section"><h4>Check new primary accepts writes</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  psql -U postgres -c "SELECT pg_is_in_recovery(), now();"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+            <div class="rb-ok">✓ Should return f (false) = primary mode</div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Check Patroni timeline</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  psql -U postgres -c "SELECT timeline_id FROM pg_control_checkpoint();"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+            <div class="rb-info">Timeline should be TL:8+1 = TL:9 after successful promotion</div>
+          </div>
+          <div class="rb-section"><h4>Check PgBouncer service endpoint</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc get endpoints -n prod-pgcluster-uae prod-pgcluster-uae-ha \
+  -o jsonpath='{.subsets[*].addresses[*].ip}'</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+      </div>`,
+
+      // Tab 3: Manual Failover (if auto failed)
+      `<div class="rb-warn">⚠ Only use if Patroni did NOT auto-promote after 60s. Manual failover risks data loss if standby is behind primary.</div>
+      <div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Option A — patronictl failover (safe)</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd"># From any running pod:
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  patronictl -c /etc/patroni/postgres.yml failover \
+  prod-pgcluster-uae-ha \
+  --master prod-pgcluster-uae-dc1-9c5j-0 \
+  --candidate prod-pgcluster-uae-dc1-5c2q-0 \
+  --force</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Option B — Promote standby directly (last resort)</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  psql -U postgres -c "SELECT pg_promote();"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Pause PgBouncer during transition (optional)</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-pgbouncer-0 -- \
+  psql -p 5555 -U pgbouncer pgbouncer -c "PAUSE;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Resume PgBouncer after failover confirmed</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-pgbouncer-0 -- \
+  psql -p 5555 -U pgbouncer pgbouncer -c "RESUME;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+      </div>`,
+
+      // Tab 4: Verify
+      `<div class="rb-ok">✓ Primary promoted. Run all verification checks before declaring success.</div>
+      <div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Verify new primary writes</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  psql -U postgres -c "\
+  SELECT pid, usename, application_name, state, sync_state \
+  FROM pg_stat_replication;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Check application connectivity via PgBouncer</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  psql -h 10.171.1.205 -p 5555 -U postgres -c "SELECT 1;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Verify PgBouncer pool status</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-pgbouncer-0 -- \
+  psql -p 5555 -U pgbouncer pgbouncer -c "SHOW POOLS;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Verify DR streaming resumed</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  psql -U postgres -c "\
+  SELECT client_addr, state, sent_lsn, write_lsn, \
+  flush_lsn, replay_lsn, sync_state \
+  FROM pg_stat_replication WHERE application_name LIKE 'dr%';"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Check WAL archiving resumed</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  psql -U postgres -c "SELECT * FROM pg_stat_archiver;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+      </div>`,
+
+      // Tab 5: Rebuild Old Primary as Replica
+      `<div class="rb-info">After failover the old primary pod needs to be re-initialized as a standby. Patroni handles this via reinit.</div>
+      <div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Step 1 — Reinit old primary via Patroni</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  patronictl -c /etc/patroni/postgres.yml reinit \
+  prod-pgcluster-uae-ha prod-pgcluster-uae-dc1-9c5j-0 --force</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Step 2 — Watch reinit progress</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc logs -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 \
+  -c database -f | grep -i "basebackup\|replica\|stream"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Step 3 — Confirm replica streaming</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  patronictl -c /etc/patroni/postgres.yml list</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Step 4 — Re-enable synchronous replication</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd"># Verify sync standby is back
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  psql -U postgres -c "\
+  SELECT name, sync_state FROM pg_stat_replication;"
+
+# Should show: synchronous_standby_names includes dc1-9c5j-0</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Step 5 — Optional: Switchback to original primary</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd"># Only after dc1-9c5j-0 is fully caught up
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  patronictl -c /etc/patroni/postgres.yml switchover \
+  prod-pgcluster-uae-ha \
+  --master prod-pgcluster-uae-dc1-5c2q-0 \
+  --candidate prod-pgcluster-uae-dc1-9c5j-0 \
+  --scheduled now --force</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+      </div>`,
+
+      // Tab 6: Post-Failover
+      `<div class="rb-ok">✓ Failover complete. Complete all post-failover checks before closing the incident.</div>
+      <div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Full cluster health check</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  psql -U postgres -c "\
+  SELECT 'Connections' AS metric, count(*) AS value FROM pg_stat_activity \
+  UNION ALL \
+  SELECT 'Replication slots', count(*) FROM pg_replication_slots \
+  UNION ALL \
+  SELECT 'Failed archive', failed_count::text FROM pg_stat_archiver \
+  UNION ALL \
+  SELECT 'TL', timeline_id::text FROM pg_control_checkpoint();"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Verify DR lag acceptable</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  psql -U postgres -c "\
+  SELECT client_addr, pg_size_pretty(pg_wal_lsn_diff(sent_lsn,replay_lsn)) AS dr_lag \
+  FROM pg_stat_replication WHERE application_name LIKE 'dr%';"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Take new full backup immediately</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c pgbackrest -- \
+  pgbackrest --stanza=db --type=full backup \
+  --log-level-console=info</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Checklist</h4>
+            <div class="rb-info">
+              □ New leader confirmed in Patroni<br>
+              □ PgBouncer pointing to new primary<br>
+              □ Application writes succeeding<br>
+              □ Sync standby streaming (lag &lt; 10MB)<br>
+              □ DR standby streaming (lag &lt; 500MB)<br>
+              □ WAL archiving running (failed_count stable)<br>
+              □ Full backup taken<br>
+              □ Incident ticket updated with TL change
+            </div>
+          </div>
+        </div>
+      </div>`
+    ]
+  },
+
+  switchover: {
+    title: '🔄 Switchover Runbook — Planned Primary Handoff',
+    badge: 'PLANNED',
+    badgeClass: 'rb-badge-amber',
+    rto: 'Downtime: 5–30s',
+    rpo: 'RPO: 0 (zero data loss)',
+    tabs: ['1 · Pre-flight', '2 · Execute', '3 · Monitor', '4 · Verify', '5 · Rollback'],
+    content: [
+      // Tab 1: Pre-flight
+      `<div class="rb-info">Complete ALL pre-flight checks before executing. A failed pre-flight check means abort the switchover.</div>
+      <div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Check 1 — Replication lag &lt; 1MB</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres -c "\
+  SELECT application_name, \
+  pg_size_pretty(pg_wal_lsn_diff(sent_lsn,replay_lsn)) AS lag \
+  FROM pg_stat_replication;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Check 2 — No long-running transactions</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres -c "\
+  SELECT pid, duration, state, query \
+  FROM (SELECT pid, now()-xact_start AS duration, state, left(query,60) AS query \
+        FROM pg_stat_activity WHERE xact_start IS NOT NULL) x \
+  WHERE duration > interval '30 seconds' ORDER BY duration DESC;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Check 3 — No backup running</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres -c "SELECT pg_is_in_backup(), pg_backup_start_time();"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Check 4 — Client connections manageable</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-pgbouncer-0 -- \
+  psql -p 5555 -U pgbouncer pgbouncer -c "SHOW POOLS;" | \
+  grep -v "^$\|---\|pool"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Check 5 — Patroni cluster healthy</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  patronictl -c /etc/patroni/postgres.yml list</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+            <div class="rb-ok">✓ All members must show "running" state before proceeding</div>
+          </div>
+          <div class="rb-section"><h4>Notify team (mandatory)</h4>
+            <div class="rb-info">Post in ops channel: "Initiating planned switchover dc1-9c5j-0 → dc1-5c2q-0 at [TIME]. Expect ~15s interruption."</div>
+          </div>
+        </div>
+      </div>`,
+
+      // Tab 2: Execute
+      `<div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Step 1 — Pause PgBouncer (zero downtime window)</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-pgbouncer-0 -- \
+  psql -p 5555 -U pgbouncer pgbouncer -c "PAUSE;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+            <div class="rb-info">Clients will queue — transactions will not start until RESUME. Max pause time: 60s.</div>
+          </div>
+          <div class="rb-section"><h4>Step 2 — Execute patronictl switchover</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  patronictl -c /etc/patroni/postgres.yml switchover \
+  prod-pgcluster-uae-ha \
+  --master prod-pgcluster-uae-dc1-9c5j-0 \
+  --candidate prod-pgcluster-uae-dc1-5c2q-0 \
+  --scheduled now --force</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Step 3 — Watch switchover in real time</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">watch -n 1 "oc exec -n prod-pgcluster-uae \
+  prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  patronictl -c /etc/patroni/postgres.yml list 2>/dev/null"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Step 4 — Resume PgBouncer once new leader confirmed</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-pgbouncer-0 -- \
+  psql -p 5555 -U pgbouncer pgbouncer -c "RESUME;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+            <div class="rb-warn">Do NOT resume until patronictl shows dc1-5c2q-0 as Leader</div>
+          </div>
+        </div>
+      </div>`,
+
+      // Tab 3: Monitor
+      `<div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Monitor new primary load</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">watch -n 2 "oc exec -n prod-pgcluster-uae \
+  prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  psql -U postgres -c \
+  'SELECT count(*) AS connections, \
+   round(100*count(*) FILTER (WHERE state=''active'')/count(*)) AS active_pct \
+   FROM pg_stat_activity WHERE datname IS NOT NULL;' 2>/dev/null"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Monitor replication (old primary now standby)</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  psql -U postgres -c "\
+  SELECT application_name, state, sync_state, \
+  pg_size_pretty(pg_wal_lsn_diff(sent_lsn,replay_lsn)) AS lag \
+  FROM pg_stat_replication;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Monitor PgBouncer pool stats</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-pgbouncer-0 -- \
+  psql -p 5555 -U pgbouncer pgbouncer -c "SHOW STATS;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Timeline confirmation</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  psql -U postgres -c "SELECT timeline_id FROM pg_control_checkpoint();"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+            <div class="rb-info">Expected: TL:9 (was TL:8 before switchover)</div>
+          </div>
+        </div>
+      </div>`,
+
+      // Tab 4: Verify
+      `<div class="rb-ok">✓ Switchover succeeded. Run complete verification.</div>
+      <div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Full Patroni state</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  patronictl -c /etc/patroni/postgres.yml list</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Application write test</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  psql -h 10.171.1.205 -p 5555 -U postgres \
+  -c "SELECT now(), pg_is_in_recovery();"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Sync replication confirmed</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  psql -U postgres -c "SHOW synchronous_standby_names;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>WAL archiving still healthy</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  psql -U postgres -c "\
+  SELECT archived_count, failed_count, last_archived_time \
+  FROM pg_stat_archiver;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+      </div>`,
+
+      // Tab 5: Rollback
+      `<div class="rb-warn">⚠ Rollback: switch back to original primary. Only if new primary has issues.</div>
+      <div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Switchback to original primary</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd"># Wait until dc1-9c5j-0 is fully streaming (check patronictl list)
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-5c2q-0 -c database -- \
+  patronictl -c /etc/patroni/postgres.yml switchover \
+  prod-pgcluster-uae-ha \
+  --master prod-pgcluster-uae-dc1-5c2q-0 \
+  --candidate prod-pgcluster-uae-dc1-9c5j-0 \
+  --scheduled now --force</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Emergency: Resume PgBouncer if stuck in PAUSE</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-pgbouncer-0 -- \
+  psql -p 5555 -U pgbouncer pgbouncer -c "RESUME;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Kill stuck PgBouncer if PAUSE hangs</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc delete pod -n prod-pgcluster-uae prod-pgcluster-uae-pgbouncer-0
+# PGO will recreate it automatically</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+      </div>`
+    ]
+  },
+
+  pitr: {
+    title: '⏮ PITR Runbook — Point-in-Time Recovery',
+    badge: 'RECOVERY',
+    badgeClass: 'rb-badge-blue',
+    rto: 'RTO: 2–4 hrs',
+    rpo: 'Depends on target time',
+    tabs: ['1 · Identify Target', '2 · Isolate Cluster', '3 · Restore', '4 · Replay WAL', '5 · Promote', '6 · Rebuild'],
+    content: [
+      // Tab 1
+      `<div class="rb-warn">⚠ PITR restores DB to a past state. All transactions AFTER the target time will be LOST. Confirm target time with application team before proceeding.</div>
+      <div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Step 1 — Find available backup base</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c pgbackrest -- \
+  pgbackrest --stanza=db info</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Step 2 — Find oldest/newest WAL available</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c pgbackrest -- \
+  pgbackrest --stanza=db info --output=json | \
+  python3 -c "import sys,json; d=json.load(sys.stdin); \
+  [print('min:',b['archive']['min'],'max:',b['archive']['max']) \
+   for s in d for b in s.get('backup',[])]"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Step 3 — Check transaction logs for target event</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd"># Find the LSN of a specific transaction (if known):
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres -c "\
+  SELECT pg_walfile_name(pg_current_wal_lsn()), \
+  now() AT TIME ZONE 'Asia/Dubai';"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Confirmed target time</h4>
+            <div class="rb-info">Example from 2026-05-21 PITR run:<br>
+            Target: 2026-05-21 04:00:00+04 (GST)<br>
+            Reason: Accidental bulk delete at 04:03:22+04</div>
+          </div>
+        </div>
+      </div>`,
+
+      // Tab 2: Isolate
+      `<div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Step 1 — Pause Patroni (prevent auto-failover during restore)</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  patronictl -c /etc/patroni/postgres.yml pause \
+  prod-pgcluster-uae-ha --wait</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Step 2 — Pause PgBouncer (stop new connections)</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-pgbouncer-0 -- \
+  psql -p 5555 -U pgbouncer pgbouncer -c "PAUSE;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Step 3 — Kill remaining connections</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres -c "\
+  SELECT pg_terminate_backend(pid) FROM pg_stat_activity \
+  WHERE datname='hbldb' AND pid &lt;&gt; pg_backend_pid();"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Step 4 — Stop PostgreSQL on primary</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  pg_ctl stop -D /pgdata/pg18 -m fast</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Step 5 — Confirm stopped</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  pg_ctl status -D /pgdata/pg18</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+      </div>`,
+
+      // Tab 3: Restore
+      `<div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Step 1 — pgBackRest PITR restore</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c pgbackrest -- \
+  pgbackrest restore \
+  --stanza=db \
+  --type=time \
+  --target="2026-05-21 04:00:00+04" \
+  --target-action=pause \
+  --target-exclusive=false \
+  --pg1-path=/pgdata/pg18 \
+  --delta \
+  --log-level-console=info</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+            <div class="rb-info">--delta rewrites only changed blocks — faster for large datasets. Remove if you want a clean restore.</div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Step 2 — Verify recovery.signal created</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  ls -la /pgdata/pg18/recovery.signal</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Step 3 — Check postgresql.auto.conf target settings</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  cat /pgdata/pg18/postgresql.auto.conf | \
+  grep -i "recovery\|target\|archive"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+            <div class="rb-info">Expected: recovery_target_time, recovery_target_action=pause</div>
+          </div>
+        </div>
+      </div>`,
+
+      // Tab 4: Replay WAL
+      `<div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Step 1 — Start PostgreSQL in recovery mode</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  pg_ctl start -D /pgdata/pg18 \
+  -l /pgdata/pg18/log/postgresql.log</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Step 2 — Monitor WAL replay progress</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">watch -n 5 "oc exec -n prod-pgcluster-uae \
+  prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres -c \
+  'SELECT pg_is_in_recovery(), \
+   pg_last_xact_replay_timestamp() AT TIME ZONE ''Asia/Dubai'' AS replay_time, \
+   pg_last_wal_replay_lsn() AS replay_lsn;' 2>/dev/null"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Step 3 — Check logs for recovery target reached</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  tail -f /pgdata/pg18/log/postgresql.log | \
+  grep -i "recovery\|target\|pausing\|promote"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+            <div class="rb-info">Look for: "recovery stopping before commit..." or "pausing at the end of recovery"</div>
+          </div>
+          <div class="rb-section"><h4>Step 4 — Verify data at target time (before promote)</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd"># READ ONLY — verify the data looks correct before promoting
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres hbldb -c "SELECT count(*) FROM &lt;affected_table&gt; WHERE &lt;condition&gt;;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+      </div>`,
+
+      // Tab 5: Promote
+      `<div class="rb-warn">⚠ Promotion is irreversible. Confirm data is correct before promoting.</div>
+      <div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Step 1 — Promote to read-write</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres -c "SELECT pg_promote();"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Step 2 — Confirm primary mode</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres -c "\
+  SELECT pg_is_in_recovery(), \
+  pg_current_wal_lsn(), \
+  (SELECT timeline_id FROM pg_control_checkpoint()) AS tl;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+            <div class="rb-ok">✓ pg_is_in_recovery = f, new timeline = TL:9</div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Step 3 — Resume Patroni</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  patronictl -c /etc/patroni/postgres.yml resume \
+  prod-pgcluster-uae-ha --wait</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Step 4 — Resume PgBouncer</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-pgbouncer-0 -- \
+  psql -p 5555 -U pgbouncer pgbouncer -c "RESUME;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+      </div>`,
+
+      // Tab 6: Rebuild
+      `<div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Reinit sync standby from new primary</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  patronictl -c /etc/patroni/postgres.yml reinit \
+  prod-pgcluster-uae-ha prod-pgcluster-uae-dc1-5c2q-0 --force</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Rebuild DR standby (DC2)</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd"># DR standby should auto-reconnect via archive-get from S3
+# Check DR streaming:
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres -c "\
+  SELECT client_addr, state, \
+  pg_size_pretty(pg_wal_lsn_diff(sent_lsn,replay_lsn)) AS lag \
+  FROM pg_stat_replication WHERE application_name LIKE 'dr%';"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Take immediate full backup</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c pgbackrest -- \
+  pgbackrest --stanza=db --type=full backup \
+  --log-level-console=info</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+            <div class="rb-warn">MANDATORY — previous backups are now invalid due to timeline change</div>
+          </div>
+          <div class="rb-section"><h4>Verify backup succeeded</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c pgbackrest -- \
+  pgbackrest --stanza=db info | grep -A5 "full backup"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+      </div>`
+    ]
+  },
+
+  single_table: {
+    title: '🔧 Single Table Recovery — Logical Restore',
+    badge: 'MAINTENANCE',
+    badgeClass: 'rb-badge-green',
+    rto: 'Table offline: 10–30 min',
+    rpo: 'Data loss = time since last backup',
+    tabs: ['1 · Assess', '2 · Temp Restore', '3 · Extract Table', '4 · Restore to Prod', '5 · Verify', '6 · Cleanup'],
+    content: [
+      // Tab 1
+      `<div class="rb-info">Single table recovery restores one table without affecting the rest of the cluster. The main cluster stays running throughout.</div>
+      <div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Identify table and target backup</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd"># Check table exists and get row count
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres hbldb -c "\
+  SELECT schemaname, tablename, \
+  pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size \
+  FROM pg_tables WHERE tablename = '&lt;table_name&gt;';"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>List available backups</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c pgbackrest -- \
+  pgbackrest --stanza=db info</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Decision: which approach?</h4>
+            <div class="rb-info">
+              <strong>Approach A</strong> — Use pg_dump logical snapshot (if available and recent)<br>
+              → Fastest: 5–10 min<br><br>
+              <strong>Approach B</strong> — pgBackRest restore to temp pod, extract table<br>
+              → Safest for production: 15–30 min<br><br>
+              <strong>Approach C</strong> — PITR clone cluster, extract table<br>
+              → For exact point-in-time: 1–2 hrs
+            </div>
+          </div>
+          <div class="rb-section"><h4>Get FK dependencies</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres hbldb -c "\
+  SELECT conname, conrelid::regclass, confrelid::regclass \
+  FROM pg_constraint WHERE confrelid = '&lt;table_name&gt;'::regclass \
+  OR conrelid = '&lt;table_name&gt;'::regclass AND contype='f';"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+      </div>`,
+
+      // Tab 2: Temp Restore
+      `<div class="rb-info">Approach B: Spin up a temp pgBackRest restore to extract just the table. Main cluster is untouched.</div>
+      <div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Create temp PVC for restore</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">cat &lt;&lt;EOF | oc apply -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pgdata-temp-restore
+  namespace: prod-pgcluster-uae
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 500Gi
+  storageClassName: ocs-storagecluster-ceph-rbd
+EOF</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Restore backup to temp volume</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c pgbackrest -- \
+  pgbackrest restore \
+  --stanza=db \
+  --pg1-path=/mnt/temp-restore \
+  --type=default \
+  --target-action=promote \
+  --delta \
+  --log-level-console=info</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Start temp postgres on restored data</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd"># Start postgres in temp PGDATA (port 5433 to avoid conflict)
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  pg_ctl start -D /mnt/temp-restore \
+  -o "-p 5433 -c listen_addresses=localhost" \
+  -l /mnt/temp-restore/restore.log</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Verify temp postgres is up</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  pg_isready -p 5433 -U postgres</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+      </div>`,
+
+      // Tab 3: Extract Table
+      `<div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Dump single table from temp postgres</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  pg_dump -h /tmp -p 5433 -U postgres hbldb \
+  --table=public.&lt;table_name&gt; \
+  --data-only \
+  --no-privileges \
+  --disable-triggers \
+  -Fc \
+  -f /tmp/table_restore.dump</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Verify dump file</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  pg_restore --list /tmp/table_restore.dump | head -20</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Copy dump to pgbouncer pod (bridge to production)</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc cp prod-pgcluster-uae/prod-pgcluster-uae-dc1-9c5j-0:/tmp/table_restore.dump \
+  /tmp/table_restore.dump -c database</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Stop temp postgres</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  pg_ctl stop -D /mnt/temp-restore -m fast</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+      </div>`,
+
+      // Tab 4: Restore to Prod
+      `<div class="rb-warn">⚠ Production table will be offline for 10–30 min. Coordinate with application team.</div>
+      <div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Step 1 — Disable triggers on production table</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres hbldb -c "\
+  ALTER TABLE public.&lt;table_name&gt; DISABLE TRIGGER ALL;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Step 2 — Rename existing table (safe rollback)</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres hbldb -c "\
+  ALTER TABLE public.&lt;table_name&gt; \
+  RENAME TO &lt;table_name&gt;_backup_$(date +%Y%m%d);"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Step 3 — Restore table data</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  pg_restore -h /var/run/postgresql -p 5432 -U postgres \
+  -d hbldb \
+  --data-only \
+  --disable-triggers \
+  --table=&lt;table_name&gt; \
+  -Fc /tmp/table_restore.dump</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Step 4 — Reset sequences</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres hbldb -c "\
+  SELECT setval(pg_get_serial_sequence('public.&lt;table_name&gt;', 'id'), \
+  (SELECT MAX(id) FROM public.&lt;table_name&gt;));"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Step 5 — Re-enable triggers</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres hbldb -c "\
+  ALTER TABLE public.&lt;table_name&gt; ENABLE TRIGGER ALL;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+      </div>`,
+
+      // Tab 5: Verify
+      `<div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Row count comparison</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres hbldb -c "\
+  SELECT 'restored' AS src, count(*) FROM public.&lt;table_name&gt; \
+  UNION ALL \
+  SELECT 'backup', count(*) FROM public.&lt;table_name&gt;_backup_$(date +%Y%m%d);"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>FK integrity check</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres hbldb -c "\
+  SET session_replication_role = DEFAULT; \
+  -- Run a FK check via re-validate constraint:
+  ALTER TABLE public.&lt;table_name&gt; VALIDATE CONSTRAINT &lt;fk_name&gt;;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>VACUUM ANALYZE</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres hbldb -c "VACUUM ANALYZE public.&lt;table_name&gt;;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Confirm replication lag still OK</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres -c "\
+  SELECT application_name, \
+  pg_size_pretty(pg_wal_lsn_diff(sent_lsn,replay_lsn)) AS lag \
+  FROM pg_stat_replication;"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+      </div>`,
+
+      // Tab 6: Cleanup
+      `<div class="rb-grid">
+        <div>
+          <div class="rb-section"><h4>Drop backup table (after 48hr observation)</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd"># ONLY after confirming data integrity over 48 hours
+oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  psql -U postgres hbldb -c "\
+  DROP TABLE public.&lt;table_name&gt;_backup_$(date +%Y%m%d);"</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Delete temp PVC</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc delete pvc -n prod-pgcluster-uae pgdata-temp-restore</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+        </div>
+        <div>
+          <div class="rb-section"><h4>Delete temp dump file</h4>
+            <div class="rb-cmd-wrap"><pre class="rb-cmd">oc exec -n prod-pgcluster-uae prod-pgcluster-uae-dc1-9c5j-0 -c database -- \
+  rm /tmp/table_restore.dump</pre><button class="rb-copy" onclick="rbCopy(this)">copy</button></div>
+          </div>
+          <div class="rb-section"><h4>Final checklist</h4>
+            <div class="rb-info">
+              □ Row counts match expected values<br>
+              □ FK constraints valid<br>
+              □ Application queries returning correct data<br>
+              □ Replication lag normal (&lt;10MB)<br>
+              □ Backup table kept for 48hrs<br>
+              □ Incident documented with cause, fix, and table affected
+            </div>
+          </div>
+        </div>
+      </div>`
+    ]
+  }
+};
+
+function showRunbook(sc) {
+  var rb = RUNBOOKS[sc];
+  if (!rb) return;
+  var panel  = document.getElementById('runbook-panel');
+  var title  = document.getElementById('rb-main-title');
+  var tabs   = document.getElementById('runbook-tabs');
+  var body   = document.getElementById('runbook-body');
+  if (!panel) return;
+
+  title.innerHTML = rb.title +
+    ' &nbsp;<span class="rb-badge '+rb.badgeClass+'">'+rb.badge+'</span>' +
+    ' &nbsp;<span style="font-size:10px;color:var(--muted);font-weight:400;">'+rb.rto+'</span>' +
+    ' &nbsp;<span style="font-size:10px;color:var(--muted);font-weight:400;">'+rb.rpo+'</span>';
+
+  // Build tabs
+  tabs.innerHTML = rb.tabs.map(function(t,i) {
+    return '<button class="rb-tab'+(i===0?' active':'')+'" onclick="switchRbTab('+i+')">'+t+'</button>';
+  }).join('');
+
+  // Build content panels
+  body.innerHTML = rb.content.map(function(c,i) {
+    return '<div class="rb-content'+(i===0?' show':'')+'" id="rb-c-'+i+'">'+c+'</div>';
+  }).join('');
+
+  panel.classList.add('show');
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function switchRbTab(idx) {
+  document.querySelectorAll('.rb-tab').forEach(function(t,i) {
+    t.classList.toggle('active', i===idx);
+  });
+  document.querySelectorAll('.rb-content').forEach(function(c,i) {
+    c.classList.toggle('show', i===idx);
+  });
+}
+
+function hideRunbook() {
+  var panel = document.getElementById('runbook-panel');
+  if (panel) panel.classList.remove('show');
+  // Also deactivate recovery scenario buttons
+  document.querySelectorAll('.sc-btn').forEach(function(b) { b.classList.remove('active'); });
+  // Switch back to normal
+  document.querySelector('[data-sc="normal"]').classList.add('active');
+  state.scenario = 'normal';
+  setArchOverlay('normal');
+  alertActiveSince = {};
+}
+
+function rbCopy(btn) {
+  var pre = btn.previousElementSibling || btn.parentElement.querySelector('pre');
+  if (!pre) return;
+  navigator.clipboard.writeText(pre.textContent.trim()).then(function() {
+    var orig = btn.textContent;
+    btn.textContent = '✓ copied';
+    btn.style.background = '#166534';
+    setTimeout(function(){ btn.textContent = orig; btn.style.background = ''; }, 1800);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PAGE TAB SWITCHING
+// ═══════════════════════════════════════════════════════════════════
+function switchPage(name) {
+  document.querySelectorAll('.pg-tab-content').forEach(function(el) {
+    el.classList.toggle('active', el.id === 'pg-'+name);
+  });
+  document.querySelectorAll('.pg-tab').forEach(function(btn) {
+    btn.classList.toggle('active', btn.id === 'pgtab-'+name);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PATRONI PANEL UPDATER (called each tick)
+// ═══════════════════════════════════════════════════════════════════
+function updatePatroniPanel() {
+  var m = state.metrics;
+  var sc = state.scenario;
+
+  function pb(b) {
+    if (!b || b < 1024) return '0 B';
+    if (b < 1048576) return (b/1024).toFixed(0)+' KB';
+    if (b < 1073741824) return (b/1048576).toFixed(1)+' MB';
+    return (b/1073741824).toFixed(2)+' GB';
+  }
+  function stel(id, val) { var e=document.getElementById(id); if(e) e.textContent=val; }
+  function stcol(id, val, col) { var e=document.getElementById(id); if(e){e.textContent=val;e.style.color=col||'';} }
+
+  // Determine member states
+  var priRunning = (sc !== 'failover' || (state._failoverTick||0) > 18);
+  var stdRunning = true;
+  var drRunning  = true;
+
+  // Primary state
+  var priStateEl = document.getElementById('pt-pri-state');
+  if (priStateEl) {
+    if (!priRunning) {
+      priStateEl.innerHTML = '<span class="pt-state-stopped">stopped</span>';
+    } else if (sc === 'switchover' && (state._switchoverTick||0) < 12) {
+      priStateEl.innerHTML = '<span class="pt-state-starting">starting</span>';
+    } else {
+      priStateEl.innerHTML = '<span class="pt-state-running">running</span>';
+    }
+  }
+
+  // Sync standby state
+  var stdStateEl = document.getElementById('pt-std-state');
+  if (stdStateEl) {
+    if (sc === 'failover' && (state._failoverTick||0) < 20) {
+      stdStateEl.innerHTML = '<span class="pt-state-starting">promoting…</span>';
+    } else {
+      stdStateEl.innerHTML = '<span class="pt-state-running">running</span>';
+    }
+  }
+
+  // Sync lag
+  var slStr = pb(m.syncLag);
+  stel('pt-std-lag', slStr);
+  var slEl = document.getElementById('pt-sync-lag-kv');
+  if (slEl) {
+    slEl.textContent = slStr;
+    slEl.className = 'pt-kv-val '+(m.syncLag>100e6 ? 'red' : m.syncLag>10e6 ? 'amber' : 'green');
+  }
+
+  // DR lag
+  var drStr = pb(m.drLag);
+  stel('pt-dr-lag', drStr);
+  var drEl = document.getElementById('pt-dr-lag-kv');
+  if (drEl) {
+    drEl.textContent = drStr;
+    drEl.className = 'pt-kv-val '+(m.drLag>1e9 ? 'red' : m.drLag>100e6 ? 'amber' : 'green');
+  }
+
+  // PgBouncer status
+  var pgbOk = m.clientConn < 1800 && m.waitQueue < 50;
+  var pgbEl = document.getElementById('pt-pgb-status');
+  if (pgbEl) {
+    pgbEl.textContent = m.clientConn === 0 ? (sc==='pitr' ? 'PAUSED' : 'OK') : (pgbOk ? 'OK' : 'WARN');
+    pgbEl.className = 'pt-kv-val '+(pgbOk ? 'green' : m.waitQueue > 50 ? 'red' : 'amber');
+  }
+
+  // Archive status
+  var archEl = document.getElementById('pt-archive-status');
+  if (archEl) {
+    archEl.textContent = m.archiveOk ? 'OK' : 'FAILING';
+    archEl.className = 'pt-kv-val '+(m.archiveOk ? 'green' : 'red');
+  }
+
+  // Overall health badge
+  var badgeEl = document.getElementById('pt-overall-badge');
+  if (badgeEl) {
+    var crit = !priRunning || m.drLag > 2e9 || m.syncLag > 200e6 || !m.archiveOk || m.waitQueue > 80;
+    var warn = m.syncLag > 10e6 || m.drLag > 200e6 || m.waitQueue > 5;
+    if (crit) {
+      badgeEl.textContent = 'CRITICAL';
+      badgeEl.className = 'pt-badge pt-badge-red';
+    } else if (warn) {
+      badgeEl.textContent = 'WARNING';
+      badgeEl.className = 'pt-badge pt-badge-amber';
+    } else {
+      badgeEl.textContent = 'HEALTHY';
+      badgeEl.className = 'pt-badge pt-badge-green';
+    }
+  }
+
+  // PITR / Table restore progress bars
+  var pitrBar = document.getElementById('pitr-bar');
+  var tblBar  = document.getElementById('tbl-restore-bar');
+  if (pitrBar)  pitrBar.style.display  = (sc === 'pitr')         ? 'block' : 'none';
+  if (tblBar)   tblBar.style.display   = (sc === 'single_table') ? 'block' : 'none';
+
+  // Table restore fill width (mirrored from pct text already set in tick)
+  var tblFill = document.getElementById('tbl-restore-fill');
+  if (tblFill && state._tableRestorePct !== undefined) {
+    tblFill.style.width = state._tableRestorePct.toFixed(1)+'%';
+  }
+}
+
+// ── Copy helper for patroni panel ──
+function ptCopy(btn, text) {
+  navigator.clipboard.writeText(text).then(function() {
+    var orig = btn.textContent;
+    btn.textContent = '✓';
+    btn.style.background = '#166534';
+    setTimeout(function(){ btn.textContent = orig; btn.style.background = ''; }, 1800);
+  });
+}
+
+</script>
+</body>
+</html>

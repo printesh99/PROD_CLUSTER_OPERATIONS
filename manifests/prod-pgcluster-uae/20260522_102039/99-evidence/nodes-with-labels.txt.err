@@ -1,0 +1,1 @@
+Error from server (Forbidden): nodes is forbidden: User "mohsinali" cannot list resource "nodes" in API group "" at the cluster scope
