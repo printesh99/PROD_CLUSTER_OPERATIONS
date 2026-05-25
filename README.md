@@ -19,6 +19,7 @@ No Kubernetes Secret values, passwords, private keys, or S3 access keys are deco
 | `local-kind/README.md` | Minimal macOS kind lab for PostgreSQL 18, Patroni, PGO, and PgBouncer |
 | `LOCAL_METADATA_ENVIRONMENT.md` | Local metadata-only database environment and object inventory for troubleshooting |
 | `INDEX_RECOMMENDATIONS.md` | Metadata-driven missing foreign-key child index analysis and validation SQL |
+| `PERFORMANCE_TROUBLESHOOTING_RECOMMENDATIONS.md` | Consolidated performance troubleshooting recommendations and SQL checks |
 | `scripts/export-prod-cluster-manifests.sh` | Read-only exporter for PROD namespace manifests and rebuild evidence |
 | `configs/prod-pgbackrest-config.md` | Captured PROD pgBackRest ConfigMap and instance config |
 | `configs/prod-pgbouncer.ini` | Captured PROD PgBouncer operator config |
