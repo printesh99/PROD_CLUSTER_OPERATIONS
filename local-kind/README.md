@@ -28,7 +28,7 @@ From the repo root:
 ./local-kind/setup-local-cluster.sh
 ```
 
-The script creates a kind cluster named `patroni-prod-local`, installs PGO from the official Crunchy Data examples repository, and applies `local-kind/postgrescluster-local.yaml`.
+The script creates a kind cluster named `patroni-prod-local`, installs Crunchy Postgres for Kubernetes from the official Crunchy Data operator repository pinned to `v6.0.1`, and applies `local-kind/postgrescluster-local.yaml`.
 
 ## Check Status
 
@@ -46,17 +46,17 @@ PRIMARY=$(kubectl -n prod-pgcluster-uae-local get pod \
 kubectl -n prod-pgcluster-uae-local exec "$PRIMARY" -c database -- patronictl list
 ```
 
-Get the generated `postgres` password:
+Get the generated `tps-app` password:
 
 ```bash
-kubectl -n prod-pgcluster-uae-local get secret prod-pgcluster-uae-pguser-postgres \
+kubectl -n prod-pgcluster-uae-local get secret prod-pgcluster-uae-pguser-tps-app \
   -o jsonpath='{.data.password}' | base64 --decode; echo
 ```
 
 Connect from macOS through PgBouncer:
 
 ```bash
-psql 'host=127.0.0.1 port=5555 dbname=postgres user=postgres sslmode=require'
+psql 'host=127.0.0.1 port=5555 dbname=tps user=tps-app sslmode=require'
 ```
 
 ## Delete The Lab
