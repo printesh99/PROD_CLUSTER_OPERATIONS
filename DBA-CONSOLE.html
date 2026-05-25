@@ -5,332 +5,587 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>PostgreSQL 18 DBA Console — Habib Bank UAE</title>
 <style>
-/* ═══════════════════════════════════════════════════════════
-   DBA CONSOLE — MASTER STYLESHEET
-   Theme: Dark navy / cyan accent — zero external deps
-═══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════
+   DBA CONSOLE v2 — POLISHED MASTER STYLESHEET
+   PostgreSQL 18 · Habib Bank UAE · Crunchy PGO
+═══════════════════════════════════════════════════ */
 :root{
-  --bg0:#0a0e1a;--bg1:#0f1422;--bg2:#141929;--bg3:#1a2035;
-  --panel:#1e2540;--panel2:#232b4a;--panel3:#2a3356;
-  --border:#2d3a5e;--border2:#3a4a70;
-  --cyan:#00d4ff;--cyan2:#00a8cc;--cyan3:#007fa0;
-  --green:#00e676;--green2:#00c853;
-  --yellow:#ffd740;--yellow2:#ffab00;
-  --red:#ff5252;--red2:#d32f2f;
+  /* Core palette */
+  --bg0:#070b16;--bg1:#0b1020;--bg2:#0f1428;--bg3:#141a30;
+  --panel:#171e32;--panel2:#1c2440;--panel3:#222c50;--panel4:#28345c;
+  --border:#252f50;--border2:#2e3a5e;--border3:#3a4870;
+  /* Accent colours */
+  --cyan:#00d4ff;--cyan2:#00a8cc;--cyan3:#007fa0;--cyan4:#004f64;
+  --green:#00e676;--green2:#00c853;--green3:#00a040;
+  --yellow:#ffd740;--yellow2:#ffab00;--yellow3:#c87800;
+  --red:#ff5252;--red2:#d32f2f;--red3:#8b0000;
   --orange:#ff9800;--orange2:#f57c00;
-  --purple:#7c4dff;--purple2:#5c35cc;
-  --text:#e8edf5;--text2:#a0aec0;--text3:#64748b;
-  --mono:'Fira Mono','Courier New',monospace;
-  --ff:'Segoe UI',system-ui,sans-serif;
-  --radius:6px;--radius2:10px;
-  --shadow:0 4px 20px rgba(0,0,0,.6);
-  --transition:.18s ease;
+  --purple:#9c6dff;--purple2:#7c4dff;--purple3:#5c35cc;
+  --pink:#ff4db8;
+  /* Text */
+  --text:#e8edf8;--text2:#a0b0cc;--text3:#5a6a88;--text4:#3a4a60;
+  /* Fonts */
+  --mono:'Fira Mono','JetBrains Mono','Courier New',monospace;
+  --ff:'Inter','Segoe UI',system-ui,sans-serif;
+  /* Misc */
+  --radius:6px;--radius2:10px;--radius3:14px;
+  --shadow:0 4px 24px rgba(0,0,0,.7);
+  --shadow2:0 2px 8px rgba(0,0,0,.5);
+  --tr:.18s ease;
 }
+
+/* ── Reset & base ───────────────────────────────── */
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;background:var(--bg0);color:var(--text);font-family:var(--ff);font-size:13px;overflow:hidden;display:flex;flex-direction:column;}
-
-/* ── Top header ────────────────────────────────────────── */
-#header{
-  display:flex;align-items:center;gap:12px;
-  padding:0 16px;height:46px;
-  background:linear-gradient(90deg,var(--bg1),var(--bg2));
-  border-bottom:1px solid var(--border);
-  box-shadow:0 2px 12px rgba(0,0,0,.5);
-  flex-shrink:0;
+html,body{
+  height:100%;background:var(--bg0);color:var(--text);
+  font-family:var(--ff);font-size:13px;overflow:hidden;
+  display:flex;flex-direction:column;
 }
-#header h1{font-size:14px;font-weight:700;color:var(--cyan);letter-spacing:.5px;white-space:nowrap;}
-#header .badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px;}
-.badge-ok{background:rgba(0,230,118,.15);color:var(--green);border:1px solid rgba(0,230,118,.3);}
-.badge-warn{background:rgba(255,215,64,.15);color:var(--yellow);border:1px solid rgba(255,215,64,.3);}
-.badge-err{background:rgba(255,82,82,.15);color:var(--red);border:1px solid rgba(255,82,82,.3);}
-#header .spacer{flex:1;}
-#hdr-tl{font-size:11px;color:var(--text2);}
-#hdr-clock{font-family:var(--mono);font-size:12px;color:var(--cyan);margin-left:8px;}
 
-/* ── Tab bar ───────────────────────────────────────────── */
-#tabbar{
-  display:flex;align-items:center;gap:1px;
-  padding:4px 8px 0;
-  background:var(--bg1);
+/* ── Header ─────────────────────────────────────── */
+#header{
+  display:flex;align-items:center;gap:10px;
+  padding:0 16px;height:46px;flex-shrink:0;
+  background:linear-gradient(90deg,#0a1428 0%,#0e1830 50%,#0a1428 100%);
   border-bottom:1px solid var(--border);
+  box-shadow:0 2px 16px rgba(0,0,0,.6);
+}
+#header h1{
+  font-size:14px;font-weight:700;color:var(--cyan);
+  letter-spacing:.4px;white-space:nowrap;
+  text-shadow:0 0 20px rgba(0,212,255,.3);
+}
+#header h1 span{color:var(--text2);font-weight:400;}
+.hdr-divider{width:1px;height:20px;background:var(--border2);flex-shrink:0;}
+.hdr-badge{
+  padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;
+  letter-spacing:.5px;white-space:nowrap;
+}
+.hdr-ok  {background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.3);}
+.hdr-warn{background:rgba(255,215,64,.12);color:var(--yellow);border:1px solid rgba(255,215,64,.3);}
+.hdr-crit{background:rgba(255,82,82,.12);color:var(--red);border:1px solid rgba(255,82,82,.35);}
+.hdr-info{
+  font-size:10px;color:var(--text2);white-space:nowrap;
+  font-family:var(--mono);
+}
+.hdr-info b{color:var(--text);}
+.hdr-info .c{color:var(--cyan);}
+.hdr-info .g{color:var(--green);}
+.hdr-info .p{color:var(--purple);}
+#header .spacer{flex:1;}
+#hdr-clock{
+  font-family:var(--mono);font-size:13px;font-weight:700;
+  color:var(--cyan);letter-spacing:1px;
+  background:rgba(0,212,255,.06);
+  border:1px solid rgba(0,212,255,.15);
+  padding:3px 10px;border-radius:6px;
+}
+
+/* ── Tab bar ────────────────────────────────────── */
+#tabbar{
+  display:flex;align-items:flex-end;gap:2px;
+  padding:5px 10px 0;min-height:40px;
+  background:var(--bg1);
+  border-bottom:2px solid var(--border);
   overflow-x:auto;flex-shrink:0;
-  scrollbar-width:thin;scrollbar-color:var(--border) transparent;
+  scrollbar-width:thin;scrollbar-color:var(--border2) transparent;
 }
 #tabbar::-webkit-scrollbar{height:3px;}
 #tabbar::-webkit-scrollbar-thumb{background:var(--border2);}
-.tab{
-  padding:7px 13px;border:none;border-radius:var(--radius) var(--radius) 0 0;
-  background:transparent;color:var(--text3);cursor:pointer;
-  font-size:11px;font-weight:600;white-space:nowrap;
-  border-bottom:2px solid transparent;transition:var(--transition);
-  display:flex;align-items:center;gap:5px;
-}
-.tab:hover{background:var(--panel);color:var(--text2);}
-.tab.active{background:var(--panel);color:var(--cyan);border-bottom-color:var(--cyan);}
-.tab-group-sep{width:1px;height:24px;background:var(--border);margin:0 4px;flex-shrink:0;}
 
-/* ── Main layout ───────────────────────────────────────── */
-#main{display:flex;flex:1;overflow:hidden;height:calc(100vh - 46px - 41px - 22px);}
+.tab{
+  display:flex;align-items:center;gap:5px;
+  padding:6px 12px;border:none;
+  border-radius:var(--radius) var(--radius) 0 0;
+  background:transparent;color:var(--text3);
+  cursor:pointer;font-size:11px;font-weight:600;
+  white-space:nowrap;letter-spacing:.2px;
+  border-bottom:2px solid transparent;
+  transition:var(--tr);position:relative;
+}
+.tab:hover{background:rgba(255,255,255,.04);color:var(--text2);}
+.tab.active{
+  background:var(--panel);color:var(--cyan);
+  border-bottom-color:var(--cyan);
+  text-shadow:0 0 10px rgba(0,212,255,.4);
+}
+/* Colour-coded tab groups */
+.tab-g1.active{color:var(--cyan);border-bottom-color:var(--cyan);}
+.tab-g2.active{color:var(--green);border-bottom-color:var(--green);}
+.tab-g3.active{color:var(--yellow);border-bottom-color:var(--yellow);}
+.tab-g4.active{color:var(--purple);border-bottom-color:var(--purple);}
+.tab-g5.active{color:var(--pink);border-bottom-color:var(--pink);}
+.tab-g2:hover{color:var(--green2);}
+.tab-g3:hover{color:var(--yellow2);}
+.tab-g4:hover{color:var(--purple3);}
+.tab-g5:hover{color:var(--pink);}
+
+.tab-sep{
+  width:1px;height:22px;
+  background:linear-gradient(180deg,transparent,var(--border2),transparent);
+  margin:0 3px 4px;align-self:center;flex-shrink:0;
+}
+
+/* ── Main area ──────────────────────────────────── */
+#main{
+  display:flex;flex:1;overflow:hidden;
+  height:calc(100vh - 46px - 40px - 22px);
+}
 .tab-page{display:none;flex:1;overflow:hidden;flex-direction:column;}
 .tab-page.active{display:flex;}
 
-/* ── Scrollable content ────────────────────────────────── */
-.page-scroll{flex:1;overflow-y:auto;padding:14px;
-  scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
+.page-scroll{
+  flex:1;overflow-y:auto;padding:14px 16px;
+  scrollbar-width:thin;scrollbar-color:var(--border2) transparent;
+  overflow-x:hidden;
+}
 .page-scroll::-webkit-scrollbar{width:5px;}
 .page-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+.page-scroll::-webkit-scrollbar-track{background:transparent;}
 
-/* ── Grid layouts ──────────────────────────────────────── */
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+/* ── Grid layouts ───────────────────────────────── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
 .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
 .grid-auto{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
-.col-span2{grid-column:span 2;}
-.col-span3{grid-column:span 3;}
-.col-span4{grid-column:span 4;}
+.col2{grid-column:span 2;}
+.col3{grid-column:span 3;}
+.col4{grid-column:span 4;}
 
-/* ── Panel card ────────────────────────────────────────── */
-.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius2);overflow:hidden;}
+/* ── Card ───────────────────────────────────────── */
+.card{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:var(--radius2);overflow:hidden;
+  transition:border-color var(--tr),box-shadow var(--tr);
+}
+.card:hover{
+  border-color:var(--border2);
+  box-shadow:0 0 0 1px var(--border2),var(--shadow2);
+}
 .card-head{
   display:flex;align-items:center;gap:8px;
-  padding:9px 14px;background:var(--panel2);
-  border-bottom:1px solid var(--border);font-size:11px;font-weight:700;
-  color:var(--cyan);letter-spacing:.3px;
+  padding:10px 14px;
+  background:linear-gradient(90deg,var(--panel2) 0%,var(--panel) 100%);
+  border-bottom:1px solid var(--border);
+  font-size:11px;font-weight:700;color:var(--text2);
+  letter-spacing:.3px;position:relative;
 }
-.card-head .icon{font-size:14px;}
-.card-head .ml{margin-left:auto;display:flex;gap:6px;align-items:center;}
-.card-body{padding:12px 14px;}
+.card-head::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--ch-accent,var(--cyan));border-radius:0;
+}
+/* Per-group card accent colours */
+.card-g2 .card-head::before{--ch-accent:var(--green);}
+.card-g3 .card-head::before{--ch-accent:var(--yellow);}
+.card-g4 .card-head::before{--ch-accent:var(--purple);}
+.card-g5 .card-head::before{--ch-accent:var(--pink);}
+.card-warn .card-head::before{--ch-accent:var(--orange);}
+.card-crit .card-head::before{--ch-accent:var(--red);}
+
+.card-head .icon{font-size:15px;flex-shrink:0;}
+.card-head .title{color:var(--cyan);font-size:11.5px;font-weight:700;}
+.card-head .ml{margin-left:auto;display:flex;gap:8px;align-items:center;}
+.card-body{padding:13px 15px;}
 .card-body-np{padding:0;}
 
-/* ── KPI tiles ─────────────────────────────────────────── */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+/* ── KPI tiles ──────────────────────────────────── */
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(148px,1fr));
+  gap:10px;
+}
 .kpi{
-  background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius2);
-  padding:12px 14px;display:flex;flex-direction:column;gap:4px;
+  background:var(--panel2);
+  border:1px solid var(--border);border-radius:var(--radius2);
+  padding:13px 14px;display:flex;flex-direction:column;gap:3px;
   position:relative;overflow:hidden;
+  transition:border-color var(--tr),transform var(--tr);
+  cursor:default;
 }
+.kpi:hover{border-color:var(--border2);transform:translateY(-1px);}
+/* Top accent bar */
 .kpi::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:var(--kpi-color,var(--cyan));
+  content:'';position:absolute;top:0;left:0;right:0;height:2.5px;
+  background:var(--kc,var(--cyan));
+  box-shadow:0 0 8px var(--kc,var(--cyan));
 }
-.kpi .label{font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
-.kpi .val{font-size:22px;font-weight:700;color:var(--kpi-color,var(--cyan));font-family:var(--mono);}
-.kpi .sub{font-size:10px;color:var(--text3);}
-.kpi-green{--kpi-color:var(--green);}
-.kpi-yellow{--kpi-color:var(--yellow);}
-.kpi-red{--kpi-color:var(--red);}
-.kpi-orange{--kpi-color:var(--orange);}
-.kpi-purple{--kpi-color:var(--purple);}
+/* Subtle background glow */
+.kpi::after{
+  content:'';position:absolute;top:0;right:0;width:60px;height:60px;
+  background:radial-gradient(circle,var(--kc,var(--cyan)) 0%,transparent 70%);
+  opacity:.04;pointer-events:none;
+}
+.kpi-green {--kc:var(--green);}
+.kpi-yellow{--kc:var(--yellow);}
+.kpi-red   {--kc:var(--red);}
+.kpi-orange{--kc:var(--orange);}
+.kpi-purple{--kc:var(--purple);}
+.kpi-pink  {--kc:var(--pink);}
 
-/* ── Progress bar ──────────────────────────────────────── */
-.pbar-wrap{background:var(--bg0);border-radius:4px;height:6px;overflow:hidden;}
-.pbar{height:100%;border-radius:4px;transition:width .5s ease;background:var(--cyan);}
-.pbar-green{background:var(--green);}
-.pbar-yellow{background:var(--yellow);}
-.pbar-red{background:var(--red);}
-.pbar-orange{background:var(--orange);}
+.kpi .label{
+  font-size:9.5px;color:var(--text3);font-weight:700;
+  text-transform:uppercase;letter-spacing:.6px;
+}
+.kpi .val{
+  font-size:24px;font-weight:800;color:var(--kc,var(--cyan));
+  font-family:var(--mono);line-height:1.1;
+}
+.kpi .sub{font-size:9.5px;color:var(--text3);}
+.kpi .trend{
+  font-size:9px;font-family:var(--mono);
+  display:flex;align-items:center;gap:2px;margin-top:1px;
+}
+.trend-up  {color:var(--red);}
+.trend-down{color:var(--green);}
+.trend-flat{color:var(--text3);}
 
-/* ── Tables ────────────────────────────────────────────── */
-.tbl{width:100%;border-collapse:collapse;font-size:11px;}
+/* ── Progress bars ──────────────────────────────── */
+.pbar-wrap{
+  background:rgba(0,0,0,.4);border-radius:4px;
+  height:6px;overflow:hidden;border:1px solid var(--border);
+}
+.pbar{
+  height:100%;border-radius:3px;transition:width .6s ease;
+  background:linear-gradient(90deg,var(--cyan3),var(--cyan));
+}
+.pbar-green {background:linear-gradient(90deg,var(--green3),var(--green));}
+.pbar-yellow{background:linear-gradient(90deg,var(--yellow3),var(--yellow));}
+.pbar-red   {background:linear-gradient(90deg,var(--red2),var(--red));}
+.pbar-orange{background:linear-gradient(90deg,var(--orange2),var(--orange));}
+.pbar-purple{background:linear-gradient(90deg,var(--purple3),var(--purple));}
+
+/* ── Tables ─────────────────────────────────────── */
+.tbl{width:100%;border-collapse:collapse;font-size:11.5px;}
+.tbl thead tr{
+  background:linear-gradient(90deg,var(--panel2),var(--panel));
+}
 .tbl th{
-  padding:7px 10px;text-align:left;font-size:10px;font-weight:700;
-  text-transform:uppercase;letter-spacing:.4px;
-  color:var(--text2);background:var(--panel2);
-  border-bottom:1px solid var(--border2);white-space:nowrap;
+  padding:8px 12px;text-align:left;font-size:9.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.5px;color:var(--text3);
+  border-bottom:2px solid var(--border2);white-space:nowrap;
 }
-.tbl td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
-.tbl tr:hover td{background:rgba(255,255,255,.03);}
-.tbl .mono{font-family:var(--mono);font-size:10px;}
-.tbl .badge{padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;}
-
-/* ── Code / SQL blocks ─────────────────────────────────── */
-.code-block{
-  background:var(--bg0);border:1px solid var(--border);border-radius:var(--radius);
-  padding:10px 14px;font-family:var(--mono);font-size:11px;
-  color:var(--cyan2);overflow-x:auto;white-space:pre;line-height:1.6;
+.tbl td{
+  padding:7px 12px;border-bottom:1px solid var(--border);
+  vertical-align:middle;color:var(--text);
 }
-.sql-kw{color:var(--cyan);}
-.sql-fn{color:var(--green);}
-.sql-str{color:var(--yellow);}
-.sql-comment{color:var(--text3);}
-
-/* ── Command pills ─────────────────────────────────────── */
-.cmd{
-  display:inline-block;background:var(--bg0);border:1px solid var(--border2);
-  border-radius:var(--radius);padding:3px 8px;font-family:var(--mono);
-  font-size:10px;color:var(--cyan2);cursor:default;
+.tbl tbody tr:nth-child(even) td{background:rgba(255,255,255,.015);}
+.tbl tbody tr:hover td{
+  background:rgba(0,212,255,.04);
+  border-bottom-color:var(--border2);
 }
-.cmd-list{display:flex;flex-direction:column;gap:4px;}
+.tbl .mono{font-family:var(--mono);font-size:10.5px;}
+.tbl td.muted{color:var(--text2);}
 
-/* ── Status dots ───────────────────────────────────────── */
+/* ── Status badges ──────────────────────────────── */
+.badge{
+  display:inline-flex;align-items:center;gap:3px;
+  padding:2px 7px;border-radius:10px;
+  font-size:9.5px;font-weight:700;letter-spacing:.3px;white-space:nowrap;
+}
+.b-green {background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.25);}
+.b-cyan  {background:rgba(0,212,255,.12);color:var(--cyan);border:1px solid rgba(0,212,255,.25);}
+.b-yellow{background:rgba(255,215,64,.12);color:var(--yellow);border:1px solid rgba(255,215,64,.25);}
+.b-red   {background:rgba(255,82,82,.12);color:var(--red);border:1px solid rgba(255,82,82,.25);}
+.b-orange{background:rgba(255,152,0,.12);color:var(--orange);border:1px solid rgba(255,152,0,.25);}
+.b-purple{background:rgba(156,109,255,.12);color:var(--purple);border:1px solid rgba(156,109,255,.25);}
+.b-gray  {background:rgba(90,106,136,.12);color:var(--text2);border:1px solid rgba(90,106,136,.25);}
+
+/* Legacy badge shims */
+.mb-green{@extend .b-green} .mb-cyan{} .mb-yellow{} .mb-red{} .mb-purple{} .mb-gray{}
+.mb-green{background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.25);display:inline-flex;align-items:center;padding:2px 7px;border-radius:10px;font-size:9.5px;font-weight:700;}
+.mb-cyan  {background:rgba(0,212,255,.12);color:var(--cyan);border:1px solid rgba(0,212,255,.25);display:inline-flex;padding:2px 7px;border-radius:10px;font-size:9.5px;font-weight:700;}
+.mb-yellow{background:rgba(255,215,64,.12);color:var(--yellow);border:1px solid rgba(255,215,64,.25);display:inline-flex;padding:2px 7px;border-radius:10px;font-size:9.5px;font-weight:700;}
+.mb-red   {background:rgba(255,82,82,.12);color:var(--red);border:1px solid rgba(255,82,82,.25);display:inline-flex;padding:2px 7px;border-radius:10px;font-size:9.5px;font-weight:700;}
+.mb-purple{background:rgba(156,109,255,.12);color:var(--purple);border:1px solid rgba(156,109,255,.25);display:inline-flex;padding:2px 7px;border-radius:10px;font-size:9.5px;font-weight:700;}
+.mb-gray  {background:rgba(90,106,136,.12);color:var(--text2);border:1px solid rgba(90,106,136,.25);display:inline-flex;padding:2px 7px;border-radius:10px;font-size:9.5px;font-weight:700;}
+
+/* ── Status dots ────────────────────────────────── */
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.dot-green{background:var(--green);box-shadow:0 0 6px var(--green);}
+.dot-green {background:var(--green);box-shadow:0 0 6px var(--green);}
 .dot-yellow{background:var(--yellow);box-shadow:0 0 6px var(--yellow);}
-.dot-red{background:var(--red);box-shadow:0 0 6px var(--red);}
-.dot-cyan{background:var(--cyan);box-shadow:0 0 6px var(--cyan);}
+.dot-red   {background:var(--red);box-shadow:0 0 6px var(--red);}
+.dot-cyan  {background:var(--cyan);box-shadow:0 0 6px var(--cyan);}
 .dot-purple{background:var(--purple);box-shadow:0 0 6px var(--purple);}
-.dot-gray{background:var(--text3);}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.6;transform:scale(1.3);}}
-.dot-green,.dot-cyan{animation:pulse 2s infinite;}
-@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
-.spin{display:inline-block;animation:spin 1.5s linear infinite;}
-/* Glow effect on active tab */
-.tab.active{text-shadow:0 0 8px rgba(0,212,255,.4);}
-/* Card hover lift */
-.card{transition:box-shadow .2s ease;}
-.card:hover{box-shadow:0 0 0 1px var(--border2),0 8px 24px rgba(0,0,0,.4);}
-/* Better scrollbar on main */
-#main::-webkit-scrollbar{width:4px;}
-/* KPI hover */
-.kpi:hover{border-color:var(--border2);background:var(--panel3);}
-/* Code block copy feel */
-.code-block{position:relative;}
-/* Scenario pill hover glow */
-.sc-pill:hover{box-shadow:0 0 8px rgba(0,212,255,.2);}
+.dot-gray  {background:var(--text3);}
 
-/* ── Inline row helpers ────────────────────────────────── */
-.row{display:flex;align-items:center;gap:8px;}
-.row-between{display:flex;align-items:center;justify-content:space-between;gap:8px;}
-.mt4{margin-top:4px;}.mt8{margin-top:8px;}.mt12{margin-top:12px;}.mt16{margin-top:16px;}
-.mb8{margin-bottom:8px;}.mb12{margin-bottom:12px;}
-.flex1{flex:1;}
-.text-sm{font-size:11px;}.text-xs{font-size:10px;}.text-muted{color:var(--text2);}
-.text-mono{font-family:var(--mono);}
-.text-green{color:var(--green);}.text-red{color:var(--red);}
-.text-yellow{color:var(--yellow);}.text-cyan{color:var(--cyan);}
-.text-orange{color:var(--orange);}.text-purple{color:var(--purple);}
-.font-bold{font-weight:700;}
-
-/* ── Section label ─────────────────────────────────────── */
-.sec-label{
-  font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
-  color:var(--text3);border-bottom:1px solid var(--border);padding-bottom:5px;
-  margin-bottom:8px;
+/* ── Code blocks ────────────────────────────────── */
+.code-block{
+  background:#050a14;border:1px solid var(--border2);
+  border-radius:var(--radius);padding:11px 14px;
+  font-family:var(--mono);font-size:10.5px;color:#8ecae6;
+  overflow-x:auto;white-space:pre;line-height:1.7;
+  position:relative;cursor:pointer;
+  transition:border-color var(--tr),box-shadow var(--tr);
 }
+.code-block:hover{border-color:var(--border3);}
+.code-block::after{
+  content:'⎘ copy';position:absolute;top:6px;right:8px;
+  font-size:9px;color:var(--text4);font-family:var(--ff);
+  font-weight:600;letter-spacing:.3px;pointer-events:none;
+  opacity:0;transition:opacity .2s;
+}
+.code-block:hover::after{opacity:1;color:var(--text3);}
+.code-block.copied{
+  border-color:var(--green);
+  box-shadow:0 0 12px rgba(0,230,118,.2);
+}
+/* SQL syntax tints */
+.kw{color:var(--cyan);}
+.fn{color:var(--green);}
+.str{color:var(--yellow);}
+.cm{color:var(--text4);}
 
-/* ── Alert pills ───────────────────────────────────────── */
+/* ── Command pills ──────────────────────────────── */
+.cmd{
+  display:inline-flex;align-items:center;
+  background:#050a14;border:1px solid var(--border2);
+  border-radius:var(--radius);padding:4px 10px;
+  font-family:var(--mono);font-size:10px;color:#8ecae6;
+  transition:var(--tr);cursor:pointer;
+}
+.cmd:hover{border-color:var(--cyan3);color:var(--cyan);background:#071218;}
+.cmd-list{display:flex;flex-direction:column;gap:5px;}
+
+/* ── Alert panels ───────────────────────────────── */
 .alert{
   display:flex;align-items:flex-start;gap:10px;
-  padding:9px 12px;border-radius:var(--radius);margin-bottom:6px;
-  font-size:11px;border:1px solid;
+  padding:10px 13px;border-radius:var(--radius);
+  margin-bottom:7px;font-size:11px;border:1px solid;
+  line-height:1.5;
 }
-.alert-green{background:rgba(0,230,118,.08);border-color:rgba(0,230,118,.3);color:var(--green);}
-.alert-yellow{background:rgba(255,215,64,.08);border-color:rgba(255,215,64,.3);color:var(--yellow);}
-.alert-red{background:rgba(255,82,82,.08);border-color:rgba(255,82,82,.3);color:var(--red);}
-.alert-cyan{background:rgba(0,212,255,.08);border-color:rgba(0,212,255,.3);color:var(--cyan);}
+.alert-green {background:rgba(0,230,118,.06);border-color:rgba(0,230,118,.25);color:var(--green);}
+.alert-yellow{background:rgba(255,215,64,.06);border-color:rgba(255,215,64,.25);color:var(--yellow);}
+.alert-red   {background:rgba(255,82,82,.06);border-color:rgba(255,82,82,.25);color:var(--red);}
+.alert-cyan  {background:rgba(0,212,255,.06);border-color:rgba(0,212,255,.25);color:var(--cyan);}
+.alert-orange{background:rgba(255,152,0,.06);border-color:rgba(255,152,0,.25);color:var(--orange);}
+.alert-icon{font-size:15px;flex-shrink:0;margin-top:1px;}
+.alert b{font-weight:700;}
+.alert code{
+  background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);
+  border-radius:3px;padding:1px 5px;font-family:var(--mono);font-size:10px;
+  color:inherit;
+}
 
-/* ── Scenario badge strip ──────────────────────────────── */
+/* ── Section labels ─────────────────────────────── */
+.sec-label{
+  font-size:9.5px;font-weight:700;letter-spacing:.6px;
+  text-transform:uppercase;color:var(--text4);
+  border-bottom:1px solid var(--border);
+  padding-bottom:5px;margin-bottom:9px;
+  display:flex;align-items:center;gap:6px;
+}
+.sec-label::before{
+  content:'';display:inline-block;width:2px;height:10px;
+  background:var(--cyan);border-radius:2px;
+}
+
+/* ── Scenario pills ─────────────────────────────── */
 .sc-pill{
   display:inline-flex;align-items:center;gap:4px;
-  padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;
-  cursor:pointer;border:1px solid var(--border);background:var(--panel2);
-  color:var(--text2);transition:var(--transition);
+  padding:5px 11px;border-radius:20px;font-size:10px;font-weight:700;
+  cursor:pointer;border:1px solid var(--border2);
+  background:var(--panel2);color:var(--text3);
+  transition:var(--tr);letter-spacing:.2px;
 }
-.sc-pill:hover,.sc-pill.active{background:var(--cyan3);color:#fff;border-color:var(--cyan2);}
+.sc-pill:hover{
+  background:var(--panel3);color:var(--text2);
+  border-color:var(--border3);
+}
+.sc-pill.active{
+  background:rgba(0,212,255,.12);color:var(--cyan);
+  border-color:rgba(0,212,255,.4);
+  box-shadow:0 0 10px rgba(0,212,255,.1);
+}
+.sc-pill.sc-warn.active{
+  background:rgba(255,215,64,.1);color:var(--yellow);
+  border-color:rgba(255,215,64,.4);
+}
+.sc-pill.sc-crit.active{
+  background:rgba(255,82,82,.1);color:var(--red);
+  border-color:rgba(255,82,82,.4);
+}
 .sc-pill-strip{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
 
-/* ── SVG architecture ──────────────────────────────────── */
-#arch-svg-wrap{width:100%;overflow:hidden;border-radius:var(--radius2);min-height:350px;}
-#arch-svg-wrap svg{width:100%;height:auto;}
+/* ── Utility helpers ────────────────────────────── */
+.row{display:flex;align-items:center;gap:8px;}
+.row-between{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.flex1{flex:1;}
+.mt4{margin-top:4px;}.mt8{margin-top:8px;}.mt10{margin-top:10px;}
+.mt12{margin-top:12px;}.mt16{margin-top:16px;}.mt20{margin-top:20px;}
+.mb6{margin-bottom:6px;}.mb8{margin-bottom:8px;}.mb12{margin-bottom:12px;}
+.text-sm{font-size:11px;}.text-xs{font-size:10px;}.text-2xs{font-size:9px;}
+.text-muted{color:var(--text2);}.text-dim{color:var(--text3);}
+.text-mono{font-family:var(--mono);}
+.text-green {color:var(--green);}.text-red   {color:var(--red);}
+.text-yellow{color:var(--yellow);}.text-cyan  {color:var(--cyan);}
+.text-orange{color:var(--orange);}.text-purple{color:var(--purple);}
+.font-bold{font-weight:700;}.font-700{font-weight:700;}
 
-/* ── Patroni member table colours ─────────────────────── */
-.patroni-leader{background:rgba(0,230,118,.06);}
-.patroni-sync{background:rgba(0,212,255,.06);}
-.patroni-replica{background:rgba(124,77,255,.06);}
+/* ── Buttons ────────────────────────────────────── */
+.btn{
+  padding:5px 14px;border-radius:var(--radius);
+  border:1px solid var(--border2);
+  background:var(--panel2);color:var(--text);
+  font-size:11px;font-weight:600;cursor:pointer;
+  transition:var(--tr);letter-spacing:.2px;
+}
+.btn:hover{background:var(--panel3);border-color:var(--border3);}
+.btn-cyan{background:rgba(0,168,204,.15);border-color:var(--cyan2);color:var(--cyan);}
+.btn-cyan:hover{background:rgba(0,168,204,.25);}
+.btn-green{background:rgba(0,230,118,.12);border-color:var(--green2);color:var(--green);}
+.btn-red{background:rgba(255,82,82,.1);border-color:var(--red2);color:var(--red);}
 
-/* ── Scrollable log ────────────────────────────────────── */
+/* ── Log box ────────────────────────────────────── */
 .log-box{
-  background:var(--bg0);border:1px solid var(--border);border-radius:var(--radius);
+  background:#040810;border:1px solid var(--border);border-radius:var(--radius);
   height:200px;overflow-y:auto;font-family:var(--mono);font-size:10px;
-  padding:8px;color:var(--text2);
+  padding:8px;color:var(--text2);line-height:1.6;
   scrollbar-width:thin;scrollbar-color:var(--border2) transparent;
 }
 .log-box::-webkit-scrollbar{width:4px;}
 .log-box::-webkit-scrollbar-thumb{background:var(--border2);}
-.log-line{padding:1px 0;border-bottom:1px solid rgba(255,255,255,.03);}
-.log-ts{color:var(--text3);}
-.log-ok{color:var(--green);}
+.log-line{padding:2px 0;border-bottom:1px solid rgba(255,255,255,.025);}
+.log-ts  {color:var(--text4);}
+.log-ok  {color:var(--green);}
 .log-warn{color:var(--yellow);}
-.log-err{color:var(--red);}
+.log-err {color:var(--red);}
 .log-info{color:var(--cyan2);}
 
-/* ── Sparkline canvas ──────────────────────────────────── */
-.spark-wrap{position:relative;height:40px;}
-.spark-wrap canvas{width:100%!important;height:40px!important;}
+/* ── Patroni rows ───────────────────────────────── */
+.patroni-leader {background:rgba(0,230,118,.04);}
+.patroni-sync   {background:rgba(0,212,255,.04);}
+.patroni-replica{background:rgba(156,109,255,.04);}
 
-/* ── Tooltip ───────────────────────────────────────────── */
+/* ── Architecture SVG wrapper ───────────────────── */
+#arch-svg-wrap{width:100%;overflow:hidden;border-radius:0 0 var(--radius2) var(--radius2);min-height:380px;}
+#arch-svg-wrap svg{width:100%;height:auto;display:block;}
+
+/* ── Tooltip ────────────────────────────────────── */
 .tip{position:relative;cursor:help;}
 .tip::after{
-  content:attr(data-tip);position:absolute;bottom:120%;left:50%;transform:translateX(-50%);
-  background:var(--panel3);border:1px solid var(--border2);border-radius:var(--radius);
-  padding:5px 8px;font-size:10px;color:var(--text);white-space:nowrap;
+  content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);
+  left:50%;transform:translateX(-50%);
+  background:var(--panel3);border:1px solid var(--border2);
+  border-radius:var(--radius);padding:5px 9px;font-size:10px;
+  color:var(--text);white-space:nowrap;
   pointer-events:none;opacity:0;transition:.15s;z-index:99;
+  box-shadow:var(--shadow2);
 }
 .tip:hover::after{opacity:1;}
 
-/* ── Button ────────────────────────────────────────────── */
-.btn{
-  padding:5px 12px;border-radius:var(--radius);border:1px solid var(--border2);
-  background:var(--panel2);color:var(--text);font-size:11px;font-weight:600;
-  cursor:pointer;transition:var(--transition);
+/* ── XID bar ────────────────────────────────────── */
+.xid-bar-wrap{
+  background:rgba(0,0,0,.4);border-radius:4px;height:8px;
+  overflow:hidden;border:1px solid var(--border);position:relative;
 }
-.btn:hover{background:var(--panel3);border-color:var(--cyan3);}
-.btn-cyan{background:var(--cyan3);border-color:var(--cyan2);color:#fff;}
-.btn-cyan:hover{background:var(--cyan2);}
-.btn-red{background:rgba(255,82,82,.15);border-color:var(--red2);color:var(--red);}
-.btn-green{background:rgba(0,230,118,.15);border-color:var(--green2);color:var(--green);}
+.xid-bar{height:100%;border-radius:3px;transition:width .6s ease;}
+.xid-marker{
+  position:absolute;top:0;bottom:0;width:2px;background:var(--red);
+  opacity:.6;
+}
 
-/* ── Mini badge in tables ──────────────────────────────── */
-.mb-green{background:rgba(0,230,118,.15);color:var(--green);padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;}
-.mb-yellow{background:rgba(255,215,64,.15);color:var(--yellow);padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;}
-.mb-red{background:rgba(255,82,82,.15);color:var(--red);padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;}
-.mb-cyan{background:rgba(0,212,255,.15);color:var(--cyan);padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;}
-.mb-purple{background:rgba(124,77,255,.15);color:var(--purple);padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;}
-.mb-gray{background:rgba(100,116,139,.15);color:var(--text2);padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;}
+/* ── Animations ─────────────────────────────────── */
+@keyframes pulse{
+  0%,100%{opacity:1;transform:scale(1);}
+  50%{opacity:.5;transform:scale(1.4);}
+}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+@keyframes shimmer{
+  0%{background-position:-200% center;}
+  100%{background-position:200% center;}
+}
+.dot-green,.dot-cyan{animation:pulse 2.5s ease-in-out infinite;}
+.dot-red{animation:blink 1s ease-in-out infinite;}
+.card{animation:fadeIn .2s ease both;}
+.kpi.flash{
+  background:linear-gradient(90deg,var(--panel2) 0%,var(--panel3) 50%,var(--panel2) 100%);
+  background-size:200% auto;animation:shimmer .6s linear;
+}
+.tab.active{text-shadow:0 0 8px rgba(0,212,255,.5);}
 
-/* ── Arch SVG fonts ────────────────────────────────────── */
-.arch-label{font-family:var(--ff);fill:var(--text2);font-size:10px;}
-.arch-title{font-family:var(--ff);fill:var(--cyan);font-size:11px;font-weight:700;}
+/* ── Footer status bar ──────────────────────────── */
+#statusbar{
+  height:22px;background:var(--bg1);
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;padding:0 14px;gap:14px;
+  flex-shrink:0;font-size:10px;color:var(--text4);
+  font-family:var(--mono);
+}
+#statusbar b{color:var(--text2);}
+#statusbar .sb-sep{color:var(--border2);}
+#statusbar .sb-ok{color:var(--green);}
+#statusbar .sb-warn{color:var(--yellow);}
+#statusbar .sb-crit{color:var(--red);}
+
+/* ── Inline selects ─────────────────────────────── */
+select{
+  background:var(--bg0);border:1px solid var(--border2);
+  border-radius:var(--radius);color:var(--text);
+  padding:4px 8px;font-size:11px;font-family:var(--ff);
+  cursor:pointer;transition:var(--tr);
+}
+select:hover{border-color:var(--border3);}
+select:focus{outline:none;border-color:var(--cyan3);}
+
+/* ── Range slider ───────────────────────────────── */
+input[type=range]{
+  accent-color:var(--cyan);cursor:pointer;
+  height:4px;border-radius:2px;
+}
 </style>
+
 </head>
 <body>
 
 <!-- ═══ HEADER ══════════════════════════════════════════════ -->
 <div id="header">
-  <h1>🐘 PostgreSQL 18 DBA Console</h1>
-  <span class="badge badge-ok" id="hdr-status">● HEALTHY</span>
-  <span class="badge" id="hdr-scenario" style="background:rgba(0,212,255,.12);color:var(--cyan);border:1px solid rgba(0,212,255,.25);">Normal Operations</span>
+  <h1>🐘 PostgreSQL 18 <span>DBA Console</span></h1>
+  <div class="hdr-divider"></div>
+  <span class="hdr-badge hdr-ok" id="hdr-status"><span class="dot dot-green" style="width:6px;height:6px;margin-right:2px;"></span>HEALTHY</span>
+  <span class="hdr-badge" id="hdr-scenario" style="background:rgba(0,212,255,.1);color:var(--cyan);border:1px solid rgba(0,212,255,.2);">Normal Operations</span>
+  <div class="hdr-divider"></div>
+  <span class="hdr-info">PG<b class="c">18</b></span>
+  <span class="hdr-info">TL:<b class="c" id="hdr-tl-num">8</b></span>
+  <span class="hdr-info">Scope: <b>prod-pgcluster-uae-ha</b></span>
+  <span class="hdr-info">Sync: <b class="g">ON</b></span>
+  <div class="hdr-divider"></div>
+  <span class="hdr-info">DC1 <b class="g">Leader</b>+<b class="c">Sync</b></span>
+  <span class="hdr-info">DC2 <b class="p">DR-0</b>+<b class="p">DR-1</b></span>
   <div class="spacer"></div>
-  <span id="hdr-tl" style="font-size:11px;color:var(--text2);">PG<b style="color:var(--cyan)">18</b> &nbsp;|&nbsp; TL:<b style="color:var(--cyan)">8</b> &nbsp;|&nbsp; Scope: <b style="color:var(--text)">prod-pgcluster-uae-ha</b> &nbsp;|&nbsp; Sync: <b style="color:var(--green)">ON</b> &nbsp;|&nbsp; DC1: <b style="color:var(--green)">2</b> nodes &nbsp;|&nbsp; DC2: <b style="color:var(--purple)">2</b> nodes</span>
+  <span class="hdr-info" style="font-size:11px;">TPS: <b class="c" id="hdr-tps">120</b></span>
+  <span class="hdr-info" style="font-size:11px;">Conn: <b id="hdr-conn">180</b></span>
+  <div class="hdr-divider"></div>
   <span id="hdr-clock">00:00:00</span>
 </div>
 
 <!-- ═══ TAB BAR ═════════════════════════════════════════════ -->
 <div id="tabbar">
   <!-- Phase 1 -->
-  <button class="tab active" onclick="switchTab('overview')" id="t-overview">🏠 Overview</button>
-  <button class="tab" onclick="switchTab('arch')" id="t-arch">🏛 Architecture</button>
-  <div class="tab-group-sep"></div>
-  <!-- Phase 2 -->
-  <button class="tab" onclick="switchTab('cmdcenter')" id="t-cmdcenter">⚡ Command Center</button>
-  <button class="tab" onclick="switchTab('sessions')" id="t-sessions">🔒 Sessions & Locks</button>
-  <button class="tab" onclick="switchTab('pgbouncer')" id="t-pgbouncer">🔀 PgBouncer</button>
-  <div class="tab-group-sep"></div>
-  <!-- Phase 3 -->
-  <button class="tab" onclick="switchTab('perf')" id="t-perf">🚀 Performance</button>
-  <button class="tab" onclick="switchTab('memory')" id="t-memory">🧠 Memory</button>
-  <button class="tab" onclick="switchTab('checkpoint')" id="t-checkpoint">💾 Checkpoints</button>
-  <div class="tab-group-sep"></div>
-  <!-- Phase 4 -->
-  <button class="tab" onclick="switchTab('wal')" id="t-wal">📡 WAL & Repl</button>
-  <button class="tab" onclick="switchTab('backup')" id="t-backup">🗄 pgBackRest</button>
-  <button class="tab" onclick="switchTab('bloat')" id="t-bloat">🗃 Storage & Bloat</button>
-  <button class="tab" onclick="switchTab('vacuum')" id="t-vacuum">🌀 Autovacuum</button>
-  <div class="tab-group-sep"></div>
-  <!-- Phase 5 -->
-  <button class="tab" onclick="switchTab('k8s')" id="t-k8s">☸ Kubernetes</button>
-  <button class="tab" onclick="switchTab('alerts')" id="t-alerts">🚨 Alerts & Runbooks</button>
-  <button class="tab" onclick="switchTab('audit')" id="t-audit">📋 Audit</button>
+  <!-- G1: Cluster view -->
+  <button class="tab tab-g1 active" onclick="switchTab('overview')" id="t-overview">🏠 Overview</button>
+  <button class="tab tab-g1" onclick="switchTab('arch')" id="t-arch">🏛 Architecture</button>
+  <div class="tab-sep"></div>
+  <!-- G2: Session ops -->
+  <button class="tab tab-g2" onclick="switchTab('cmdcenter')" id="t-cmdcenter">⚡ Command Center</button>
+  <button class="tab tab-g2" onclick="switchTab('sessions')" id="t-sessions">🔒 Sessions</button>
+  <button class="tab tab-g2" onclick="switchTab('pgbouncer')" id="t-pgbouncer">🔀 PgBouncer</button>
+  <div class="tab-sep"></div>
+  <!-- G3: Performance -->
+  <button class="tab tab-g3" onclick="switchTab('perf')" id="t-perf">🚀 Performance</button>
+  <button class="tab tab-g3" onclick="switchTab('memory')" id="t-memory">🧠 Memory</button>
+  <button class="tab tab-g3" onclick="switchTab('checkpoint')" id="t-checkpoint">💾 Checkpoints</button>
+  <div class="tab-sep"></div>
+  <!-- G4: Data integrity -->
+  <button class="tab tab-g4" onclick="switchTab('wal')" id="t-wal">📡 WAL & Repl</button>
+  <button class="tab tab-g4" onclick="switchTab('backup')" id="t-backup">🗄 pgBackRest</button>
+  <button class="tab tab-g4" onclick="switchTab('bloat')" id="t-bloat">🗃 Bloat</button>
+  <button class="tab tab-g4" onclick="switchTab('vacuum')" id="t-vacuum">🌀 Autovacuum</button>
+  <div class="tab-sep"></div>
+  <!-- G5: Ops & compliance -->
+  <button class="tab tab-g5" onclick="switchTab('k8s')" id="t-k8s">☸ Kubernetes</button>
+  <button class="tab tab-g5" onclick="switchTab('alerts')" id="t-alerts">🚨 Alerts & Runbooks</button>
+  <button class="tab tab-g5" onclick="switchTab('audit')" id="t-audit">📋 Audit</button>
 </div>
 
 <!-- ═══ MAIN ═════════════════════════════════════════════════ -->
@@ -355,7 +610,7 @@ html,body{height:100%;background:var(--bg0);color:var(--text);font-family:var(--
 <div class="grid2">
 <!-- Cluster status -->
 <div class="card">
-  <div class="card-head"><span class="icon">🗂</span> Cluster Members<span class="ml"><span class="dot dot-green"></span><span style="font-size:10px;color:var(--green)">HEALTHY</span></span></div>
+  <div class="card-head"><span class="icon">🗂</span><span class="title">Cluster Members</span><span class="ml"><span class="dot dot-green"></span><span style="font-size:10px;color:var(--green)">HEALTHY</span></span></div>
   <div class="card-body-np">
     <table class="tbl">
       <thead><tr><th>Member</th><th>Role</th><th>State</th><th>TL</th><th>Lag</th><th>DC</th></tr></thead>
@@ -371,7 +626,7 @@ html,body{height:100%;background:var(--bg0);color:var(--text);font-family:var(--
 
 <!-- Scenario selector -->
 <div class="card">
-  <div class="card-head"><span class="icon">🎬</span> Simulation Scenario</div>
+  <div class="card-head"><span class="icon">🎬</span><span class="title">Simulation Scenario</span></div>
   <div class="card-body">
     <div class="sc-pill-strip" id="sc-strip">
       <span class="sc-pill active" onclick="setScenario('normal','Normal Operations','ok')">🟢 Normal</span>
@@ -505,7 +760,7 @@ html,body{height:100%;background:var(--bg0);color:var(--text);font-family:var(--
 
 <!-- Health check card -->
 <div class="card mt12">
-  <div class="card-head"><span class="icon">🩺</span> DBA Quick Health Check — All-in-One SQL</div>
+  <div class="card-head"><span class="icon">🩺</span><span class="title">DBA Quick Health Check — All-in-One SQL</span></div>
   <div class="card-body">
     <div class="grid2">
       <div>
@@ -1782,6 +2037,70 @@ sysctl -p /etc/sysctl.d/99-postgresql.conf
 </div>
 </div><!-- /grid2 -->
 
+
+<!-- Memory sizing card -->
+<div class="grid2 mt12">
+<div class="card">
+  <div class="card-head"><span class="icon">📐</span><span class="title">Memory Sizing Reference</span></div>
+  <div class="card-body">
+    <div class="sec-label">RAM = 128 GB · shared_buffers = 32 GB (25%)</div>
+    <table class="tbl">
+      <thead><tr><th>Parameter</th><th>Current</th><th>Formula / Rule</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>shared_buffers</td><td class="mono text-cyan">32 GB</td><td class="text-dim">25–40% of RAM</td><td><span class="badge b-green">OK</span></td></tr>
+        <tr><td>work_mem</td><td class="mono text-yellow">64 MB</td><td class="text-dim">RAM/max_connections/4</td><td><span class="badge b-yellow">WATCH</span></td></tr>
+        <tr><td>effective_cache_size</td><td class="mono">96 GB</td><td class="text-dim">75% RAM (planner hint)</td><td><span class="badge b-green">OK</span></td></tr>
+        <tr><td>maintenance_work_mem</td><td class="mono">2 GB</td><td class="text-dim">1–5% RAM for VACUUM</td><td><span class="badge b-green">OK</span></td></tr>
+        <tr><td>wal_buffers</td><td class="mono">64 MB</td><td class="text-dim">3% shared_buffers</td><td><span class="badge b-green">OK</span></td></tr>
+        <tr><td>max_connections</td><td class="mono">150</td><td class="text-dim">PgBouncer handles clients</td><td><span class="badge b-green">OK</span></td></tr>
+      </tbody>
+    </table>
+    <div class="sec-label mt10">Peak memory estimate</div>
+    <div class="code-block">-- Theoretical peak usage
+shared_buffers       = 32 GB
+max_connections × work_mem (peak) = 150 × 64MB = 9.6 GB
+autovacuum × maintenance_work_mem = 3 × 2GB   = 6.0 GB
+OS cache (remaining) ≈ 128 - 32 - 9.6 - 6    = 80+ GB
+-- Actual: backends rarely all sort at once
+-- Use pg_stat_activity to check active sorts</div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-head"><span class="icon">🔧</span><span class="title">Memory Tuning Commands</span></div>
+  <div class="card-body">
+    <div class="sec-label">Apply memory settings (no restart for most)</div>
+    <div class="code-block">-- Increase work_mem for session (DBA use)
+SET work_mem = '256MB';
+
+-- Per-role override
+ALTER ROLE hplus_app SET work_mem = '128MB';
+ALTER ROLE hplus_reporting SET work_mem = '256MB';
+
+-- Increase maintenance_work_mem for index build
+SET maintenance_work_mem = '4GB';
+REINDEX TABLE CONCURRENTLY txn_log;
+RESET maintenance_work_mem;
+
+-- Apply system changes (requires reload, not restart)
+ALTER SYSTEM SET work_mem = '64MB';
+SELECT pg_reload_conf();
+
+-- Verify applied
+SHOW work_mem;
+SHOW shared_buffers;
+SELECT name, setting, unit
+FROM pg_settings
+WHERE name IN ('shared_buffers','work_mem',
+  'effective_cache_size','maintenance_work_mem',
+  'wal_buffers','huge_pages');</div>
+    <div class="alert alert-yellow mt10">
+      <span class="alert-icon">⚠</span>
+      <span>Raising work_mem globally: 150 connections × 64MB = 9.6GB worst case. Use per-role settings for reporting queries instead.</span>
+    </div>
+  </div>
+</div>
+</div>
+
 </div><!-- /page-scroll -->
 </div><!-- /page-memory -->
 
@@ -1871,6 +2190,65 @@ FROM pg_stat_bgwriter;</div>
 </div>
 </div><!-- /grid2 -->
 
+
+<!-- Checkpoint I/O card -->
+<div class="grid2 mt12">
+<div class="card">
+  <div class="card-head"><span class="icon">📈</span><span class="title">I/O Pressure Indicators</span></div>
+  <div class="card-body">
+    <div class="row-between mb8">
+      <span class="text-muted">Checkpoint write pressure</span>
+      <span class="mono" id="ck-wpct">18%</span>
+    </div>
+    <div class="pbar-wrap mb12"><div class="pbar pbar-green" id="ck-wbar" style="width:18%"></div></div>
+    <div class="row-between mb8">
+      <span class="text-muted">bgwriter efficiency</span>
+      <span class="mono" id="ck-bpct">87%</span>
+    </div>
+    <div class="pbar-wrap mb12"><div class="pbar pbar-green" id="ck-bbar" style="width:87%"></div></div>
+    <div class="row-between mb8">
+      <span class="text-muted">Backend-written buffers (bad)</span>
+      <span class="mono text-yellow" id="ck-backend-pct">4%</span>
+    </div>
+    <div class="pbar-wrap mb12"><div class="pbar pbar-yellow" id="ck-backbar" style="width:4%"></div></div>
+    <div class="sec-label">Checkpoint health thresholds</div>
+    <table class="tbl">
+      <tr><td class="text-dim">checkpoint_write_time</td><td>&lt;500ms <span class="badge b-green">OK</span> / &gt;2s <span class="badge b-red">SLOW</span></td></tr>
+      <tr><td class="text-dim">checkpoints_req ratio</td><td>&lt;10% <span class="badge b-green">OK</span> / &gt;25% <span class="badge b-yellow">RAISE max_wal_size</span></td></tr>
+      <tr><td class="text-dim">maxwritten_clean &gt; 0</td><td>Raise bgwriter_lru_maxpages <span class="badge b-yellow">TUNE</span></td></tr>
+      <tr><td class="text-dim">buffers_backend &gt; 5%</td><td>Backends writing dirty pages <span class="badge b-red">BAD</span></td></tr>
+    </table>
+  </div>
+</div>
+<div class="card">
+  <div class="card-head"><span class="icon">🗂</span><span class="title">pg_stat_io Deep Dive (PG 16+)</span></div>
+  <div class="card-body">
+    <div class="code-block">-- I/O stats by backend type (PG 16+)
+SELECT backend_type, object, context,
+  reads, writes, extends, hits,
+  round(hits::numeric/(hits+reads+1)*100,1) AS hit_pct,
+  read_time, write_time, extend_time
+FROM pg_stat_io
+WHERE reads+writes > 0
+ORDER BY reads+writes DESC;
+
+-- WAL I/O specifically
+SELECT * FROM pg_stat_io
+WHERE object = 'wal';
+
+-- Reset I/O stats
+SELECT pg_stat_reset_shared('io');
+
+-- Track temp file I/O per backend
+SELECT pid, temp_files, temp_bytes,
+  pg_size_pretty(temp_bytes) AS tmp_size
+FROM pg_stat_activity
+JOIN pg_stat_database d ON d.datname = current_database()
+WHERE temp_bytes > 0;</div>
+  </div>
+</div>
+</div>
+
 </div><!-- /page-scroll -->
 </div><!-- /page-checkpoint -->
 
@@ -1893,7 +2271,7 @@ FROM pg_stat_bgwriter;</div>
 <div class="grid2 mb12">
 <!-- Replication status -->
 <div class="card">
-  <div class="card-head"><span class="icon">📡</span> pg_stat_replication</div>
+  <div class="card-head"><span class="icon">📡</span><span class="title">pg_stat_replication</span></div>
   <div class="card-body-np">
     <table class="tbl">
       <thead><tr><th>App Name</th><th>Client IP</th><th>State</th><th>Mode</th><th>Sent LSN</th><th>Write Lag</th><th>Flush Lag</th><th>Replay Lag</th><th>Sync State</th></tr></thead>
@@ -1932,7 +2310,7 @@ FROM pg_stat_bgwriter;</div>
 
 <!-- WAL archive -->
 <div class="card">
-  <div class="card-head"><span class="icon">📦</span> WAL Archive Status</div>
+  <div class="card-head"><span class="icon">📦</span><span class="title">WAL Archive Status</span></div>
   <div class="card-body">
     <div class="code-block">SELECT archived_count, failed_count,
   last_archived_wal,
@@ -1965,7 +2343,7 @@ pgbackrest --stanza=db archive-push /pg/wal/00000008.../</div>
 <div class="grid2">
 <!-- Replication slots -->
 <div class="card">
-  <div class="card-head"><span class="icon">🎯</span> Replication Slots</div>
+  <div class="card-head"><span class="icon">🎯</span><span class="title">Replication Slots</span></div>
   <div class="card-body">
     <div class="code-block">SELECT slot_name, plugin, slot_type, active,
   restart_lsn, confirmed_flush_lsn,
@@ -1990,7 +2368,7 @@ FROM pg_replication_slots;</div>
 
 <!-- WAL configuration -->
 <div class="card">
-  <div class="card-head"><span class="icon">⚙</span> WAL Configuration</div>
+  <div class="card-head"><span class="icon">⚙</span><span class="title">WAL Configuration</span></div>
   <div class="card-body">
     <table class="tbl">
       <tr><td class="text-muted">wal_level</td><td class="mono text-green">replica</td></tr>
@@ -2035,7 +2413,7 @@ SELECT pg_is_in_recovery(), pg_is_wal_replay_paused();</div>
 
 <div class="grid2 mb12">
 <div class="card">
-  <div class="card-head"><span class="icon">📅</span> Backup Timeline</div>
+  <div class="card-head"><span class="icon">📅</span><span class="title">Backup Timeline</span></div>
   <div class="card-body">
     <div class="code-block">pgbackrest --stanza=db info</div>
     <div class="sec-label mt8">Backup inventory</div>
@@ -2061,7 +2439,7 @@ SELECT pg_is_in_recovery(), pg_is_wal_replay_paused();</div>
 </div>
 
 <div class="card">
-  <div class="card-head"><span class="icon">⏪</span> PITR Procedure</div>
+  <div class="card-head"><span class="icon">⏪</span><span class="title">PITR Procedure</span></div>
   <div class="card-body">
     <div class="sec-label">1. Identify target time</div>
     <div class="code-block">-- Find the transaction/commit
@@ -2209,6 +2587,70 @@ ORDER BY pg_relation_size(indexrelid) DESC;</div>
 </div>
 </div><!-- /grid2 -->
 
+
+<div class="grid2 mt12">
+<div class="card">
+  <div class="card-head"><span class="icon">⚡</span><span class="title">Bloat Action Center</span></div>
+  <div class="card-body">
+    <div class="sec-label">Immediate actions for current state</div>
+    <div class="alert alert-red mb8">
+      <span class="alert-icon">🔴</span>
+      <div>
+        <b>txn_log — 842K dead tuples (98% threshold)</b>
+        <div class="mt4"><span class="cmd">VACUUM (ANALYZE, VERBOSE) public.txn_log;</span></div>
+      </div>
+    </div>
+    <div class="alert alert-yellow mb8">
+      <span class="alert-icon">⚠</span>
+      <div>
+        <b>3 unused indexes wasting 544 MB</b>
+        <div class="cmd-list mt4">
+          <div class="cmd">DROP INDEX CONCURRENTLY public.ix_txnlog_old_status;</div>
+          <div class="cmd">DROP INDEX CONCURRENTLY public.ix_audit_legacy_ref;</div>
+          <div class="cmd">DROP INDEX CONCURRENTLY public.ix_gl_bak_ref;</div>
+        </div>
+      </div>
+    </div>
+    <div class="sec-label mt10">REINDEX for index bloat</div>
+    <div class="code-block">-- Safe concurrent rebuild (no table lock)
+REINDEX INDEX CONCURRENTLY ix_txnlog_branch_date;
+REINDEX TABLE CONCURRENTLY txn_log;
+
+-- Monitor reindex progress
+SELECT phase, blocks_processed, blocks_total,
+  round(blocks_processed::numeric/
+    nullif(blocks_total,0)*100,1) AS pct
+FROM pg_stat_progress_create_index;</div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-head"><span class="icon">📊</span><span class="title">Table Growth Trend</span></div>
+  <div class="card-body">
+    <div class="sec-label">Size growth (last 7 days estimate)</div>
+    <table class="tbl">
+      <thead><tr><th>Table</th><th>Current</th><th>+/day</th><th>30-day est.</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>txn_log</td><td class="mono text-yellow">18 GB</td><td class="mono text-red">+600 MB</td><td class="mono">36 GB</td><td><span class="badge b-yellow">PARTITION</span></td></tr>
+        <tr><td>audit_log</td><td class="mono">8.4 GB</td><td class="mono">+280 MB</td><td class="mono">16.8 GB</td><td><span class="badge b-cyan">ARCHIVE</span></td></tr>
+        <tr><td>gl_entries</td><td class="mono">4.2 GB</td><td class="mono">+120 MB</td><td class="mono">7.8 GB</td><td><span class="badge b-green">OK</span></td></tr>
+        <tr><td>accounts</td><td class="mono">2.1 GB</td><td class="mono">+40 MB</td><td class="mono">3.3 GB</td><td><span class="badge b-green">OK</span></td></tr>
+      </tbody>
+    </table>
+    <div class="sec-label mt10">Partition txn_log (recommended)</div>
+    <div class="code-block">-- Create monthly partitions (already started)
+CREATE TABLE txn_log_2026_06
+  PARTITION OF txn_log
+  FOR VALUES FROM ('2026-06-01') TO ('2026-07-01');
+
+-- Check partition sizes
+SELECT inhrelid::regclass AS partition,
+  pg_size_pretty(pg_relation_size(inhrelid)) AS size
+FROM pg_inherits WHERE inhparent = 'txn_log'::regclass
+ORDER BY inhrelid;</div>
+  </div>
+</div>
+</div>
+
 </div><!-- /page-scroll -->
 </div><!-- /page-bloat -->
 
@@ -2330,6 +2772,72 @@ ORDER BY last_autovacuum DESC NULLS LAST LIMIT 20;</div>
 </div>
 </div><!-- /grid2 -->
 
+
+<div class="grid2 mt12">
+<div class="card">
+  <div class="card-head"><span class="icon">🧊</span><span class="title">XID Wraparound Risk Gauge</span></div>
+  <div class="card-body">
+    <div class="sec-label">Transaction ID consumption — 2 billion limit</div>
+    <div class="row-between mb6">
+      <span class="text-muted">hplus_core XID age</span>
+      <span class="mono text-orange" id="av-xid-display">142M / 2000M</span>
+    </div>
+    <div class="xid-bar-wrap mb4">
+      <div class="xid-bar pbar-green" id="av-xid-bar" style="width:7.1%"></div>
+      <div class="xid-marker" style="left:10%"></div><!-- autovac trigger at 200M -->
+      <div class="xid-marker" style="left:75%;background:var(--red);opacity:.8"></div><!-- emergency at 1.5B -->
+    </div>
+    <div class="row mb12" style="justify-content:space-between;font-size:9px;color:var(--text4);">
+      <span>0</span><span style="margin-left:10%">↑ AutoVac 200M</span>
+      <span>↑ Emergency 1.5B</span><span>2B (wrap)</span>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Database</th><th>XID Age</th><th>% to Wrap</th><th>Headroom</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>hplus_core</td><td class="mono text-orange" id="av-xid-core">142M</td><td class="mono" id="av-xid-pct1">7.1%</td><td class="mono text-green">1,857M</td><td><span class="badge b-green">LOW RISK</span></td></tr>
+        <tr><td>hplus_archive</td><td class="mono">98M</td><td class="mono">4.9%</td><td class="mono text-green">1,902M</td><td><span class="badge b-green">LOW RISK</span></td></tr>
+        <tr><td>template1</td><td class="mono text-yellow">188M</td><td class="mono">9.4%</td><td class="mono text-yellow">1,812M</td><td><span class="badge b-yellow">WATCH</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="card">
+  <div class="card-head card-warn"><span class="icon">🚨</span><span class="title">Freeze Emergency Procedure</span></div>
+  <div class="card-body">
+    <div class="alert alert-yellow mb10">
+      <span class="alert-icon">⚠</span>
+      <span>Run if XID age &gt; 1.5B (75%) to avoid autovacuum emergency that locks all writes.</span>
+    </div>
+    <div class="sec-label">Step 1 — Identify oldest table</div>
+    <div class="code-block">SELECT relname, relfrozenxid,
+  age(relfrozenxid) AS xid_age,
+  pg_size_pretty(pg_relation_size(oid)) AS size
+FROM pg_class
+WHERE relkind = 'r'
+ORDER BY age(relfrozenxid) DESC LIMIT 10;</div>
+    <div class="sec-label mt8">Step 2 — Schedule freeze maintenance</div>
+    <div class="code-block">-- During low-traffic window (blocks DDL but not DML)
+VACUUM FREEZE VERBOSE public.txn_log;
+
+-- Monitor progress
+SELECT pid, phase, heap_blks_scanned,
+  heap_blks_vacuumed, num_dead_tuples
+FROM pg_stat_progress_vacuum
+WHERE relid = 'txn_log'::regclass;</div>
+    <div class="sec-label mt8">Step 3 — Adjust freeze params</div>
+    <div class="code-block">-- Lower freeze trigger thresholds
+ALTER TABLE txn_log SET (
+  autovacuum_freeze_max_age = 150000000,
+  autovacuum_freeze_min_age = 5000000
+);
+
+-- Global adjustment (restart required)
+ALTER SYSTEM SET autovacuum_freeze_max_age = 150000000;
+SELECT pg_reload_conf();</div>
+  </div>
+</div>
+</div>
+
 </div><!-- /page-scroll -->
 </div><!-- /page-vacuum -->
 
@@ -2349,7 +2857,7 @@ ORDER BY last_autovacuum DESC NULLS LAST LIMIT 20;</div>
 <div class="grid2 mb12">
 <!-- Pod status -->
 <div class="card">
-  <div class="card-head"><span class="icon">☸</span> Pod Status</div>
+  <div class="card-head"><span class="icon">☸</span><span class="title">Pod Status</span></div>
   <div class="card-body-np">
     <table class="tbl">
       <thead><tr><th>Pod</th><th>Role</th><th>Status</th><th>CPU</th><th>Memory</th><th>Restarts</th><th>Node</th></tr></thead>
@@ -2406,7 +2914,7 @@ ORDER BY last_autovacuum DESC NULLS LAST LIMIT 20;</div>
 
 <!-- PVC & Storage -->
 <div class="card">
-  <div class="card-head"><span class="icon">💾</span> PVC & Storage</div>
+  <div class="card-head"><span class="icon">💾</span><span class="title">PVC & Storage</span></div>
   <div class="card-body">
     <table class="tbl mb8">
       <thead><tr><th>PVC Name</th><th>Pod</th><th>Size</th><th>Used</th><th>%</th><th>SC</th></tr></thead>
@@ -2539,7 +3047,7 @@ spec:
 
 <!-- Active Alerts panel -->
 <div class="card mb12">
-  <div class="card-head"><span class="icon">🚨</span> Active Alerts</div>
+  <div class="card-head"><span class="icon">🚨</span><span class="title">Active Alerts</span></div>
   <div class="card-body" id="al-active-list">
     <div class="alert alert-red mb8">
       <span>🔴</span>
@@ -2769,7 +3277,7 @@ ORDER BY pg_relation_size(indexrelid) DESC LIMIT 10;</div>
 
 <div class="grid2 mb12">
 <div class="card">
-  <div class="card-head"><span class="icon">📋</span> pgaudit Log Viewer</div>
+  <div class="card-head"><span class="icon">📋</span><span class="title">pgaudit Log Viewer</span></div>
   <div class="card-body">
     <div class="sec-label">Filter</div>
     <div class="row mb8" style="gap:8px;">
