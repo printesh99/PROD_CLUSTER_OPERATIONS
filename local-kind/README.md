@@ -46,18 +46,20 @@ PRIMARY=$(kubectl -n prod-pgcluster-uae-local get pod \
 kubectl -n prod-pgcluster-uae-local exec "$PRIMARY" -c database -- patronictl list
 ```
 
-Get the generated `tps-app` password:
+Get the generated `postgres` password:
 
 ```bash
-kubectl -n prod-pgcluster-uae-local get secret prod-pgcluster-uae-pguser-tps-app \
+kubectl -n prod-pgcluster-uae-local get secret prod-pgcluster-uae-pguser-postgres \
   -o jsonpath='{.data.password}' | base64 --decode; echo
 ```
 
-Connect from macOS through PgBouncer:
+Connect inside the leader pod:
 
 ```bash
-psql 'host=127.0.0.1 port=5555 dbname=tps user=tps-app sslmode=require'
+kubectl -n prod-pgcluster-uae-local exec "$PRIMARY" -c database -- psql -U postgres -d postgres
 ```
+
+PgBouncer remains deployed to mirror the production topology, but this local lab no longer creates the earlier sample app databases or app users (`tps`, `tps_dw`, `service`, `common`, `tps-app`, `tpsdw-app`, `service-app`, `common-app`, `ro-user`).
 
 ## Delete The Lab
 

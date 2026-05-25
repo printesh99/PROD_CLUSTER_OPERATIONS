@@ -137,26 +137,3 @@ spec:
   users:
     - name: postgres
       options: SUPERUSER
-    - name: tps-app
-      databases:
-        - tps
-      options: LOGIN
-    - name: tpsdw-app
-      databases:
-        - tps_dw
-      options: LOGIN
-    - name: service-app
-      databases:
-        - service
-      options: LOGIN
-    - name: common-app
-      databases:
-        - common
-      options: LOGIN
-    - name: ro-user
-      databases:
-        - tps
-        - tps_dw
-        - service
-        - common
-      options: LOGIN

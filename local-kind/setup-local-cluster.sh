@@ -90,11 +90,11 @@ Check Patroni:
     -o jsonpath='{.items[0].metadata.name}')
   kubectl -n $NAMESPACE exec "\$PRIMARY" -c database -- patronictl list
 
-Get generated tps-app password:
-  kubectl -n $NAMESPACE get secret prod-pgcluster-uae-pguser-tps-app \\
+Get generated postgres password:
+  kubectl -n $NAMESPACE get secret prod-pgcluster-uae-pguser-postgres \\
     -o jsonpath='{.data.password}' | base64 --decode; echo
 
-Connect through PgBouncer from the Mac:
-  psql 'host=127.0.0.1 port=5555 dbname=tps user=tps-app sslmode=require'
+Connect inside the leader pod:
+  kubectl -n $NAMESPACE exec "\$PRIMARY" -c database -- psql -U postgres -d postgres
 
 EOF
